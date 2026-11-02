@@ -1,0 +1,31 @@
+/* STAGE 8 responsive and accessibility foundation: CSS-only, game engines unchanged */
+:root{--pocket-touch-target:44px}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-y:contain}
+body{max-width:100%;}
+button,select,input,[role="button"]{touch-action:manipulation}
+button,[role="button"]{-webkit-tap-highlight-color:transparent}
+button:focus-visible,[role="button"]:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #fff0a6!important;outline-offset:2px}
+img,svg,canvas{max-width:100%}
+@media (pointer:coarse){button,[role="button"],select{min-height:44px}input[type="checkbox"],input[type="radio"]{accent-color:#ebbf62}}
+@media (max-width:767px){
+ html,body{min-width:0!important;width:100%;max-width:100%;}
+ .shell,.layout,.viewport,.game,.table,.scoreboard,.topbar,.board-wrap,.panel,.score-panel,.table-panel{max-width:100%;min-width:0}
+ .viewport{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+ .topbar{padding-left:max(8px,env(safe-area-inset-left))!important;padding-right:max(8px,env(safe-area-inset-right))!important}
+ .scoreboard{scrollbar-width:thin}
+ .dialog,.modal,.overlay [role="dialog"]{max-width:min(96vw,540px)}
+}
+@media (max-width:390px){
+ .topbar{gap:4px!important}
+ .topbar .title{font-size:clamp(15px,4.4vw,22px)!important}
+ .topbar .icon-btn{flex-shrink:0}
+}
+@media (min-width:768px) and (max-width:1199px){
+ .shell,.layout,.game,.table,.viewport{max-width:100%;min-width:0}
+ .viewport{overflow-y:auto;-webkit-overflow-scrolling:touch}
+}
+@media (max-height:520px) and (orientation:landscape){
+ .viewport{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+ .topbar{min-height:40px!important}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

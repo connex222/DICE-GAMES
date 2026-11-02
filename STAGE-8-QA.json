@@ -1,0 +1,125 @@
+{
+  "summary": {
+    "games": 7,
+    "tested_screen_sizes": [
+      "360\u00d7780",
+      "390\u00d7844",
+      "768\u00d71024",
+      "1024\u00d7768",
+      "1440\u00d7900"
+    ],
+    "browser_testing": "BLOCKED: browser policy ERR_BLOCKED_BY_ADMINISTRATOR for localhost, file and data URLs; no layout or gameplay pass claimed",
+    "syntax_check": "node --check on inline JavaScript",
+    "original_game_javascript": "unchanged"
+  },
+  "static_checks": [
+    {
+      "file": "index.html",
+      "viewport": true,
+      "responsiveCSS": false,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "play.html",
+      "viewport": true,
+      "responsiveCSS": false,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/bust-or-bank.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/brain-raid.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/shut-the-box.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/gilded-five.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/liars-dice.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/generala.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "file": "games/ten-of-a-kind.html",
+      "viewport": true,
+      "responsiveCSS": true,
+      "scripts": [
+        {
+          "number": 0,
+          "pass": true,
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

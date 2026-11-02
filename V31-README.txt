@@ -1,0 +1,1 @@
+Stage 7 of expanded audio: Ten of a Kind 7 voices and 4 sound effects. Run INSTALL-NEW-SOUNDS.bat to install all 94 Creative Claw assets. Full browser/audio QA remains outstanding. All seven games retained.

@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121826">
+<meta name="color-scheme" content="dark">
+<title>Bust or Bank</title>
+<style>
+/* =========================================================
+   1. MASTER DESIGN TOKENS (shared across the game suite)
+   ========================================================= */
+:root{
+  --bg-primary:#121826;
+  --bg-surface:#1B2436;
+  --bg-card:#25334D;
+  --text-main:#F3F4F6;
+  --text-muted:#9CA3AF;
+  --accent-primary:#6366F1;
+  --accent-success:#10B981;
+  --accent-warning:#F59E0B;
+  --accent-danger:#EF4444;
+  --border-radius:12px;
+  --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+  /* Shell tokens derived from the master set */
+  --line:rgba(243,244,246,.12);
+  --pad:clamp(8px,2.2vmin,22px);
+  --gap:clamp(6px,1.6vmin,16px);
+  --tap:48px;
+  --roll-ms:1000ms;
+  --on-success:#04261B;
+
+  /* Dice */
+  --ivory-hi:#FFFFFF;
+  --ivory:#EEEBE3;
+  --ivory-lo:#CBC5B7;
+  --pip:#121826;
+
+  color-scheme:dark;
+  box-sizing:border-box;
+  height:100%;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  scroll-padding-top:env(safe-area-inset-top,0px);
+  font-size:clamp(15px,calc(12px + .45vmin),20px);
+  background:var(--bg-primary);
+}
+/* Bright-light mode: stronger text and edges for direct sunlight */
+:root[data-contrast="high"]{
+  --text-muted:#E5E7EB;
+  --line:rgba(243,244,246,.5);
+  --bg-card:#2E4066;
+}
+/* TV mode: bigger type and targets for a room-distance screen */
+:root[data-tv="on"]{
+  --tap:64px;
+  font-size:clamp(18px,calc(8px + 1.7vmin),34px);
+}
+:root[data-tv="on"] .table{max-width:none}
+:root[data-idle="true"],:root[data-idle="true"] *{cursor:none !important}
+
+*,*::before,*::after{box-sizing:inherit}
+
+body{
+  margin:0;height:100%;
+  background:var(--bg-primary);
+  color:var(--text-main);
+  font-family:var(--font-family);
+  font-variant-numeric:tabular-nums;
+  line-height:1.4;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+}
+button,input{font:inherit;color:inherit}
+button{touch-action:manipulation}
+[hidden]{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* =========================================================
+   2. SHELL LAYOUT (identical across every game in the suite)
+   ========================================================= */
+.shell{
+  height:100%;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "score" "main" "dock";
+}
+.shell[data-view="lobby"]{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "main" "dock";
+}
+.shell[data-view="lobby"] .scoreboard,
+.shell[data-view="lobby"] #table,
+.shell[data-view="game"] #lobby{display:none}
+
+/* ---- Top header bar ---- */
+.topbar{
+  grid-area:header;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"left center right";
+  align-items:center;
+  gap:var(--gap);
+  padding:calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-right,0px)) calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);
+  border-bottom:1px solid var(--line);
+}
+.tb-left{grid-area:left;display:flex;align-items:center;gap:6px}
+.tb-center{grid-area:center;text-align:center;min-width:0}
+.tb-right{grid-area:right;display:flex;gap:4px}
+.title{margin:0;font-size:clamp(1.05rem,4.4vw,1.3rem);font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.t-bust{color:var(--accent-danger)}
+.t-or{color:var(--text-muted);font-weight:600}
+.t-bank{color:var(--accent-success)}
+.turn-label{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-msg{font-size:.88rem;color:var(--text-muted);min-height:1.3em}
+.status-msg[data-tone="success"]{color:var(--accent-success)}
+.status-msg[data-tone="warning"]{color:var(--accent-warning)}
+.status-msg[data-tone="danger"]{color:var(--accent-danger);font-weight:700}
+
+@media (max-width:599px){
+  .topbar{
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"left right" "center center";
+    row-gap:4px;
+  }
+  .tb-center{text-align:left;padding:0 4px 4px}
+}
+@media (max-width:359px){
+  .tb-left{gap:0}
+  .tb-right{gap:0}
+  .topbar{column-gap:4px}
+}
+
+.icon-btn{
+  min-width:var(--tap);min-height:var(--tap);
+  display:inline-grid;place-items:center;
+  background:transparent;border:1px solid transparent;border-radius:var(--border-radius);
+  cursor:pointer;
+}
+.icon-btn:hover{background:var(--bg-card)}
+.icon-btn svg{width:1.4em;height:1.4em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn[aria-pressed="false"] .ico-on,
+.icon-btn[aria-pressed="true"] .ico-off{display:none}
+
+:focus-visible{outline:3px solid var(--accent-primary);outline-offset:2px}
+
+/* ---- Scoreboard & player dock ---- */
+.scoreboard{
+  grid-area:score;
+  display:flex;gap:var(--gap);
+  overflow-x:auto;overflow-y:hidden;
+  padding:var(--gap) max(var(--pad),env(safe-area-inset-right,0px)) var(--gap) max(var(--pad),env(safe-area-inset-left,0px));
+  border-bottom:1px solid var(--line);
+  scrollbar-width:none;
+}
+.scoreboard::-webkit-scrollbar{display:none}
+.chip{
+  flex:1 0 auto;min-width:8.5rem;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-areas:"av name" "av score" "bar bar";
+  column-gap:.6rem;align-items:center;
+  padding:.5rem .75rem;
+  background:var(--bg-surface);
+  border:2px solid transparent;border-radius:var(--border-radius);
+  transition:border-color .2s,background .2s;
+}
+.chip.active{border-color:var(--accent-primary);background:var(--bg-card)}
+.chip.winner{border-color:var(--accent-success)}
+.avatar{
+  grid-area:av;width:2.2rem;height:2.2rem;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--c);color:#121826;font-weight:800;
+}
+.chip-name{grid-area:name;font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:.7rem;font-weight:700;color:var(--text-muted);border:1px solid var(--line);border-radius:6px;padding:0 .3em;margin-left:.25em}
+.chip-score{grid-area:score;font-size:1.2rem;font-weight:800;line-height:1.1}
+.chip-bar{grid-area:bar;height:4px;margin-top:.4rem;border-radius:2px;background:var(--bg-primary);overflow:hidden}
+.chip-bar span{display:block;height:100%;background:var(--c);transition:width .5s ease}
+
+/* ---- Main viewport ---- */
+.viewport{
+  grid-area:main;min-height:0;overflow:auto;
+  display:flex;flex-direction:column;
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+}
+.table{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:var(--gap);width:100%;max-width:1200px;margin:0 auto;
+}
+
+/* Live score display */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.stat{
+  background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--border-radius);
+  padding:.5rem .6rem;text-align:center;min-width:0;
+}
+.stat-label{display:block;font-size:.78rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-value{display:block;font-size:clamp(1.35rem,5.5vmin,2.8rem);font-weight:800;line-height:1.15;letter-spacing:-.02em}
+.stat-sub{display:block;font-size:.75rem;color:var(--text-muted);min-height:1.2em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-value[data-tone="success"]{color:var(--accent-success)}
+.stat-value[data-tone="warning"]{color:var(--accent-warning)}
+.stat-value[data-tone="danger"]{color:var(--accent-danger)}
+
+/* ---- Dice board ---- */
+.board-wrap{
+  position:relative;flex:1 1 auto;min-height:calc(var(--die-size,64px)*2.6);
+  display:grid;place-items:center;
+  padding:var(--pad);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*2);
+  background:radial-gradient(ellipse 80% 70% at 50% 45%,var(--bg-card),var(--bg-surface) 75%);
+  overflow:hidden;
+  container-type:inline-size;
+}
+.board{
+  --die:clamp(48px,min(20vw,12vh),120px);
+  display:grid;
+  grid-template-columns:repeat(3,auto);
+  gap:calc(var(--die)*.28) calc(var(--die)*.3);
+  justify-content:center;
+}
+@media (min-width:600px){
+  .board{grid-template-columns:repeat(6,auto);--die:clamp(44px,min(9vw,15vh),130px)}
+}
+/* Size dice from the board's own width so six always fit (container query units) */
+@supports (width:1cqi){
+  .board{--die:clamp(48px,min(13vh,calc((100cqi - 12px) / 4.8)),130px)}
+  @media (min-width:600px){
+    .board{--die:clamp(44px,min(15vh,calc((100cqi - 24px) / 9.6)),150px)}
+  }
+}
+
+.slot{
+  position:relative;
+  min-width:var(--tap);min-height:var(--tap);
+  padding:calc(var(--die)*.14);
+  background:transparent;border:2px solid transparent;border-radius:calc(var(--border-radius)*1.2);
+  cursor:pointer;
+  transition:background .18s,border-color .18s;
+}
+.slot:disabled{cursor:default}
+.die-shadow{
+  position:absolute;left:22%;right:22%;bottom:calc(var(--die)*.04);height:calc(var(--die)*.16);
+  background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);
+  transition:opacity .25s;
+}
+.die{
+  --half:calc(var(--die) / 2);
+  position:relative;display:block;
+  width:var(--die);height:var(--die);
+  perspective:calc(var(--die)*6);
+  transition:transform .2s ease,opacity .25s,filter .25s;
+}
+.cube{
+  position:relative;display:block;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform var(--roll-ms) cubic-bezier(.15,.75,.25,1);
+}
+.face{
+  position:absolute;inset:0;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  padding:15%;
+  border-radius:14%;
+  background:radial-gradient(circle at 28% 22%,var(--ivory-hi),var(--ivory) 45%,var(--ivory-lo));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 calc(var(--die)*-.07) calc(var(--die)*.12) rgba(0,0,0,.16);
+  -webkit-backface-visibility:hidden;backface-visibility:hidden;
+}
+.f1{transform:translateZ(var(--half))}
+.f6{transform:rotateY(180deg) translateZ(var(--half))}
+.f3{transform:rotateY(90deg) translateZ(var(--half))}
+.f4{transform:rotateY(-90deg) translateZ(var(--half))}
+.f2{transform:rotateX(90deg) translateZ(var(--half))}
+.f5{transform:rotateX(-90deg) translateZ(var(--half))}
+.pip{
+  width:64%;aspect-ratio:1;justify-self:center;align-self:center;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3D4864,var(--pip) 70%);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.6);
+  visibility:hidden;
+}
+.pip.on{visibility:visible}
+.mark{
+  position:absolute;top:-.35rem;right:-.35rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;
+  display:grid;place-items:center;
+  font-size:.85rem;font-weight:900;
+  background:var(--ring,var(--accent-primary));color:#fff;
+  transform:scale(0);transition:transform .18s cubic-bezier(.3,1.6,.5,1);
+}
+
+/* Die states: idle (turn not started), free (rolled), held (kept this roll), set (kept earlier this turn) */
+.slot[data-state="idle"] .die{opacity:.5;filter:saturate(.5)}
+.slot[data-state="free"]:not(:disabled):hover{background:rgba(99,102,241,.1)}
+.slot[data-state="held"]{--ring:var(--accent-primary);background:rgba(99,102,241,.22);border-color:var(--ring)}
+.slot[data-state="held"][data-valid="false"]{--ring:var(--accent-warning);background:rgba(245,158,11,.2)}
+.slot[data-state="held"] .die{transform:translateY(calc(var(--die)*-.08))}
+.slot[data-state="held"] .face{box-shadow:inset 0 0 0 calc(var(--die)*.05) var(--ring),inset 0 calc(var(--die)*-.07) calc(var(--die)*.12) rgba(0,0,0,.16)}
+.slot[data-state="held"] .mark{transform:scale(1)}
+.slot[data-state="set"] .die{opacity:.32;transform:scale(.8);filter:grayscale(.6)}
+.slot[data-state="set"] .die-shadow{opacity:.3}
+
+.die.rolling{animation:hop var(--roll-ms) cubic-bezier(.3,.6,.4,1)}
+@keyframes hop{
+  0%{transform:translateY(0)}
+  22%{transform:translateY(-38%)}
+  48%{transform:translateY(0)}
+  64%{transform:translateY(-10%)}
+  78%,100%{transform:translateY(0)}
+}
+
+/* Big moment stamps: Bust!, Hot dice!, +450 */
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.stamp span{
+  font-size:clamp(2.2rem,11vmin,7rem);font-weight:900;letter-spacing:-.03em;line-height:1;
+  padding:.12em .4em;border:.07em solid currentColor;border-radius:.22em;
+  background:rgba(18,24,38,.86);
+  transform:rotate(-7deg);
+  animation:stampIn .45s cubic-bezier(.2,1.5,.4,1) both;
+}
+.stamp[data-tone="danger"]{color:var(--accent-danger)}
+.stamp[data-tone="warning"]{color:var(--accent-warning)}
+.stamp[data-tone="success"]{color:var(--accent-success)}
+@keyframes stampIn{from{transform:rotate(-7deg) scale(2.2);opacity:0}to{transform:rotate(-7deg) scale(1);opacity:1}}
+
+.hint{margin:0;text-align:center;color:var(--text-muted);font-size:.9rem;min-height:2.6em;max-width:60ch;align-self:center}
+
+/* ---- Action dock (sticky thumb zone) ---- */
+.dock{
+  grid-area:dock;position:sticky;bottom:0;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:var(--gap);
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-top:1px solid var(--line);
+}
+.dock.single{grid-template-columns:minmax(0,1fr)}
+.btn{
+  min-height:max(58px,var(--tap));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:.4em 1em;border:0;border-radius:var(--border-radius);
+  font-size:1.1rem;font-weight:800;line-height:1.15;
+  cursor:pointer;
+  transition:transform .08s,background .15s,color .15s;
+}
+.btn small{font-size:.72rem;font-weight:600;opacity:.88}
+.btn-primary{background:var(--accent-primary);color:#fff}
+.btn-success{background:var(--accent-success);color:var(--on-success)}
+.btn-ghost{background:var(--bg-card);color:var(--text-main);border:1px solid var(--line)}
+.btn:disabled{background:var(--bg-card);color:var(--text-muted);cursor:not-allowed;border:1px solid var(--line)}
+.btn:not(:disabled):active{transform:scale(.97)}
+.btn:focus-visible{outline:3px solid var(--text-main);outline-offset:3px}
+
+/* ---- Lobby ---- */
+.lobby{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:var(--gap)}
+.lede{margin:.2rem 0 .4rem;font-size:1.05rem;color:var(--text-muted);max-width:52ch}
+.card{background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--border-radius);padding:var(--pad)}
+.card h2{margin:0 0 .6rem;font-size:1rem;font-weight:700}
+.resume{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);border-color:var(--accent-primary)}
+.resume p{margin:0;color:var(--text-muted);font-size:.88rem}
+.resume .btn{flex:0 0 auto;min-width:8rem}
+.roster{list-style:none;margin:0 0 .75rem;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.player-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.5rem;align-items:center}
+.player-row .avatar{grid-area:auto}
+.name-input{
+  min-height:var(--tap);width:100%;padding:0 .8em;
+  background:var(--bg-card);border:1px solid var(--line);border-radius:10px;
+}
+.type-btn{
+  min-height:var(--tap);min-width:5.2rem;padding:0 .8em;
+  background:var(--bg-card);border:1px solid var(--line);border-radius:10px;
+  font-weight:700;cursor:pointer;
+}
+.type-btn[aria-pressed="true"]{border-color:var(--accent-warning);color:var(--accent-warning)}
+.modes{display:flex;flex-direction:column;gap:.5rem}
+.mode{
+  display:flex;gap:.75rem;align-items:flex-start;
+  padding:.75rem;border:1px solid var(--line);border-radius:10px;background:var(--bg-card);cursor:pointer;
+}
+.mode input{width:1.3rem;height:1.3rem;margin:.15rem 0 0;accent-color:var(--accent-primary)}
+.mode small{display:block;color:var(--text-muted)}
+.mode.disabled{opacity:.55;cursor:not-allowed}
+
+/* ---- Dialogs ---- */
+dialog{
+  width:min(92vw,560px);max-height:86vh;padding:0;
+  background:var(--bg-surface);color:var(--text-main);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*1.5);
+}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(5,8,15,.72)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:var(--gap);padding:.5rem .5rem .5rem var(--pad);border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:1.15rem}
+.dlg-body{padding:var(--pad);overflow:auto}
+.dlg-body p{margin:0 0 .8rem}
+.dlg-foot{display:flex;gap:var(--gap);padding:var(--pad);border-top:1px solid var(--line)}
+.dlg-foot .btn{flex:1}
+.score-table{width:100%;border-collapse:collapse;margin-bottom:1rem}
+.score-table td{padding:.45rem .2rem;border-bottom:1px solid var(--line)}
+.score-table td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+.steps{margin:0 0 .8rem;padding-left:1.3rem}
+.steps li{margin-bottom:.35rem}
+.muted{color:var(--text-muted)}
+.set-row{
+  width:100%;min-height:3.5rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.4rem 0;background:none;border:0;border-bottom:1px solid var(--line);
+  text-align:left;cursor:pointer;
+}
+.set-row:disabled{opacity:.5;cursor:not-allowed}
+.set-row small{display:block;color:var(--text-muted);font-size:.8rem}
+.switch{flex:0 0 auto;width:3.2rem;height:1.85rem;border-radius:1rem;background:var(--bg-card);border:1px solid var(--line);position:relative;transition:background .2s}
+.switch::after{content:"";position:absolute;top:.2rem;left:.2rem;width:1.35rem;height:1.35rem;border-radius:50%;background:var(--text-muted);transition:transform .2s,background .2s}
+.set-row[aria-checked="true"] .switch{background:var(--accent-primary);border-color:var(--accent-primary)}
+.set-row[aria-checked="true"] .switch::after{transform:translateX(1.3rem);background:#fff}
+.cast-help{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--bg-card);font-size:.9rem}
+.cast-help h3{margin:0 0 .4rem;font-size:.95rem}
+.cast-help ol{margin:0;padding-left:1.2rem}
+.winner-name{font-size:clamp(2rem,8vmin,3.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .3rem;color:var(--accent-success)}
+.standings{list-style:none;margin:1rem 0 0;padding:0}
+.standings li{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.standings li:first-child{font-weight:800}
+
+/* =========================================================
+   3. RESPONSIVE: landscape tablets, desktop, TV, short phones
+   ========================================================= */
+@media (min-width:900px) and (min-aspect-ratio:5/4), (orientation:landscape) and (max-height:520px){
+  .shell{
+    grid-template-columns:minmax(0,1fr) clamp(210px,24vw,380px);
+    grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"header header" "main score" "dock score";
+  }
+  .scoreboard{
+    flex-direction:column;overflow-x:hidden;overflow-y:auto;
+    border-bottom:0;border-left:1px solid var(--line);
+    padding:var(--pad);
+  }
+  .chip{flex:0 0 auto;min-width:0}
+  .board{grid-template-columns:repeat(6,auto);--die:clamp(44px,min(8.5vw,17vh),170px)}
+  @supports (width:1cqi){
+    .board{--die:clamp(44px,min(18vh,calc((100cqi - 24px) / 9.6)),190px)}
+  }
+  .dock{position:static}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .stat{padding:.25rem .5rem}
+  .stat-sub{display:none}
+  .hint{display:none}
+  .topbar{padding-top:2px;padding-bottom:2px}
+  .btn{min-height:var(--tap)}
+}
+@media (min-width:600px){
+  :root[data-tv="on"] .board{--die:clamp(56px,min(11vw,21vh),240px)}
+  @supports (width:1cqi){
+    :root[data-tv="on"] .board{--die:clamp(56px,min(22vh,calc((100cqi - 24px) / 9.6)),240px)}
+  }
+}
+
+@media (orientation:portrait) and (max-height:640px){
+  .stat-sub{display:none}
+  .hint{font-size:.8rem;min-height:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .die.rolling,.stamp span{animation:none}
+  .chip-bar span,.mark,.die{transition:none}
+}
+</style>
+<style id="pocket-premium-skin">
+/* Pocket Gamebox Premium skin. Does not alter rules or game code. */
+:root{--pg-gold:#71f0c6;--pg-deep:#080d1c;color-scheme:dark}
+html{background:#080d1c}body{background:radial-gradient(ellipse at 50% -12%,#56432f 0%,#111b30 48%,#080d1c 100%)!important;color:#f6f0e5}
+#app,.shell{--pg-outline:rgba(242,201,120,.28)}
+.topbar{background:linear-gradient(110deg,#10182a,#202238 62%,#161b2c)!important;border-bottom:1px solid #e8c37b65!important;box-shadow:0 12px 36px #0006!important}
+.topbar .title,.topbar .brand,.topbar h1{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;letter-spacing:-.035em!important;text-shadow:0 2px 15px #0009}
+.topbar .title::first-letter{color:var(--pg-gold)}
+button{transition:filter .18s ease,transform .18s ease,box-shadow .18s ease}button:hover:not(:disabled){filter:brightness(1.13)}button:active:not(:disabled){transform:scale(.975)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #f5cb78!important;outline-offset:2px}
+.icon-btn{border:1px solid #ddbb7955!important;border-radius:12px!important;background:linear-gradient(145deg,#353044,#151c2b)!important;box-shadow:inset 0 1px #ffffff1d,0 5px 12px #0004!important}
+.panel,.card,.modal-content,.dialog,.setup-card{box-shadow:0 14px 42px #0004;border-color:#dfbe7950}
+:where(input,select,textarea){accent-color:#f1ce86}
+@media(max-width:600px){.topbar .title,.topbar h1{font-size:clamp(17px,5vw,26px)!important}.topbar{min-height:55px}}
+@media(prefers-reduced-motion:reduce){button{transition:none!important}}
+</style><style id="gamebox-v8-bust-bank">
+/* Stage 4: appearance only. The six dice, game state, handlers, scoring and save data stay intact. */
+:root{--bg-primary:#071328;--bg-surface:#0b2440;--bg-card:#13375c;--text-main:#f1f9ff;--text-muted:#a8c9e5;--accent-primary:#f4b951;--accent-success:#3ee6a5;--accent-warning:#ffc965;--accent-danger:#ff667c;--line:#5c9ecd75;--ivory-hi:#fff;--ivory:#eaf6ff;--ivory-lo:#a7cfe6;--pip:#12335a;--on-success:#062c27;--border-radius:16px;color-scheme:dark}
+html,body{background:#040d22!important;color:#f2f9ff!important}
+.shell{background:radial-gradient(ellipse at 50% -20%,#1875ac 0%,#0b2447 46%,#040e22 89%)!important}
+.topbar{background:linear-gradient(100deg,#102843,#062543 48%,#0a1731)!important;border-bottom:2px solid #e7b65e!important;box-shadow:0 9px 27px #0008,inset 0 1px #c0eaff3b!important}
+.title{font:900 clamp(1.07rem,3vw,2rem)/1.1 Georgia,serif!important;white-space:nowrap;letter-spacing:.015em!important;text-transform:uppercase;text-shadow:0 3px 5px #00182c,0 0 15px #38aaff88}
+.title .t-bust{color:#fa7799}.title .t-or{color:#ddf8ff;font-size:.62em}.title .t-bank{color:#ffda7b}
+.gb-home{min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border:1px solid #ffd78e;padding:0 12px;border-radius:11px;color:#ffe3a7;background:linear-gradient(#275777,#0c2844);font-size:.76rem;font-weight:900;text-decoration:none;box-shadow:inset 0 1px #fff4,0 5px 14px #0007;white-space:nowrap}.gb-home:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.topbar .icon-btn{background:linear-gradient(145deg,#24587a,#0b2540)!important;border:1px solid #95d4f174!important;color:#e7f7ff!important}
+.turn-label{color:#ffe3a1!important;text-shadow:0 0 10px #ebad5566}.status-msg{color:#bfe4ff!important}
+.scoreboard{background:linear-gradient(90deg,#071d37,#143d5c,#071d37)!important;border-bottom:2px solid #d7a85d!important;scrollbar-color:#d8a95c transparent}
+.chip{background:linear-gradient(150deg,#174568,#0a263f)!important;border:2px solid #5fa9c66e!important;box-shadow:inset 0 1px #d8faff35,0 5px 12px #0008}
+.chip.active{border-color:#ffd77c!important;box-shadow:0 0 0 1px #7c602d,0 0 18px #f4bd5d8a!important}.chip.winner{border-color:#3ee6a5!important}.chip-name{color:#f7faff}.chip-score{color:#ffe2a2}.chip-bar{background:#03172c}
+.viewport{background:radial-gradient(ellipse 70% 55% at 50% 45%,#1789ba3b,transparent 77%),radial-gradient(circle at 10% 15%,#9fdcff0f 1px,transparent 2px),radial-gradient(circle at 80% 50%,#fff9 1px,transparent 2px),linear-gradient(155deg,#031027,#0a2745 58%,#041022)!important;background-size:auto,83px 81px,149px 139px,auto!important}
+.table{max-width:1320px!important;gap:clamp(8px,1.4vmin,17px)!important}
+.stats{gap:clamp(6px,1.5vw,17px)!important}
+.stat{background:linear-gradient(165deg,#1c5574d9,#09233fbf)!important;border:2px solid #d9ae6590!important;border-radius:15px!important;box-shadow:inset 0 1px #fff3,0 6px 18px #0008!important;padding:clamp(8px,1.4vmin,15px)!important}
+.stat-label{color:#b9e4ff!important;font-weight:700;text-transform:uppercase;letter-spacing:.075em}.stat-value{color:#ffe3a3;text-shadow:0 2px 8px #000a,0 0 12px #dba75666;font-size:clamp(1.5rem,5vmin,3.2rem)!important}.stat-sub{color:#c4dff3!important}
+.board-wrap{border:8px ridge #c58c49!important;border-radius:clamp(20px,3vw,38px)!important;background:radial-gradient(ellipse 65% 60% at 50% 34%,#168cba,#075176 48%,#07344c 83%)!important;box-shadow:inset 0 0 0 3px #f1d095,inset 0 0 54px #00182bc7,0 15px 31px #0009,0 0 32px #24aef03d!important;isolation:isolate}
+.board-wrap:before{content:"";position:absolute;inset:11px;border:2px solid #a7ebf17d;border-radius:clamp(13px,2.1vw,29px);pointer-events:none;box-shadow:inset 0 0 27px #0ab6f133}
+.board-wrap:after{content:"✦  COSMIC DICE ARENA  ✦";position:absolute;top:20px;left:50%;transform:translateX(-50%);font:800 clamp(.55rem,1.15vw,.9rem) Georgia,serif;letter-spacing:.19em;color:#dcf9ffd9;text-shadow:0 0 10px #91e8ff;pointer-events:none;white-space:nowrap}
+.board{z-index:1;position:relative;filter:drop-shadow(0 8px 7px #001426a0)}
+.slot{border-radius:19px!important}.slot[data-state="free"]:not(:disabled):hover{border-color:#86dfff;background:#65d7fc2d!important}.slot[data-state="held"]{border:2px solid #ffda78!important;background:linear-gradient(#f5bc4c55,#ffd38912)!important;box-shadow:0 0 20px #ffe29e66!important}.slot[data-state="held"][data-valid="false"]{border-color:#ff788e!important;background:#ac244033!important}
+.face{background:linear-gradient(130deg,#fff,#dbedfa 70%,#91bfd8)!important;box-shadow:inset 0 1px 1px #fff,inset 0 -3px 6px #39709977,0 3px 5px #00152555!important}.pip.on{background:#16446c!important}.mark{color:#ffe5a5!important}
+.stamp{z-index:2}.stamp span{font-family:Georgia,serif;font-weight:900;text-shadow:0 4px 15px #000,0 0 20px currentColor!important}
+.hint{color:#c4eaff!important;text-shadow:0 1px 4px #00182c!important;font-weight:600}
+.dock{background:linear-gradient(#154467,#071a36)!important;border-top:3px solid #edbb6e!important;box-shadow:0 -9px 24px #000b!important}
+.btn{border-radius:14px!important;border:2px solid #f0c783!important;box-shadow:inset 0 2px #ffffff5c,0 5px 0 #031527,0 8px 15px #000a!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.04em;text-shadow:0 1px #00182b88!important}
+.btn-primary{background:linear-gradient(#ffe9a9,#f1b74e 55%,#b77a20)!important;color:#242018!important;text-shadow:0 1px #fff2c4!important}.btn-success{background:linear-gradient(#a8ffdc,#36d8a1 52%,#0e896c)!important;color:#062a2e!important;text-shadow:0 1px #c8ffe7!important}.btn-ghost{background:linear-gradient(#276080,#102b4b)!important;color:#d9f4ff!important}.btn:disabled{background:#263d50!important;color:#94a6b0!important;border-color:#5b7283!important;box-shadow:none!important;text-shadow:none!important}
+.lobby{max-width:860px!important}.lobby:before{content:"🚀  BUST OR BANK  🚀";font:900 clamp(1.3rem,4vw,2.4rem) Georgia,serif;text-align:center;display:block;letter-spacing:.1em;color:#ffda92;text-shadow:0 3px #143c5f,0 0 22px #ffc26788;padding:.2em 0 .6em}.lede{color:#c9eaff!important;text-align:center;max-width:65ch;margin-inline:auto;line-height:1.5}
+.card,dialog{background:linear-gradient(155deg,#1b506f,#092944 65%,#071a36)!important;border:2px solid #d9ac6988!important;border-radius:18px!important;box-shadow:inset 0 1px #d7faff30,0 10px 25px #0009!important}.card h2,.dlg-head h2{color:#ffdb95;font-family:Georgia,serif}.mode,.name-input,.type-btn,.set-row{border-color:#4f9bc1!important;background:#0c2b48!important;color:#f1faff!important}.mode:has(input:checked){border-color:#efc17a!important;background:#1a4762!important}dialog::backdrop{background:#020a1de0}
+@media(max-width:599px){.gb-home{padding:0 8px}.gb-home span{display:none}.board-wrap{border-width:5px!important}.board-wrap:after{top:11px;font-size:.55rem;letter-spacing:.11em}.stat-label{font-size:.66rem}.stat-sub{font-size:.68rem}.stat{padding:7px 4px!important}.board{margin-top:7px}.dock{padding:10px}.btn{min-height:50px}}
+@media(max-width:360px){.title{font-size:1rem!important}.gb-home{min-width:42px;padding:0 5px}.stats{gap:3px!important}.stat-value{font-size:1.35rem!important}}
+@media(prefers-reduced-motion:reduce){.die,.chip,.slot,.stamp{animation:none!important;transition:none!important}}
+</style>
+<link rel="stylesheet" href="../assets/stage8-responsive.css">
+</head>
+<body>
+<div id="app" class="shell" data-view="lobby">
+
+  <!-- Top header bar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <a class="gb-home" href="../index.html" aria-label="Return to Pocket Gamebox lobby">⌂ <span>LOBBY</span></a>
+      <button id="btnHome" class="icon-btn" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 class="title"><span class="t-bust">Bust</span> <span class="t-or">or</span> <span class="t-bank">Bank</span></h1>
+    </div>
+    <div class="tb-center" aria-live="polite">
+      <div id="turnLabel" class="turn-label">New game</div>
+      <div id="statusMsg" class="status-msg"></div>
+    </div>
+    <div class="tb-right">
+      <button id="btnSound" class="icon-btn" type="button" aria-label="Sound" aria-pressed="true">
+        <svg class="ico-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <svg class="ico-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>
+      </button>
+      <button id="btnRules" class="icon-btn" type="button" aria-label="Rules and scoring">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6M12 17.2v.1"/></svg>
+      </button>
+      <button id="btnSettings" class="icon-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scoreboard & player dock -->
+  <div id="scoreboard" class="scoreboard" role="list" aria-label="Scores"></div>
+
+  <!-- Main viewport -->
+  <main class="viewport">
+
+    <!-- Lobby -->
+    <section id="lobby" class="lobby" aria-labelledby="lobbyTitle">
+      <h2 id="lobbyTitle" class="sr-only">Game setup</h2>
+      <p class="lede">Roll six dice, keep the ones that score, and bank your points before you bust. First to 10,000 wins.</p>
+
+      <div id="resumeCard" class="card resume" hidden>
+        <div>
+          <strong>Game in progress</strong>
+          <p id="resumeInfo"></p>
+        </div>
+        <button class="btn btn-primary" type="button" data-act="resume">Resume</button>
+      </div>
+
+      <div class="card">
+        <h2>Players</h2>
+        <ul id="roster" class="roster"></ul>
+        <button id="btnAddPlayer" class="btn btn-ghost" type="button" style="width:100%">Add player</button>
+      </div>
+
+      <div class="card">
+        <h2>How you're playing</h2>
+        <div class="modes" role="radiogroup" aria-label="Play mode">
+          <label class="mode">
+            <input type="radio" name="mode" value="local" checked>
+            <span><strong>Pass and play</strong><small>Share one phone, tablet or TV. Bots take their own turns.</small></span>
+          </label>
+          <label class="mode disabled">
+            <input type="radio" name="mode" value="online" disabled>
+            <span><strong>Online</strong><small>Needs a game server. Not switched on in this offline build.</small></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game table -->
+    <section id="table" class="table" aria-label="Game table">
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-label">Current roll</span>
+          <span id="vRoll" class="stat-value">0</span>
+          <span id="sRoll" class="stat-sub"></span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Bankable turn</span>
+          <span id="vTurn" class="stat-value">0</span>
+          <span id="sTurn" class="stat-sub"></span>
+        </div>
+        <div class="stat">
+          <span id="lTotal" class="stat-label">Banked total</span>
+          <span id="vTotal" class="stat-value">0</span>
+          <span id="sTotal" class="stat-sub"></span>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board" role="group" aria-label="Dice"></div>
+        <div id="stamp" class="stamp" aria-hidden="true"></div>
+      </div>
+
+      <p id="hint" class="hint"></p>
+    </section>
+  </main>
+
+  <!-- Action dock -->
+  <footer id="dock" class="dock">
+    <button id="btnA" class="btn btn-success" type="button"></button>
+    <button id="btnB" class="btn btn-primary" type="button"></button>
+  </footer>
+</div>
+
+<!-- Rules -->
+<dialog id="dlgRules" aria-labelledby="rulesTitle">
+  <div class="dlg-head">
+    <h2 id="rulesTitle">How to play</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <ol class="steps">
+      <li>Roll all six dice.</li>
+      <li>Tap at least one scoring die to keep it. Every die you keep must be part of a score.</li>
+      <li>Roll the rest to add more, or bank your turn total. You need 300 or more in one turn to bank.</li>
+      <li>If a roll has no scoring dice, you've gone bust: you lose everything from this turn.</li>
+      <li>If all six dice end up kept, that's hot dice: roll all six again and keep building.</li>
+    </ol>
+    <p>The first player to reach 10,000 banked points wins straight away.</p>
+    <table class="score-table" aria-label="Scoring">
+      <tbody>
+        <tr><td>Each 1</td><td>100</td></tr>
+        <tr><td>Each 5</td><td>50</td></tr>
+        <tr><td>Three 1s</td><td>1,000</td></tr>
+        <tr><td>Three 2s, 3s, 4s, 5s or 6s</td><td>Face × 100</td></tr>
+        <tr><td>Four of a kind</td><td>1,000</td></tr>
+        <tr><td>Five of a kind</td><td>2,000</td></tr>
+        <tr><td>Six of a kind</td><td>3,000</td></tr>
+        <tr><td>Straight 1 to 6</td><td>1,500</td></tr>
+        <tr><td>Three pairs</td><td>1,500</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Keyboard and TV remote: 1 to 6 keep dice, R rolls, B banks, arrow keys move between buttons.</p>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="dlgSettings" aria-labelledby="settingsTitle">
+  <div class="dlg-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <button class="set-row" type="button" role="switch" data-setting="sound" aria-checked="true">
+      <span>Sound effects</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="voice" aria-checked="false">
+      <span>Announcer voice<small id="voiceNote">Calls out busts, hot dice and banks.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="contrast" aria-checked="false">
+      <span>Bright light mode<small>Stronger text for outdoors and sunlight.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="tv" aria-checked="false">
+      <span>TV mode<small>Bigger dice and text, hides the mouse pointer.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button id="rowFullscreen" class="set-row" type="button" role="switch" data-setting="fullscreen" aria-checked="false">
+      <span>Full screen</span><span class="switch" aria-hidden="true"></span>
+    </button>
+
+    <div class="cast-help">
+      <h3>Show the game on a TV</h3>
+      <ol>
+        <li>Android: swipe down from the top, tap Screen cast or Smart View, and pick your TV.</li>
+        <li>iPhone or iPad: open Control Centre, tap Screen Mirroring, and pick your TV.</li>
+        <li>Computer with Chrome: open the ⋮ menu, choose Cast, then Cast tab.</li>
+        <li>Turn on TV mode above, and turn your phone sideways for the widescreen layout.</li>
+      </ol>
+    </div>
+    <p class="muted" style="margin-top:1rem">Room code <strong id="roomCode"></strong> (local game)</p>
+  </div>
+</dialog>
+
+<!-- Game over -->
+<dialog id="dlgOver" aria-labelledby="overTitle">
+  <div class="dlg-body">
+    <p id="overTitle" class="winner-name"></p>
+    <p id="overSub" class="muted"></p>
+    <ol id="standings" class="standings"></ol>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" type="button" data-act="lobby">Change players</button>
+    <button class="btn btn-primary" type="button" data-act="rematch">Play again</button>
+  </div>
+</dialog>
+
+<script type="module">
+/* =====================================================================
+   BUST OR BANK — single-file build
+   Modules (in order):
+     1. RULES     – tunable rule constants
+     2. Scoring   – pure scoring maths
+     3. RNG       – fair dice
+     4. Engine    – pure, deterministic state reducer
+     5. Bot       – AI decisions (pure)
+     6. Network   – NetworkController + Local / Online adapters
+     7. Store     – localStorage persistence
+     8. Sound     – Web Audio synthesis (no audio files)
+     9. Voice     – optional speech announcer
+    10. App       – rendering, input, TV support, bot driver, boot
+   ===================================================================== */
+
+// #region core  — pure logic, no DOM. Safe to unit-test in Node.
+
+/* ---------- 1. RULES ---------- */
+const RULES = Object.freeze({
+  diceCount: 6,
+  targetScore: 10000,
+  minBank: 300,
+  single: Object.freeze({ 1: 100, 5: 50 }),
+  tripleOnes: 1000,
+  ofAKind: Object.freeze({ 4: 1000, 5: 2000, 6: 3000 }),
+  straight: 1500,
+  threePairs: 1500,
+  // House-rule switch: count 4-of-a-kind + a pair as "three pairs" (1,500)?
+  fourKindPlusPairIsThreePairs: false,
+});
+
+/* ---------- 2. SCORING (pure) ---------- */
+const Scoring = (() => {
+  const counts = (values) => {
+    const c = [0, 0, 0, 0, 0, 0, 0];
+    for (const v of values) c[v]++;
+    return c;
+  };
+  const totalOf = (c) => c.reduce((a, b) => a + b, 0);
+  const isStraight = (c) => [1, 2, 3, 4, 5, 6].every((f) => c[f] === 1);
+  const isThreePairs = (c) => {
+    const used = c.slice(1).filter((n) => n > 0);
+    if (used.length === 3 && used.every((n) => n === 2)) return true;
+    return RULES.fourKindPlusPairIsThreePairs && used.length === 2 && used.includes(4) && used.includes(2);
+  };
+  const kindValue = (face, k) =>
+    k === 3 ? (face === 1 ? RULES.tripleOnes : face * 100) : RULES.ofAKind[k];
+
+  /** Highest score that uses EVERY die in `c`. Returns -1 if any die can't score. */
+  function best(c) {
+    const n = totalOf(c);
+    if (n === 0) return 0;
+    let top = -1;
+    if (n === 6) {
+      if (isStraight(c)) top = Math.max(top, RULES.straight);
+      if (isThreePairs(c)) top = Math.max(top, RULES.threePairs);
+    }
+    for (let f = 1; f <= 6; f++) {
+      for (let k = 3; k <= c[f]; k++) {
+        c[f] -= k;
+        const rest = best(c);
+        c[f] += k;
+        if (rest >= 0) top = Math.max(top, kindValue(f, k) + rest);
+      }
+    }
+    for (const f of [1, 5]) {
+      if (c[f] > 0) {
+        c[f]--;
+        const rest = best(c);
+        c[f]++;
+        if (rest >= 0) top = Math.max(top, RULES.single[f] + rest);
+      }
+    }
+    return top;
+  }
+
+  /** Score a set of kept dice. Valid only if every die contributes. */
+  function scoreSelection(values) {
+    if (!values.length) return { valid: false, score: 0, empty: true };
+    const s = best(counts(values));
+    return s >= 0 ? { valid: true, score: s, empty: false } : { valid: false, score: 0, empty: false };
+  }
+
+  /** Does a roll contain at least one scoring die? (false = bust) */
+  function hasScoring(values) {
+    const c = counts(values);
+    if (c[1] || c[5]) return true;
+    for (let f = 2; f <= 6; f++) if (c[f] >= 3) return true;
+    return values.length === 6 && (isStraight(c) || isThreePairs(c));
+  }
+
+  /** Faces in a kept set that can't score (for player feedback). */
+  function deadFaces(values) {
+    const c = counts(values);
+    if (values.length === 6 && (isStraight(c) || isThreePairs(c))) return [];
+    const dead = [];
+    for (const f of [2, 3, 4, 6]) if (c[f] > 0 && c[f] < 3) dead.push(f);
+    return dead;
+  }
+
+  return { counts, scoreSelection, hasScoring, deadFaces };
+})();
+
+/* ---------- 3. RNG (fair, unbiased dice) ---------- */
+const RNG = {
+  die() {
+    const c = globalThis.crypto;
+    if (c && c.getRandomValues) {
+      const buf = new Uint32Array(1);
+      const limit = 4294967292; // largest multiple of 6 below 2^32 → no modulo bias
+      do c.getRandomValues(buf); while (buf[0] >= limit);
+      return (buf[0] % 6) + 1;
+    }
+    return Math.floor(Math.random() * 6) + 1;
+  },
+  dice(n) { return Array.from({ length: n }, () => RNG.die()); },
+};
+
+/* ---------- 4. ENGINE (pure, deterministic reducer) ----------
+   reduce(state, action) → new state, or the SAME object if the action is illegal.
+   Dice values arrive inside the ROLL action, so the engine never rolls itself:
+   the host (local adapter or a server) supplies them. */
+const Engine = (() => {
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const freshDice = (prev) =>
+    Array.from({ length: RULES.diceCount }, (_, i) => ({ value: prev?.[i]?.value ?? (i % 6) + 1, state: 'idle' }));
+  const newGameData = (prevDice, seq = 0) => ({
+    phase: 'READY',          // READY | SELECTING | BUSTED | DONE
+    dice: freshDice(prevDice), // state: idle | free | held | set
+    turnScore: 0,            // points locked in from earlier rolls this turn
+    lostScore: 0,            // points lost to the last bust
+    rollsThisTurn: 0,
+    hotDiceThisTurn: 0,
+    winnerId: null,
+    targetScore: RULES.targetScore,
+    minBank: RULES.minBank,
+    seq,                     // increments on every accepted action
+  });
+
+  function createState(roomCode = '') {
+    return { gameId: 'bust_or_bank', roomCode, status: 'LOBBY', turnIndex: 0, players: [], gameData: newGameData(), lastAction: null };
+  }
+
+  const currentPlayer = (s) => s.players[s.turnIndex] || null;
+  const heldValues = (s) => s.gameData.dice.filter((d) => d.state === 'held').map((d) => d.value);
+  const selection = (s) => Scoring.scoreSelection(heldValues(s));
+
+  /** How many dice the next ROLL action needs values for (0 = can't roll). */
+  function diceToRoll(s) {
+    if (s.status !== 'PLAYING') return 0;
+    const g = s.gameData;
+    if (g.phase === 'READY') return RULES.diceCount;
+    if (g.phase === 'SELECTING') {
+      if (!selection(s).valid) return 0;
+      const free = g.dice.filter((d) => d.state === 'free').length;
+      return free === 0 ? RULES.diceCount : free; // 0 free = hot dice
+    }
+    return 0;
+  }
+
+  function bankable(s) {
+    const g = s.gameData;
+    if (g.phase !== 'SELECTING') return 0;
+    const sel = selection(s);
+    return sel.valid ? g.turnScore + sel.score : 0;
+  }
+  const canBank = (s) => bankable(s) >= RULES.minBank;
+
+  function stamp(s, info) {
+    s.gameData.seq += 1;
+    s.lastAction = { ...info, seq: s.gameData.seq };
+  }
+  function nextTurn(s) {
+    const g = s.gameData;
+    s.turnIndex = (s.turnIndex + 1) % s.players.length;
+    s.gameData = newGameData(g.dice, g.seq);
+  }
+
+  function reduce(state, action) {
+    if (!action || typeof action.type !== 'string') return state;
+
+    if (action.type === 'START_GAME') {
+      const list = Array.isArray(action.players) ? action.players.slice(0, 8) : [];
+      if (!list.length) return state;
+      const s = clone(state);
+      s.players = list.map((p, i) => ({
+        id: String(p.id || `p${i + 1}`),
+        name: String(p.name || '').trim().slice(0, 16) || `Player ${i + 1}`,
+        score: 0,
+        isLocal: p.isLocal !== false,
+        isBot: !!p.isBot,
+      }));
+      s.status = 'PLAYING';
+      s.turnIndex = 0;
+      s.gameData = newGameData();
+      stamp(s, { type: 'START_GAME' });
+      return s;
+    }
+
+    if (state.status !== 'PLAYING') return state;
+    const actor = currentPlayer(state);
+    if (!actor || action.actorId !== actor.id) return state; // not your turn
+
+    const s = clone(state);
+    const g = s.gameData;
+
+    switch (action.type) {
+      case 'ROLL': {
+        let indices;
+        let hot = false;
+        let added = 0;
+        if (g.phase === 'READY') {
+          indices = g.dice.map((_, i) => i);
+        } else if (g.phase === 'SELECTING') {
+          const sel = Scoring.scoreSelection(g.dice.filter((d) => d.state === 'held').map((d) => d.value));
+          if (!sel.valid) return state;
+          added = sel.score;
+          g.turnScore += sel.score;
+          g.dice.forEach((d) => { if (d.state === 'held') d.state = 'set'; });
+          if (g.dice.every((d) => d.state === 'set')) {
+            hot = true;
+            g.hotDiceThisTurn += 1;
+            g.dice.forEach((d) => { d.state = 'free'; });
+          }
+          indices = g.dice.map((d, i) => (d.state === 'free' ? i : -1)).filter((i) => i >= 0);
+        } else {
+          return state;
+        }
+        const vals = action.values;
+        if (!Array.isArray(vals) || vals.length !== indices.length) return state;
+        if (!vals.every((v) => Number.isInteger(v) && v >= 1 && v <= 6)) return state;
+
+        indices.forEach((di, k) => { g.dice[di].value = vals[k]; g.dice[di].state = 'free'; });
+        g.rollsThisTurn += 1;
+        const bust = !Scoring.hasScoring(vals);
+        let lost = 0;
+        if (bust) {
+          lost = g.turnScore;
+          g.lostScore = lost;
+          g.turnScore = 0;
+          g.phase = 'BUSTED';
+        } else {
+          g.phase = 'SELECTING';
+        }
+        stamp(s, { type: 'ROLL', actorId: actor.id, rolled: indices, values: vals.slice(), hot, bust, added, lost });
+        return s;
+      }
+
+      case 'TOGGLE_DIE': {
+        if (g.phase !== 'SELECTING') return state;
+        const d = g.dice[action.index];
+        if (!d) return state;
+        if (d.state === 'free') d.state = 'held';
+        else if (d.state === 'held') d.state = 'free';
+        else return state;
+        stamp(s, { type: 'TOGGLE_DIE', actorId: actor.id, index: action.index, held: d.state === 'held' });
+        return s;
+      }
+
+      case 'BANK': {
+        if (g.phase !== 'SELECTING') return state;
+        const sel = Scoring.scoreSelection(g.dice.filter((d) => d.state === 'held').map((d) => d.value));
+        if (!sel.valid) return state;
+        const amount = g.turnScore + sel.score;
+        if (amount < RULES.minBank) return state;
+        const p = s.players[s.turnIndex];
+        p.score += amount;
+        if (p.score >= g.targetScore) {
+          g.dice.forEach((d) => { if (d.state === 'held') d.state = 'set'; });
+          g.phase = 'DONE';
+          g.winnerId = p.id;
+          s.status = 'GAME_OVER';
+          stamp(s, { type: 'BANK', actorId: p.id, amount, win: true });
+          return s;
+        }
+        nextTurn(s);
+        stamp(s, { type: 'BANK', actorId: p.id, amount, win: false });
+        return s;
+      }
+
+      case 'PASS': {
+        if (g.phase !== 'BUSTED') return state;
+        const lost = g.lostScore;
+        nextTurn(s);
+        stamp(s, { type: 'PASS', actorId: actor.id, lost });
+        return s;
+      }
+
+      default:
+        return state;
+    }
+  }
+
+  return { createState, reduce, diceToRoll, bankable, canBank, selection, currentPlayer, heldValues };
+})();
+
+/* ---------- 5. BOT (pure decisions) ---------- */
+const Bot = (() => {
+  // Rough value of rolling on with N dice (index = dice you'd roll next).
+  const CARRY = [0, 0, 25, 60, 130, 220, 350];
+  // Bank once the turn total reaches this, by dice left to roll.
+  const BANK_AT = [0, 300, 300, 350, 650, 1500, 3000];
+
+  /** Best set of dice to keep from the current roll. */
+  function chooseKeep(state) {
+    const g = state.gameData;
+    const pool = g.dice.map((d, i) => (d.state === 'free' || d.state === 'held' ? i : -1)).filter((i) => i >= 0);
+    let best = null;
+    for (let m = 1; m < 1 << pool.length; m++) {
+      const pick = pool.filter((_, k) => m & (1 << k));
+      const r = Scoring.scoreSelection(pick.map((i) => g.dice[i].value));
+      if (!r.valid) continue;
+      const left = pool.length - pick.length;
+      const next = left === 0 ? 6 : left;
+      const util = r.score + CARRY[next] + (left === 0 ? 150 : 0);
+      if (!best || util > best.util || (util === best.util && r.score > best.score)) {
+        best = { pick, pool, score: r.score, next, util };
+      }
+    }
+    return best;
+  }
+
+  /** 'BANK' or 'ROLL' after keeping `keep`. */
+  function decide(state, keep) {
+    const g = state.gameData;
+    const me = state.players[state.turnIndex];
+    const turn = g.turnScore + keep.score;
+    if (turn < RULES.minBank) return 'ROLL';
+    if (me.score + turn >= g.targetScore) return 'BANK';
+    const rivals = state.players.filter((p) => p.id !== me.id).map((p) => p.score);
+    const leader = rivals.length ? Math.max(...rivals) : 0;
+    let threshold = BANK_AT[keep.next];
+    if (leader - me.score > 3000) threshold += 250;             // chase when far behind
+    if (leader >= g.targetScore - 1000) threshold += 300;       // rival about to win: push
+    return turn >= threshold ? 'BANK' : 'ROLL';
+  }
+
+  return { chooseKeep, decide };
+})();
+
+// #endregion core
+
+/* ---------- 6. NETWORK LAYER ----------
+   The UI only ever talks to NetworkController. Swap the adapter to change
+   how actions travel; the game rules and UI stay the same. */
+
+/** Local adapter: pass-and-play and bots on one device. Acts as the host. */
+class LocalAdapter {
+  constructor(initialState) {
+    this.kind = 'local';
+    this.state = initialState;
+    this.onState = null;
+  }
+  send(action) {
+    let a = action;
+    if (a.type === 'ROLL' && !Array.isArray(a.values)) {
+      const n = Engine.diceToRoll(this.state);
+      if (!n) return false;
+      a = { ...a, values: RNG.dice(n) }; // host rolls the dice
+    }
+    const next = Engine.reduce(this.state, a);
+    if (next === this.state) return false;
+    this.state = next;
+    if (this.onState) this.onState(next);
+    return true;
+  }
+  replace(state) {
+    this.state = state;
+    if (this.onState) this.onState(state);
+  }
+}
+
+/** Online adapter — PROTOCOL STUB. It makes no network requests.
+    To enable online play later:
+      1. Run a server that holds the authoritative state and the same Engine.
+      2. Client → server: { t: 'action', room, action }   (ROLL sent without values)
+      3. Server fills ROLL values with its own RNG, calls Engine.reduce, then
+         broadcasts → clients: { t: 'state', state }
+      4. In connect(), open the WebSocket / Firebase listener and call receive().
+      5. Set controller.localPlayerId to this device's player id. */
+class OnlineAdapter {
+  constructor(options = {}) {
+    this.kind = 'online';
+    this.url = options.url || '';
+    this.state = Engine.createState();
+    this.onState = null;
+    this.connected = false;
+  }
+  async connect() {
+    throw new Error('Online play is not enabled in this offline build.');
+  }
+  send(action) {
+    if (!this.connected) return false;
+    // this.socket.send(JSON.stringify({ t: 'action', room: this.state.roomCode, action }));
+    return false;
+  }
+  receive(message) {
+    if (message && message.t === 'state' && message.state && message.state.gameId === 'bust_or_bank') {
+      this.state = message.state;
+      if (this.onState) this.onState(this.state);
+    }
+  }
+}
+
+class NetworkController {
+  #adapter = null;
+  #subs = new Set();
+  localPlayerId = null; // used in online mode only
+
+  use(adapter) {
+    this.#adapter = adapter;
+    adapter.onState = (s) => this.#subs.forEach((fn) => fn(s));
+    return this;
+  }
+  get state() { return this.#adapter.state; }
+  get kind() { return this.#adapter.kind; }
+  subscribe(fn) { this.#subs.add(fn); return () => this.#subs.delete(fn); }
+
+  dispatch(action) {
+    const cur = Engine.currentPlayer(this.state);
+    const actorId = this.#adapter.kind === 'online' ? this.localPlayerId : cur ? cur.id : null;
+    return this.#adapter.send({ ...action, actorId });
+  }
+  start(players) { return this.dispatch({ type: 'START_GAME', players }); }
+  roll() { return this.dispatch({ type: 'ROLL' }); }
+  toggle(index) { return this.dispatch({ type: 'TOGGLE_DIE', index }); }
+  bank() { return this.dispatch({ type: 'BANK' }); }
+  pass() { return this.dispatch({ type: 'PASS' }); }
+  load(state) { if (this.#adapter.replace) this.#adapter.replace(state); }
+}
+
+/* ---------- 7. STORE (localStorage) ---------- */
+const Store = (() => {
+  const K = { game: 'bustorbank.v1.game', settings: 'bustorbank.v1.settings', roster: 'bustorbank.v1.roster' };
+  const get = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+  const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked or full */ } };
+  return {
+    loadGame() {
+      const s = get(K.game);
+      const ok = s && s.gameId === 'bust_or_bank' && Array.isArray(s.players) && s.gameData &&
+        Array.isArray(s.gameData.dice) && s.gameData.dice.length === RULES.diceCount;
+      return ok ? s : null;
+    },
+    saveGame: (s) => set(K.game, s),
+    loadSettings: () => get(K.settings),
+    saveSettings: (v) => set(K.settings, v),
+    loadRoster: () => get(K.roster),
+    saveRoster: (v) => set(K.roster, v),
+  };
+})();
+
+/* ---------- 8. SOUND (Web Audio, generated live — no files) ---------- */
+const Sound = (() => {
+  let ctx = null;
+  let master = null;
+  let noiseBuf = null;
+  let enabled = true;
+
+  function ready() {
+    if (!enabled) return null;
+    if (!ctx) {
+      const AC = null; // Legacy synthesised effects removed: Creative Claw only
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.6;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(freq, at, dur, { type = 'sine', gain = 0.2, slideTo = 0 } = {}) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, at);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, at + dur);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(master);
+    o.start(at);
+    o.stop(at + dur + 0.03);
+  }
+  function noise(at, dur, gain, freq) {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(bp).connect(g).connect(master);
+    src.start(at, Math.random() * 0.3, dur + 0.03);
+  }
+
+  return {
+    get enabled() { return enabled; },
+    set enabled(v) { enabled = !!v; if (!enabled && ctx && ctx.state === 'running') ctx.suspend(); },
+    unlock() { ready(); },
+    rattle(count, ms) {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      const span = ms / 1000;
+      for (let i = 0; i < 8 + count * 3; i++) {
+        noise(t + Math.random() * span * 0.7, 0.025 + Math.random() * 0.04, 0.2 + Math.random() * 0.3, 1800 + Math.random() * 2400);
+      }
+      for (let i = 0; i < count; i++) {
+        noise(t + span * (0.55 + Math.random() * 0.35), 0.07, 0.45, 500 + Math.random() * 400);
+      }
+    },
+    keep() { if (ready()) tone(1250, ctx.currentTime, 0.06, { type: 'triangle', gain: 0.14 }); },
+    unkeep() { if (ready()) tone(700, ctx.currentTime, 0.06, { type: 'triangle', gain: 0.12 }); },
+    bank() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [1046.5, 1318.5, 1568].forEach((f, i) => tone(f, t + i * 0.07, 0.4, { type: 'triangle', gain: 0.16 }));
+    },
+    bust() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      tone(220, t, 0.55, { type: 'sawtooth', gain: 0.16, slideTo: 80 });
+      tone(165, t + 0.06, 0.55, { type: 'square', gain: 0.07, slideTo: 60 });
+    },
+    hot() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, t + i * 0.06, 0.2, { type: 'square', gain: 0.06 }));
+    },
+    win() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [[523.25, 0], [659.25, 0.14], [783.99, 0.28], [1046.5, 0.42], [783.99, 0.62], [1046.5, 0.76]]
+        .forEach(([f, d]) => tone(f, t + d, 0.35, { type: 'triangle', gain: 0.18 }));
+    },
+  };
+})();
+
+/* ---------- 9. VOICE (optional announcer; uses on-device voices) ---------- */
+const Voice = {
+  enabled: false,
+  supported: 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function',
+  say(text) {
+    if (!this.enabled || !this.supported) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      if(!window.PocketVoice?.enabled()) void 0;
+    } catch { /* no voice available */ }
+  },
+};
+
+/* ---------- 10. APP: rendering, input, TV support, bot driver ---------- */
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+const el = {
+  shell: $('app'), turn: $('turnLabel'), status: $('statusMsg'), scoreboard: $('scoreboard'),
+  board: $('board'), stamp: $('stamp'), hint: $('hint'),
+  vRoll: $('vRoll'), sRoll: $('sRoll'), vTurn: $('vTurn'), sTurn: $('sTurn'),
+  vTotal: $('vTotal'), lTotal: $('lTotal'), sTotal: $('sTotal'),
+  dock: $('dock'), btnA: $('btnA'), btnB: $('btnB'),
+  roster: $('roster'), resume: $('resumeCard'), resumeInfo: $('resumeInfo'), addPlayer: $('btnAddPlayer'),
+  btnHome: $('btnHome'), btnSound: $('btnSound'), btnRules: $('btnRules'), btnSettings: $('btnSettings'),
+  dlgRules: $('dlgRules'), dlgSettings: $('dlgSettings'), dlgOver: $('dlgOver'),
+  overTitle: $('overTitle'), overSub: $('overSub'), standings: $('standings'), roomCode: $('roomCode'),
+  voiceNote: $('voiceNote'),
+};
+
+const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#38BDF8', '#F472B6', '#A78BFA', '#FB923C'];
+const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+// Cube rotation [x, y] that brings each value's face to the front.
+const BASE = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROLL_MS = reduceMotion ? 220 : 1000;
+root.style.setProperty('--roll-ms', `${ROLL_MS}ms`);
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-GB');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const initial = (name) => (String(name).trim()[0] || '?').toUpperCase();
+const vibrate = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch { /* unsupported */ } };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const makeRoomCode = () => {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
+};
+
+/* UI-only state (never sent over the network) */
+const ui = {
+  view: 'lobby',
+  busy: false,          // dice are mid-roll
+  seenSeq: 0,           // last action already animated
+  stamp: null,          // { text, tone, until, id }
+  stampId: 0,
+  settleTimer: 0,
+  rot: Array.from({ length: RULES.diceCount }, () => ({ x: 0, y: 0, z: 0 })),
+  settings: { sound: true, voice: false, contrast: false, tv: false },
+  roster: [
+    { name: 'Player 1', isBot: false },
+    { name: 'Bot 1', isBot: true },
+  ],
+  lastTurnKey: '',
+  lastBoardHtml: '',
+};
+
+/* ---- Build the six 3D dice once ---- */
+const slots = [];
+const cubes = [];
+const dies = [];
+(function buildBoard() {
+  const faces = [1, 2, 3, 4, 5, 6].map((v) =>
+    `<span class="face f${v}">${Array.from({ length: 9 }, (_, k) => `<i class="pip${PIPS[v].includes(k) ? ' on' : ''}"></i>`).join('')}</span>`
+  ).join('');
+  for (let i = 0; i < RULES.diceCount; i++) {
+    const slot = document.createElement('button');
+    slot.type = 'button';
+    slot.className = 'slot';
+    slot.dataset.index = String(i);
+    slot.dataset.state = 'idle';
+    slot.innerHTML = `<span class="die-shadow"></span><span class="die"><span class="cube">${faces}</span></span><span class="mark" aria-hidden="true">✓</span>`;
+    el.board.appendChild(slot);
+    slots.push(slot);
+    dies.push(slot.querySelector('.die'));
+    cubes.push(slot.querySelector('.cube'));
+  }
+})();
+
+const cubeTransform = (r) => `rotateZ(${r.z}deg) rotateX(${r.x}deg) rotateY(${r.y}deg)`;
+// Smallest angle ≥ prev + turns×360 that lands on `target` (mod 360).
+const nextAngle = (prev, target, turns) => prev + turns * 360 + ((((target - prev) % 360) + 360) % 360);
+
+function snapDice(state) {
+  state.gameData.dice.forEach((d, i) => {
+    const [bx, by] = BASE[d.value];
+    ui.rot[i] = { x: bx, y: by, z: 0 };
+    cubes[i].style.transition = 'none';
+    cubes[i].style.transform = cubeTransform(ui.rot[i]);
+  });
+  void el.board.offsetWidth; // flush so the next change animates
+  cubes.forEach((c) => { c.style.transition = ''; });
+}
+
+function animateRoll(action) {
+  action.rolled.forEach((di, k) => {
+    const [bx, by] = BASE[action.values[k]];
+    const r = ui.rot[di];
+    const spin = reduceMotion ? 0 : 1;
+    r.x = nextAngle(r.x, bx, spin + Math.floor(Math.random() * 2));
+    r.y = nextAngle(r.y, by, spin + Math.floor(Math.random() * 2));
+    r.z = nextAngle(r.z, reduceMotion ? 0 : Math.random() * 16 - 8, spin);
+    cubes[di].style.transform = cubeTransform(r);
+    dies[di].classList.remove('rolling');
+    void dies[di].offsetWidth;
+    dies[di].classList.add('rolling');
+  });
+  Sound.rattle(action.rolled.length, ROLL_MS);
+  if (action.hot) {
+    showStamp('Hot dice!', 'warning', ROLL_MS + 500);
+    Sound.hot();
+    pocketBustAudio('risk');
+  }
+  ui.busy = true;
+  clearTimeout(ui.settleTimer);
+  ui.settleTimer = setTimeout(() => {
+    ui.busy = false;
+    if (action.bust) {
+      pocketBustAudio('bust-fx');
+      pocketBustAudio('bust');
+      vibrate(220);
+    }
+    scheduleRender();
+    BotDriver.poke();
+  }, ROLL_MS + 60);
+}
+
+function showStamp(text, tone, ms) {
+  ui.stamp = { text, tone, until: Date.now() + ms, id: ++ui.stampId };
+  scheduleRender();
+  setTimeout(scheduleRender, ms + 30);
+}
+
+/* ---- React to each new action exactly once ---- */
+function pocketBustAudio(key) {
+  try { window.parent.postMessage({type:'pocket-audio',key:'bust-'+key}, '*'); } catch (_) {}
+}
+function handleAction(state) {
+  const la = state.lastAction;
+  if (!la || la.seq === ui.seenSeq) return;
+  ui.seenSeq = la.seq;
+  const actor = state.players.find((p) => p.id === la.actorId);
+  switch (la.type) {
+    case 'START_GAME':
+      pocketBustAudio('start');
+      snapDice(state);
+      break;
+    case 'ROLL':
+      pocketBustAudio('dice-fx');
+      if(la.added>=1000) pocketBustAudio('big'); else pocketBustAudio('roll');
+      if(la.hot) pocketBustAudio('risk');
+      animateRoll(la);
+      break;
+    case 'TOGGLE_DIE':
+      if (la.held) Sound.keep(); else Sound.unkeep();
+      vibrate(8);
+      break;
+    case 'BANK':
+      showStamp(`+${fmt(la.amount)}`, 'success', 1300);
+      pocketBustAudio('bank-fx');
+      pocketBustAudio('bank');
+      if (la.win) {
+        setTimeout(() => {
+          pocketBustAudio('win');
+          openGameOver();
+        }, 900);
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+/* ---- Render (batched to one animation frame) ---- */
+let rafId = 0;
+function scheduleRender() {
+  if (!rafId) rafId = requestAnimationFrame(render);
+}
+const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+
+function statusFor(s, sel) {
+  const g = s.gameData;
+  if (s.status === 'GAME_OVER') {
+    const w = s.players.find((p) => p.id === g.winnerId);
+    return { turn: `${w ? w.name : 'Someone'} wins!`, msg: `Reached ${fmt(w ? w.score : 0)} points.`, tone: 'success' };
+  }
+  const cur = Engine.currentPlayer(s);
+  const turn = `${cur.name}'s turn`;
+  if (ui.busy) return { turn, msg: 'Rolling…', tone: '' };
+  switch (g.phase) {
+    case 'READY': {
+      const la = s.lastAction;
+      const prev = la ? s.players.find((p) => p.id === la.actorId) : null;
+      let lead = '';
+      if (la && la.type === 'BANK' && prev) lead = `${prev.name} banked ${fmt(la.amount)}. `;
+      if (la && la.type === 'PASS' && prev) lead = `${prev.name} went bust. `;
+      return { turn, msg: lead + (cur.isBot ? 'Bot is about to roll.' : 'Roll to start your turn.'), tone: '' };
+    }
+    case 'SELECTING': {
+      if (cur.isBot) return { turn, msg: 'Bot is choosing dice…', tone: '' };
+      if (sel.empty) return { turn, msg: 'Tap the dice you want to keep.', tone: '' };
+      if (!sel.valid) return { turn, msg: 'Every kept die must score.', tone: 'warning' };
+      const amt = g.turnScore + sel.score;
+      return amt >= RULES.minBank
+        ? { turn, msg: `Roll on, or bank ${fmt(amt)}.`, tone: 'success' }
+        : { turn, msg: `${fmt(RULES.minBank - amt)} more needed to bank.`, tone: '' };
+    }
+    case 'BUSTED':
+      return { turn, msg: g.lostScore ? `Bust! Lost ${fmt(g.lostScore)} points.` : 'Bust! No scoring dice.', tone: 'danger' };
+    default:
+      return { turn, msg: '', tone: '' };
+  }
+}
+
+function hintFor(s, sel) {
+  const g = s.gameData;
+  if (s.status !== 'PLAYING' || ui.busy) return '';
+  const cur = Engine.currentPlayer(s);
+  switch (g.phase) {
+    case 'READY':
+      return `Bank at least ${fmt(RULES.minBank)} in one turn to score. First to ${fmt(g.targetScore)} wins.`;
+    case 'SELECTING': {
+      if (cur.isBot) return '';
+      if (sel.empty) return 'Scoring dice: 1s, 5s, three or more of a kind, a 1–6 straight, or three pairs. Tap ? for the full table.';
+      if (!sel.valid) {
+        const dead = Scoring.deadFaces(Engine.heldValues(s));
+        return `Kept dice showing ${dead.join(' or ')} don't score here. Tap them to put them back.`;
+      }
+      const free = g.dice.filter((d) => d.state === 'free').length;
+      if (free === 0) return 'Hot dice! Every die scores. Roll all six again, or bank now.';
+      return `Keeping ${fmt(sel.score)}. Roll the other ${free} ${free === 1 ? 'die' : 'dice'} for more, but a bust loses this turn.`;
+    }
+    case 'BUSTED':
+      return 'No 1s, 5s or sets in that roll. The turn passes on.';
+    default:
+      return '';
+  }
+}
+
+function setBtn(btn, { label, small = '', act = '', variant = 'primary', enabled = true, hidden = false }) {
+  btn.hidden = hidden;
+  if (hidden) return;
+  const cls = `btn btn-${variant}`;
+  if (btn.className !== cls) btn.className = cls;
+  btn.dataset.act = act;
+  btn.disabled = !enabled;
+  const key = `${label}|${small}`;
+  if (btn.dataset.key !== key) {
+    btn.dataset.key = key;
+    btn.textContent = '';
+    const main = document.createElement('span');
+    main.textContent = label;
+    btn.appendChild(main);
+    if (small) {
+      const sm = document.createElement('small');
+      sm.textContent = small;
+      btn.appendChild(sm);
+    }
+  }
+}
+
+function renderScoreboard(s) {
+  const g = s.gameData;
+  const html = s.players.map((p, i) => {
+    const pct = Math.min(100, (p.score / g.targetScore) * 100);
+    const active = s.status === 'PLAYING' && i === s.turnIndex;
+    const winner = g.winnerId === p.id;
+    return `<div class="chip${active ? ' active' : ''}${winner ? ' winner' : ''}" role="listitem" style="--c:${COLORS[i % COLORS.length]}"${active ? ' aria-current="true"' : ''}>`
+      + `<span class="avatar" aria-hidden="true">${esc(initial(p.name))}</span>`
+      + `<span class="chip-name">${esc(p.name)}${p.isBot ? '<span class="tag">Bot</span>' : ''}</span>`
+      + `<span class="chip-score">${fmt(p.score)}</span>`
+      + `<span class="chip-bar"><span style="width:${pct.toFixed(1)}%"></span></span></div>`;
+  }).join('');
+  if (html !== ui.lastBoardHtml) {
+    ui.lastBoardHtml = html;
+    el.scoreboard.innerHTML = html;
+  }
+  const turnKey = `${s.turnIndex}|${s.status}`;
+  if (turnKey !== ui.lastTurnKey) {
+    ui.lastTurnKey = turnKey;
+    const active = el.scoreboard.querySelector('.chip.active');
+    if (active) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+}
+
+function renderStats(s, sel) {
+  const g = s.gameData;
+  const cur = Engine.currentPlayer(s) || s.players[0];
+  // Current roll
+  let rollText = '0';
+  let rollTone = '';
+  let rollSub = g.phase === 'SELECTING' ? 'nothing kept yet' : '';
+  if (g.phase === 'SELECTING' && !sel.empty) {
+    if (sel.valid) { rollText = fmt(sel.score); rollSub = 'kept this roll'; }
+    else { rollText = '—'; rollTone = 'warning'; rollSub = 'not a scoring set'; }
+  }
+  setText(el.vRoll, rollText);
+  el.vRoll.dataset.tone = rollTone;
+  setText(el.sRoll, rollSub);
+  // Bankable turn
+  const amt = g.phase === 'SELECTING' && sel.valid ? g.turnScore + sel.score : g.turnScore;
+  let turnSub;
+  let turnTone = '';
+  if (g.phase === 'BUSTED') {
+    turnSub = g.lostScore ? `lost ${fmt(g.lostScore)}` : 'bust';
+    turnTone = 'danger';
+  } else if (amt >= RULES.minBank) {
+    turnSub = 'ready to bank';
+    turnTone = 'success';
+  } else {
+    turnSub = `${fmt(RULES.minBank - amt)} more to bank`;
+  }
+  setText(el.vTurn, fmt(g.phase === 'BUSTED' ? 0 : amt));
+  el.vTurn.dataset.tone = turnTone;
+  setText(el.sTurn, s.status === 'GAME_OVER' ? '' : turnSub);
+  // Banked total for the player whose turn it is (or the winner)
+  const who = s.status === 'GAME_OVER' ? s.players.find((p) => p.id === g.winnerId) || cur : cur;
+  setText(el.lTotal, `${who.name}'s total`);
+  setText(el.vTotal, fmt(who.score));
+  setText(el.sTotal, who.score >= g.targetScore ? 'winner' : `${fmt(g.targetScore - who.score)} to win`);
+}
+
+function renderDice(s, sel, canAct) {
+  const g = s.gameData;
+  g.dice.forEach((d, i) => {
+    const slot = slots[i];
+    if (slot.dataset.state !== d.state) slot.dataset.state = d.state;
+    slot.dataset.valid = d.state === 'held' ? String(sel.valid) : '';
+    const tappable = canAct && g.phase === 'SELECTING' && (d.state === 'free' || d.state === 'held');
+    slot.disabled = !tappable;
+    slot.setAttribute('aria-pressed', d.state === 'held' ? 'true' : 'false');
+    const stateWord = { idle: 'not rolled yet', free: 'rolled', held: 'kept', set: 'set aside' }[d.state];
+    slot.setAttribute('aria-label', `Die ${i + 1}: ${d.value}, ${stateWord}`);
+  });
+}
+
+function renderStamp(s) {
+  let st = null;
+  if (ui.stamp && Date.now() < ui.stamp.until) st = ui.stamp;
+  else if (s.status === 'PLAYING' && s.gameData.phase === 'BUSTED' && !ui.busy) st = { text: 'Bust!', tone: 'danger', id: 'bust' };
+  const key = st ? `${st.id}|${st.text}` : '';
+  if (el.stamp.dataset.key === key) return;
+  el.stamp.dataset.key = key;
+  el.stamp.dataset.tone = st ? st.tone : '';
+  el.stamp.innerHTML = st ? `<span>${esc(st.text)}</span>` : '';
+}
+
+function renderDock(s, sel, canAct) {
+  const g = s.gameData;
+  let single = false;
+  if (ui.view === 'lobby') {
+    setBtn(el.btnA, { hidden: true });
+    setBtn(el.btnB, { label: 'Start game', small: `${ui.roster.length} ${ui.roster.length === 1 ? 'player' : 'players'}`, act: 'start' });
+    single = true;
+  } else if (s.status === 'GAME_OVER') {
+    setBtn(el.btnA, { label: 'New game', act: 'lobby', variant: 'ghost' });
+    setBtn(el.btnB, { label: 'Play again', small: 'Same players', act: 'rematch' });
+  } else {
+    const cur = Engine.currentPlayer(s);
+    const next = s.players[(s.turnIndex + 1) % s.players.length];
+    if (g.phase === 'BUSTED') {
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, {
+        label: cur.isBot ? 'Passing on…' : `Next: ${next.name}`,
+        small: cur.isBot ? '' : 'Pass the turn',
+        act: 'pass',
+        enabled: canAct,
+      });
+      single = true;
+    } else {
+      const n = Engine.diceToRoll(s);
+      const hotNext = g.phase === 'SELECTING' && sel.valid && g.dice.every((d) => d.state !== 'free');
+      let rollLabel = 'Roll dice';
+      if (g.phase === 'SELECTING' && n) rollLabel = hotNext ? 'Roll all 6' : `Roll ${n} ${n === 1 ? 'die' : 'dice'}`;
+      let rollSmall;
+      if (cur.isBot) rollSmall = `${cur.name} is playing`;
+      else if (g.phase === 'READY') rollSmall = 'Six dice';
+      else if (sel.empty) rollSmall = 'Keep a scoring die first';
+      else if (!sel.valid) rollSmall = 'Fix your kept dice';
+      else rollSmall = hotNext ? 'Hot dice!' : `Keep ${fmt(sel.score)}`;
+      setBtn(el.btnB, { label: rollLabel, small: rollSmall, act: 'roll', enabled: canAct && n > 0 });
+
+      const bankOk = Engine.canBank(s);
+      setBtn(el.btnA, {
+        label: bankOk ? `Bank ${fmt(Engine.bankable(s))}` : 'Bank points',
+        small: bankOk ? 'Ends your turn' : `Need ${fmt(RULES.minBank)}`,
+        act: 'bank',
+        variant: 'success',
+        enabled: canAct && bankOk,
+      });
+    }
+  }
+  el.dock.classList.toggle('single', single);
+}
+
+function render() {
+  rafId = 0;
+  const s = controller.state;
+  if (el.shell.dataset.view !== ui.view) el.shell.dataset.view = ui.view;
+
+  if (ui.view === 'lobby') {
+    setText(el.turn, 'New game');
+    setText(el.status, 'Add players, then press Start game.');
+    el.status.dataset.tone = '';
+    renderDock(s, { valid: false, empty: true, score: 0 }, false);
+    Wake.want(false);
+    return;
+  }
+
+  const sel = s.gameData.phase === 'SELECTING' ? Engine.selection(s) : { valid: false, empty: true, score: 0 };
+  const cur = Engine.currentPlayer(s);
+  const canAct = s.status === 'PLAYING' && !!cur && !cur.isBot && cur.isLocal && !ui.busy;
+
+  const st = statusFor(s, sel);
+  setText(el.turn, st.turn);
+  setText(el.status, st.msg);
+  el.status.dataset.tone = st.tone;
+
+  renderScoreboard(s);
+  renderStats(s, sel);
+  renderDice(s, sel, canAct);
+  renderStamp(s);
+  setText(el.hint, hintFor(s, sel));
+  renderDock(s, sel, canAct);
+  Wake.want(s.status === 'PLAYING');
+}
+
+/* ---- Lobby ---- */
+const isDefaultName = (name) => /^(Player|Bot) \d+$/.test(name.trim()) || name.trim() === '';
+
+function renderLobby() {
+  el.roster.innerHTML = ui.roster.map((p, i) => `
+    <li class="player-row">
+      <span class="avatar" style="--c:${COLORS[i % COLORS.length]}" aria-hidden="true">${esc(initial(p.name))}</span>
+      <input class="name-input" type="text" maxlength="16" autocomplete="off" enterkeyhint="done"
+        value="${esc(p.name)}" data-index="${i}" aria-label="Name for player ${i + 1}">
+      <button class="type-btn" type="button" data-roster="type" data-index="${i}" aria-pressed="${p.isBot}"
+        aria-label="Player ${i + 1} is ${p.isBot ? 'a bot' : 'a person'}. Tap to switch.">${p.isBot ? 'Bot' : 'Person'}</button>
+      <button class="icon-btn" type="button" data-roster="remove" data-index="${i}" aria-label="Remove player ${i + 1}"${ui.roster.length <= 1 ? ' disabled' : ''}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </li>`).join('');
+  el.addPlayer.disabled = ui.roster.length >= 8;
+  setText(el.addPlayer, ui.roster.length >= 8 ? 'Eight players is the maximum' : 'Add player');
+
+  const s = controller.state;
+  const resumable = s.status === 'PLAYING' && s.players.length > 0;
+  el.resume.hidden = !resumable;
+  if (resumable) {
+    const cur = Engine.currentPlayer(s);
+    const lead = [...s.players].sort((a, b) => b.score - a.score)[0];
+    setText(el.resumeInfo, `${cur.name} to play. ${lead.name} leads with ${fmt(lead.score)}.`);
+  }
+  scheduleRender();
+}
+
+el.roster.addEventListener('input', (e) => {
+  const input = e.target.closest('.name-input');
+  if (!input) return;
+  const i = Number(input.dataset.index);
+  ui.roster[i].name = input.value.slice(0, 16);
+  const av = input.parentElement.querySelector('.avatar');
+  if (av) av.textContent = initial(input.value);
+  Store.saveRoster(ui.roster);
+});
+el.roster.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-roster]');
+  if (!btn || btn.disabled) return;
+  const i = Number(btn.dataset.index);
+  if (btn.dataset.roster === 'type') {
+    const p = ui.roster[i];
+    p.isBot = !p.isBot;
+    if (isDefaultName(p.name)) p.name = `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`;
+  } else if (btn.dataset.roster === 'remove' && ui.roster.length > 1) {
+    ui.roster.splice(i, 1);
+  }
+  Store.saveRoster(ui.roster);
+  renderLobby();
+});
+el.addPlayer.addEventListener('click', () => {
+  if (ui.roster.length >= 8) return;
+  ui.roster.push({ name: `Player ${ui.roster.length + 1}`, isBot: false });
+  Store.saveRoster(ui.roster);
+  renderLobby();
+  const inputs = el.roster.querySelectorAll('.name-input');
+  const last = inputs[inputs.length - 1];
+  if (last) last.select();
+});
+
+/* ---- Navigation & game commands ---- */
+function startGame(players) {
+  BotDriver.cancel();
+  clearTimeout(ui.settleTimer);
+  ui.busy = false;
+  ui.stamp = null;
+  ui.seenSeq = 0;
+  ui.view = 'game';
+  controller.start(players);
+  scheduleRender();
+}
+function goLobby() {
+  BotDriver.cancel();
+  if (el.dlgOver.open) el.dlgOver.close();
+  ui.view = 'lobby';
+  renderLobby();
+}
+function resumeGame() {
+  ui.view = 'game';
+  snapDice(controller.state);
+  scheduleRender();
+  BotDriver.poke();
+}
+function openGameOver() {
+  const s = controller.state;
+  if (s.status !== 'GAME_OVER') return;
+  const w = s.players.find((p) => p.id === s.gameData.winnerId);
+  setText(el.overTitle, `${w ? w.name : 'Someone'} wins!`);
+  setText(el.overSub, `Banked ${fmt(w ? w.score : 0)} points.`);
+  el.standings.innerHTML = [...s.players].sort((a, b) => b.score - a.score)
+    .map((p) => `<li><span>${esc(p.name)}</span><span>${fmt(p.score)}</span></li>`).join('');
+  if (!el.dlgOver.open) el.dlgOver.showModal();
+}
+
+function runAct(act) {
+  const s = controller.state;
+  switch (act) {
+    case 'start': {
+      const players = ui.roster.map((p, i) => ({
+        id: `p${i + 1}`,
+        name: p.name.trim() || `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`,
+        isBot: p.isBot,
+        isLocal: true,
+      }));
+      startGame(players);
+      break;
+    }
+    case 'resume': resumeGame(); break;
+    case 'roll': controller.roll(); break;
+    case 'bank': controller.bank(); break;
+    case 'pass': controller.pass(); break;
+    case 'rematch':
+      if (el.dlgOver.open) el.dlgOver.close();
+      startGame(s.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, isLocal: p.isLocal })));
+      break;
+    case 'lobby': goLobby(); break;
+    default: break;
+  }
+}
+
+el.dock.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (btn && !btn.disabled) runAct(btn.dataset.act);
+});
+el.resume.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.dlgOver.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.board.addEventListener('click', (e) => {
+  const slot = e.target.closest('.slot');
+  if (slot && !slot.disabled) controller.toggle(Number(slot.dataset.index));
+});
+el.btnHome.addEventListener('click', () => {
+  if (ui.view === 'game') goLobby();
+});
+el.btnRules.addEventListener('click', () => el.dlgRules.showModal());
+el.btnSettings.addEventListener('click', () => { renderSettings(); el.dlgSettings.showModal(); });
+el.btnSound.addEventListener('click', () => setSetting('sound', !ui.settings.sound));
+
+// Close buttons and backdrop taps for every dialog
+document.querySelectorAll('dialog').forEach((dlg) => {
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
+  });
+});
+
+/* ---- Settings ---- */
+function applySettings() {
+  const st = ui.settings;
+  Sound.enabled = false; // Creative Claw effects play via parent
+  Voice.enabled = st.voice && Voice.supported;
+  if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
+  if (st.tv) root.dataset.tv = 'on'; else { delete root.dataset.tv; delete root.dataset.idle; }
+  el.btnSound.setAttribute('aria-pressed', String(st.sound));
+  el.btnSound.setAttribute('aria-label', st.sound ? 'Sound on. Tap to mute.' : 'Sound off. Tap to turn on.');
+}
+function renderSettings() {
+  el.dlgSettings.querySelectorAll('[data-setting]').forEach((row) => {
+    const key = row.dataset.setting;
+    const on = key === 'fullscreen' ? !!document.fullscreenElement : !!ui.settings[key];
+    row.setAttribute('aria-checked', String(on));
+  });
+  const voiceRow = el.dlgSettings.querySelector('[data-setting="voice"]');
+  if (!Voice.supported) {
+    voiceRow.disabled = true;
+    setText(el.voiceNote, 'Not available on this device.');
+  }
+  const fsRow = $('rowFullscreen');
+  fsRow.hidden = !(document.documentElement.requestFullscreen && document.fullscreenEnabled);
+  setText(el.roomCode, controller.state.roomCode || '—');
+}
+function setSetting(key, value) {
+  ui.settings[key] = value;
+  Store.saveSettings(ui.settings);
+  applySettings();
+  renderSettings();
+  if (key === 'sound' && value) { Sound.unlock(); Sound.keep(); }
+  scheduleRender();
+}
+el.dlgSettings.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-setting]');
+  if (!row || row.disabled) return;
+  const key = row.dataset.setting;
+  if (key === 'fullscreen') {
+    const req = document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    Promise.resolve(req).catch(() => {}).finally(renderSettings);
+    return;
+  }
+  setSetting(key, !ui.settings[key]);
+});
+document.addEventListener('fullscreenchange', renderSettings);
+
+/* ---- TV support: keep screen awake, hide idle pointer ---- */
+const Wake = {
+  lock: null,
+  pending: false,
+  async want(on) {
+    if (!('wakeLock' in navigator) || this.pending) return;
+    try {
+      if (on && !this.lock && document.visibilityState === 'visible') {
+        this.pending = true;
+        this.lock = await navigator.wakeLock.request('screen');
+        this.lock.addEventListener('release', () => { this.lock = null; });
+      } else if (!on && this.lock) {
+        this.pending = true;
+        await this.lock.release();
+        this.lock = null;
+      }
+    } catch { /* denied or unsupported */ } finally {
+      this.pending = false;
+    }
+  },
+};
+let idleTimer = 0;
+document.addEventListener('pointermove', () => {
+  if (root.dataset.idle) delete root.dataset.idle;
+  clearTimeout(idleTimer);
+  if (ui.settings.tv) idleTimer = setTimeout(() => { root.dataset.idle = 'true'; }, 2500);
+}, { passive: true });
+
+/* ---- Keyboard & TV remote ---- */
+function focusables() {
+  const dlg = document.querySelector('dialog[open]');
+  const scope = dlg || document;
+  return [...scope.querySelectorAll('button, input')].filter((n) =>
+    !n.disabled && !n.hidden && n.offsetParent !== null && (dlg || !n.closest('dialog')));
+}
+document.addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const inField = e.target instanceof HTMLInputElement && e.target.type === 'text';
+  const arrows = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  if (!inField && e.key in arrows) {
+    const list = focusables();
+    if (!list.length) return;
+    const at = list.indexOf(document.activeElement);
+    const next = at === -1 ? list[0] : list[(at + arrows[e.key] + list.length) % list.length];
+    next.focus();
+    e.preventDefault();
+    return;
+  }
+  if (inField || document.querySelector('dialog[open]') || ui.view !== 'game') return;
+  const k = e.key.toLowerCase();
+  if (k >= '1' && k <= '6') {
+    const slot = slots[Number(k) - 1];
+    if (slot && !slot.disabled) controller.toggle(Number(k) - 1);
+    e.preventDefault();
+  } else if (k === 'r') {
+    if (!el.btnB.hidden && !el.btnB.disabled) runAct(el.btnB.dataset.act);
+  } else if (k === 'b') {
+    if (!el.btnA.hidden && !el.btnA.disabled && el.btnA.dataset.act === 'bank') runAct('bank');
+  }
+});
+
+// Unlock audio on the first touch or key (browsers require a user gesture)
+document.addEventListener('pointerdown', () => Sound.unlock(), { passive: true });
+document.addEventListener('keydown', () => Sound.unlock());
+
+/* ---- Bot driver: plays local bot turns with readable pacing ---- */
+const BotDriver = (() => {
+  let token = 0;
+  let running = false;
+
+  async function poke() {
+    if (running) return;
+    const s = controller.state;
+    if (ui.view !== 'game' || s.status !== 'PLAYING' || ui.busy) return;
+    const cur = Engine.currentPlayer(s);
+    if (!cur || !cur.isBot || !cur.isLocal) return;
+
+    running = true;
+    const my = ++token;
+    const alive = () => my === token && ui.view === 'game' && controller.state.status === 'PLAYING'
+      && Engine.currentPlayer(controller.state)?.id === cur.id;
+    try {
+      await sleep(650);
+      if (!alive() || ui.busy) return;
+      const g = controller.state.gameData;
+      if (g.phase === 'READY') {
+        controller.roll();
+      } else if (g.phase === 'BUSTED') {
+        await sleep(1100);
+        if (alive()) controller.pass();
+      } else if (g.phase === 'SELECTING') {
+        const keep = Bot.chooseKeep(controller.state);
+        if (!keep) return;
+        for (const i of keep.pool) {
+          if (!alive()) return;
+          const d = controller.state.gameData.dice[i];
+          const want = keep.pick.includes(i);
+          if ((d.state === 'held') !== want) {
+            controller.toggle(i);
+            await sleep(320);
+          }
+        }
+        await sleep(500);
+        if (!alive()) return;
+        if (Bot.decide(controller.state, keep) === 'BANK') controller.bank();
+        else controller.roll();
+      }
+    } finally {
+      running = false;
+      if (my === token) setTimeout(poke, 30);
+    }
+  }
+  function cancel() { token++; running = false; }
+  return { poke, cancel };
+})();
+
+/* ---- Boot ---- */
+const controller = new NetworkController();
+
+(function boot() {
+  const savedSettings = Store.loadSettings();
+  if (savedSettings) Object.assign(ui.settings, savedSettings);
+  const savedRoster = Store.loadRoster();
+  if (Array.isArray(savedRoster) && savedRoster.length) {
+    ui.roster = savedRoster.slice(0, 8).map((p) => ({ name: String(p.name || ''), isBot: !!p.isBot }));
+  }
+
+  const saved = Store.loadGame();
+  const startState = saved && saved.status === 'PLAYING' ? saved : Engine.createState(makeRoomCode());
+  controller.use(new LocalAdapter(startState));
+
+  controller.subscribe((state) => {
+    Store.saveGame(state);
+    handleAction(state);
+    scheduleRender();
+    BotDriver.poke();
+  });
+
+  applySettings();
+  ui.seenSeq = startState.gameData.seq;
+  snapDice(startState);
+
+  if (startState.status === 'PLAYING') resumeGame(); // instant pick-up after interruption
+  else renderLobby();
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      Store.saveGame(controller.state);
+      Wake.lock = null;
+    } else {
+      scheduleRender();
+    }
+  });
+})();
+</script>
+<script src="../assets/clean-audio.js"></script></body>
+</html>

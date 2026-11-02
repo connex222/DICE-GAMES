@@ -1,0 +1,1 @@
+Audio correction: all games QUIET by default. Voice ON/OFF persists, independent from effects. Only game opening, victory, and rare highlights narrated. Gilded Five dice roll sends the existing Creative Claw dice effect. No new recordings. Existing 94 MP3 installer retained.

@@ -1,0 +1,1 @@
+Bust or Bank: 7 Creative Claw spoken cues plus 5 effects. Installer expects 72 audio assets total. Gameplay event wiring includes start/roll/bust/bank/win; all earlier games preserved. Browser QA remains outstanding.

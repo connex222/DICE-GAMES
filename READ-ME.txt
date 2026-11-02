@@ -1,0 +1,1 @@
+Extract these TWO replacement scripts directly into your existing POCKET-GAMEBOX-ALPHA-GITHUB-DEPLOY folder, replacing existing scripts. Do not make a new folder and do not move the 94 MP3 files. Double-click UPLOAD-EVERYTHING-TO-GITHUB.bat. The upload script uses the existing 94 audio files without redownloading them. It does not force push.

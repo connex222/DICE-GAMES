@@ -1,0 +1,1 @@
+Brain Raid: six new Creative Claw effects on separate FX channel from exclusive character voice channel. All existing Gilded Five variant voices retained. Install using INSTALL-NEW-SOUNDS.bat; target 41/41. Testing: ZIP validation and syntax only; human playback/device gameplay not verified. No gameplay rules changed.

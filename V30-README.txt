@@ -1,0 +1,1 @@
+Generala: seven new announcer voices and four effects. Run INSTALL-NEW-SOUNDS.bat: 83 assets total. Browser event timing remains unverified.

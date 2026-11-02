@@ -1,0 +1,2 @@
+POCKET GAMEBOX v13.0 - audio upgrade
+Bundled offline voice cues for Gilded Five and zombie Brain Raid; five other games have contextual effects. Dynamic player names and scores use available device speech. No game scoring rules modified. Synthetic voice performances are a functional interim version, not studio actor recordings. Enable Voice in each game, or Voice + FX on the lobby for other games.

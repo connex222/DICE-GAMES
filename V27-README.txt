@@ -1,0 +1,1 @@
+Stage 17: Shut the Box audio. Five new voice cues and three new effects. Local installer (49 assets total); old Brain Raid/Gilded Five preserved. Full audio browser QA pending.\n

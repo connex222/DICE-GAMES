@@ -1,0 +1,1 @@
+Brain Raid has 10 new character announcements wired to actual game actions. Gilded Five has 2 extra alternatives each for rolling, player changes and jackpots, rotating across three choices. 16 new recordings. Run INSTALL-NEW-SOUNDS.bat once with internet: expect 35/35. No further Creative Claw generation needed. Sound effect redesign and physical browser QA not completed.

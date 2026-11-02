@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121826">
+<meta name="color-scheme" content="dark">
+<title>Ten of a Kind</title>
+<style>
+/* =========================================================
+   1. MASTER DESIGN TOKENS (shared across the game suite)
+   ========================================================= */
+:root{
+  --bg-primary:#121826;
+  --bg-surface:#1B2436;
+  --bg-card:#25334D;
+  --text-main:#F3F4F6;
+  --text-muted:#9CA3AF;
+  --accent-primary:#6366F1;
+  --accent-success:#10B981;
+  --accent-warning:#F59E0B;
+  --accent-danger:#EF4444;
+  --border-radius:12px;
+  --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+  /* Shell tokens derived from the master set */
+  --line:rgba(243,244,246,.12);
+  --pad:clamp(8px,2.2vmin,22px);
+  --gap:clamp(6px,1.6vmin,16px);
+  --tap:48px;
+  --on-success:#04261B;
+
+  /* Dice */
+  --ivory-hi:#FFFFFF;
+  --ivory:#EEEBE3;
+  --ivory-lo:#CBC5B7;
+  --pip:#121826;
+
+  color-scheme:dark;
+  box-sizing:border-box;
+  height:100%;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  scroll-padding-top:env(safe-area-inset-top,0px);
+  font-size:clamp(15px,calc(12px + .45vmin),20px);
+  background:var(--bg-primary);
+}
+:root[data-contrast="high"]{
+  --text-muted:#E5E7EB;
+  --line:rgba(243,244,246,.5);
+  --bg-card:#2E4066;
+}
+:root[data-tv="on"]{
+  --tap:64px;
+  font-size:clamp(18px,calc(8px + 1.6vmin),32px);
+}
+:root[data-idle="true"],:root[data-idle="true"] *{cursor:none !important}
+
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0;height:100%;
+  background:var(--bg-primary);color:var(--text-main);
+  font-family:var(--font-family);
+  font-variant-numeric:tabular-nums;
+  line-height:1.4;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+}
+button,input{font:inherit;color:inherit}
+button{touch-action:manipulation}
+[hidden]{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--accent-primary);outline-offset:2px}
+
+/* =========================================================
+   2. SHELL LAYOUT (identical across every game in the suite)
+   ========================================================= */
+.shell{
+  height:100%;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "score" "main" "dock";
+}
+.shell[data-view="lobby"]{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "main" "dock";
+}
+.shell[data-view="lobby"] .scoreboard,
+.shell[data-view="lobby"] #game,
+.shell[data-view="game"] #lobby{display:none}
+
+/* ---- Top header bar ---- */
+.topbar{
+  grid-area:header;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"left center right";
+  align-items:center;gap:var(--gap);
+  padding:calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-right,0px)) calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-bottom:1px solid var(--line);
+}
+.tb-left{grid-area:left;display:flex;align-items:center;gap:6px}
+.tb-center{grid-area:center;text-align:center;min-width:0}
+.tb-right{grid-area:right;display:flex;gap:4px}
+.title{margin:0;font-size:clamp(1.05rem,4.4vw,1.3rem);font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.turn-label{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-msg{font-size:.88rem;color:var(--text-muted);min-height:1.3em}
+.status-msg[data-tone="success"]{color:var(--accent-success);font-weight:700}
+.status-msg[data-tone="warning"]{color:var(--accent-warning);font-weight:700}
+.status-msg[data-tone="danger"]{color:var(--accent-danger);font-weight:700}
+@media (max-width:599px){
+  .topbar{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"left right" "center center";row-gap:4px}
+  .tb-center{text-align:left;padding:0 4px 4px}
+}
+@media (max-width:359px){ .tb-left,.tb-right{gap:0} }
+
+.icon-btn{
+  min-width:var(--tap);min-height:var(--tap);
+  display:inline-grid;place-items:center;
+  background:transparent;border:1px solid transparent;border-radius:var(--border-radius);
+  cursor:pointer;
+}
+.icon-btn:hover{background:var(--bg-card)}
+.icon-btn:disabled{opacity:.4;cursor:not-allowed}
+.icon-btn svg{width:1.4em;height:1.4em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn[aria-pressed="false"] .ico-on,
+.icon-btn[aria-pressed="true"] .ico-off{display:none}
+
+/* ---- Scoreboard & player dock ---- */
+.scoreboard{
+  grid-area:score;
+  display:flex;gap:var(--gap);
+  overflow-x:auto;overflow-y:hidden;
+  padding:var(--gap) max(var(--pad),env(safe-area-inset-right,0px)) var(--gap) max(var(--pad),env(safe-area-inset-left,0px));
+  border-bottom:1px solid var(--line);
+  scrollbar-width:none;
+}
+.scoreboard::-webkit-scrollbar{display:none}
+.chip{
+  flex:1 0 auto;min-width:8.5rem;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"av name count" "av sub sub" "bar bar bar";
+  column-gap:.55rem;align-items:center;
+  padding:.45rem .7rem;
+  background:var(--bg-surface);
+  border:2px solid transparent;border-radius:var(--border-radius);
+  transition:border-color .2s,background .2s;
+}
+.chip.active{border-color:var(--accent-primary);background:var(--bg-card)}
+.chip.winner{border-color:var(--accent-success)}
+.avatar{
+  grid-area:av;width:2.1rem;height:2.1rem;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--c);color:#121826;font-weight:800;
+}
+.chip-name{grid-area:name;font-size:.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip-count{grid-area:count;font-size:1.1rem;font-weight:900}
+.chip-sub{grid-area:sub;font-size:.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip-sub.done{color:var(--accent-success);font-weight:700}
+.tag{font-size:.66rem;font-weight:700;color:var(--text-muted);border:1px solid var(--line);border-radius:6px;padding:0 .3em;margin-left:.25em}
+.cells{grid-area:bar;display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:.35rem}
+.cells i{height:6px;border-radius:2px;background:var(--bg-primary)}
+.cells i.on{background:var(--c)}
+
+/* ---- Main viewport ---- */
+.viewport{
+  grid-area:main;min-height:0;
+  display:flex;flex-direction:column;
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  overflow:hidden;
+}
+.shell[data-view="lobby"] .viewport{overflow:auto}
+.game{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--gap);width:100%;max-width:1300px;margin:0 auto}
+:root[data-tv="on"] .game{max-width:none}
+
+/* Timer */
+.timer-bar{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:.8rem}
+.timer-text{font-size:clamp(1.4rem,6vmin,3rem);font-weight:900;letter-spacing:-.02em;line-height:1;min-width:5ch}
+.timer-text[data-tone="danger"]{color:var(--accent-danger)}
+.timer-text[data-tone="success"]{color:var(--accent-success)}
+.timer-track{height:10px;border-radius:5px;background:var(--bg-card);overflow:hidden}
+.timer-track span{display:block;height:100%;width:100%;background:var(--accent-primary);transform-origin:left center}
+.timer-track[data-tone="danger"] span{background:var(--accent-danger)}
+
+/* Player zones */
+.zones{
+  flex:1;min-height:0;
+  display:grid;gap:var(--gap);
+  grid-template-columns:minmax(0,1fr);grid-auto-rows:minmax(0,1fr);
+}
+.zones[data-count="3"],.zones[data-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (orientation:landscape){
+  .zones[data-count="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.zone{
+  position:relative;min-height:0;min-width:0;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:.4rem;
+  padding:clamp(6px,1.6vmin,16px);
+  border:2px solid var(--line);border-radius:calc(var(--border-radius)*1.6);
+  background:radial-gradient(ellipse 85% 75% at 50% 45%,var(--bg-card),var(--bg-surface) 78%);
+  transition:border-color .2s,transform .3s;
+}
+.zone.active{border-color:var(--c)}
+.zone.flip{transform:rotate(180deg)}
+.zone.done{border-color:var(--accent-success)}
+.zone-head{display:flex;align-items:center;gap:.5rem;min-width:0}
+.zone-head .avatar{width:1.9rem;height:1.9rem;font-size:.9rem}
+.zone-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.zone-target{display:flex;align-items:center;gap:.35rem;font-size:.78rem;color:var(--text-muted)}
+.zone-target .fdie{--s:1.5rem}
+.zone-count{font-size:1.15rem;font-weight:900;white-space:nowrap}
+.zone-rolls{font-size:.78rem;color:var(--text-muted);white-space:nowrap}
+.zone-dice{
+  min-height:0;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));
+  gap:clamp(4px,1.2vmin,12px);
+  container-type:size;
+}
+.dbtn{
+  display:grid;place-items:center;min-width:0;min-height:0;
+  padding:0;background:none;border:0;border-radius:12px;cursor:pointer;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;
+}
+.dbtn:disabled{cursor:default}
+.dbtn .fdie{--s:min(17cqi,44cqb,110px)}
+.zone-roll{width:100%}
+
+/* Flat 3D-styled die */
+.fdie{
+  --s:2.4rem;
+  width:var(--s);height:var(--s);flex:0 0 auto;
+  display:inline-grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  padding:calc(var(--s) * .16);border-radius:18%;
+  background:radial-gradient(circle at 28% 22%,var(--ivory-hi),var(--ivory) 45%,var(--ivory-lo));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 calc(var(--s)*-.07) calc(var(--s)*.12) rgba(0,0,0,.16),0 calc(var(--s)*.06) calc(var(--s)*.12) rgba(0,0,0,.35);
+  transition:box-shadow .12s,transform .12s,background .12s;
+}
+.fdie i{width:66%;aspect-ratio:1;justify-self:center;align-self:center;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3D4864,var(--pip) 70%);visibility:hidden}
+.fdie i.on{visibility:visible}
+.fdie.blank{background:var(--bg-primary);box-shadow:inset 0 2px 8px rgba(0,0,0,.6)}
+.dbtn.locked .fdie{
+  background:radial-gradient(circle at 28% 22%,#fff,#E3E5FF 50%,#BFC3F2);
+  box-shadow:0 0 0 calc(var(--s)*.07) var(--accent-primary),0 calc(var(--s)*.03) calc(var(--s)*.06) rgba(0,0,0,.35);
+  transform:scale(.92);
+}
+.fdie.rolling{animation:tumble .32s cubic-bezier(.2,.8,.3,1)}
+@keyframes tumble{
+  0%{transform:rotate(-160deg) scale(.55);opacity:.3}
+  70%{transform:rotate(12deg) scale(1.06);opacity:1}
+  100%{transform:none}
+}
+
+/* Stamps and pause veil */
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:5}
+.stamp span{
+  font-size:clamp(2.4rem,13vmin,8rem);font-weight:900;letter-spacing:-.03em;line-height:1;text-align:center;
+  padding:.12em .4em;border:.07em solid currentColor;border-radius:.22em;
+  background:rgba(18,24,38,.9);
+  transform:rotate(-6deg);
+  animation:stampIn .4s cubic-bezier(.2,1.5,.4,1) both;
+}
+.stamp small{display:block;font-size:.32em;font-weight:700;margin-top:.25em;letter-spacing:0}
+.stamp[data-tone="danger"]{color:var(--accent-danger)}
+.stamp[data-tone="warning"]{color:var(--accent-warning)}
+.stamp[data-tone="success"]{color:var(--accent-success)}
+.stamp[data-tone="primary"]{color:var(--text-main)}
+@keyframes stampIn{from{transform:rotate(-6deg) scale(2.2);opacity:0}to{transform:rotate(-6deg) scale(1);opacity:1}}
+.veil{
+  position:absolute;inset:0;z-index:4;
+  display:grid;place-content:center;justify-items:center;gap:.4rem;text-align:center;
+  background:rgba(18,24,38,.94);border-radius:calc(var(--border-radius)*1.6);
+}
+.veil strong{font-size:clamp(2rem,9vmin,4.5rem);font-weight:900}
+.veil span{color:var(--text-muted)}
+
+/* ---- Action dock (sticky thumb zone) ---- */
+.dock{
+  grid-area:dock;position:sticky;bottom:0;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:var(--gap);
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-top:1px solid var(--line);
+}
+.dock.single{grid-template-columns:minmax(0,1fr)}
+.btn{
+  min-height:max(58px,var(--tap));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:.4em 1em;border:0;border-radius:var(--border-radius);
+  font-size:1.1rem;font-weight:800;line-height:1.15;
+  cursor:pointer;transition:transform .06s,background .15s,color .15s;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;
+}
+.btn small{font-size:.72rem;font-weight:600;opacity:.9}
+.btn-primary{background:var(--accent-primary);color:#fff}
+.btn-success{background:var(--accent-success);color:var(--on-success)}
+.btn-ghost{background:var(--bg-card);color:var(--text-main);border:1px solid var(--line)}
+.btn:disabled{background:var(--bg-card);color:var(--text-muted);cursor:not-allowed;border:1px solid var(--line)}
+.btn:not(:disabled):active{transform:scale(.97)}
+.btn:focus-visible{outline:3px solid var(--text-main);outline-offset:3px}
+
+/* ---- Lobby ---- */
+.lobby{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:var(--gap)}
+.lede{margin:.2rem 0 .4rem;font-size:1.05rem;color:var(--text-muted);max-width:52ch}
+.card{background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--border-radius);padding:var(--pad)}
+.card h2{margin:0 0 .6rem;font-size:1rem;font-weight:700}
+.card h3{margin:.9rem 0 .45rem;font-size:.9rem;font-weight:700;color:var(--text-muted)}
+.note{margin:.6rem 0 0;color:var(--text-muted);font-size:.88rem}
+.resume{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);border-color:var(--accent-primary)}
+.resume p{margin:0;color:var(--text-muted);font-size:.88rem}
+.resume .btn{flex:0 0 auto;min-width:8rem}
+.roster{list-style:none;margin:0 0 .75rem;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.player-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.5rem;align-items:center}
+.player-row .avatar{grid-area:auto}
+.name-input{min-height:var(--tap);width:100%;padding:0 .8em;background:var(--bg-card);border:1px solid var(--line);border-radius:10px}
+.type-btn{min-height:var(--tap);min-width:5.2rem;padding:0 .8em;background:var(--bg-card);border:1px solid var(--line);border-radius:10px;font-weight:700;cursor:pointer}
+.type-btn[aria-pressed="true"]{border-color:var(--accent-warning);color:var(--accent-warning)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--bg-card);border-radius:12px}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:grid;place-items:center;min-height:var(--tap);border-radius:9px;font-weight:700;color:var(--text-muted);text-align:center;padding:.2em .4em;line-height:1.15}
+.seg span small{display:block;font-weight:500;font-size:.72rem}
+.seg input:checked + span{background:var(--accent-primary);color:#fff}
+.seg input:focus-visible + span{outline:3px solid var(--text-main);outline-offset:-3px}
+
+/* ---- Dialogs ---- */
+dialog{
+  width:min(92vw,560px);max-height:86vh;padding:0;
+  background:var(--bg-surface);color:var(--text-main);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*1.5);
+}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(5,8,15,.72)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:var(--gap);padding:.5rem .5rem .5rem var(--pad);border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:1.15rem}
+.dlg-body{padding:var(--pad);overflow:auto}
+.dlg-body p{margin:0 0 .8rem}
+.dlg-body h3{margin:1rem 0 .4rem;font-size:1rem}
+.dlg-foot{display:flex;gap:var(--gap);padding:var(--pad);border-top:1px solid var(--line)}
+.dlg-foot .btn{flex:1}
+.steps{margin:0 0 .8rem;padding-left:1.3rem}
+.steps li{margin-bottom:.35rem}
+.muted{color:var(--text-muted)}
+.set-row{
+  width:100%;min-height:3.5rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.4rem 0;background:none;border:0;border-bottom:1px solid var(--line);
+  text-align:left;cursor:pointer;
+}
+.set-row:disabled{opacity:.5;cursor:not-allowed}
+.set-row small{display:block;color:var(--text-muted);font-size:.8rem}
+.switch{flex:0 0 auto;width:3.2rem;height:1.85rem;border-radius:1rem;background:var(--bg-card);border:1px solid var(--line);position:relative;transition:background .2s}
+.switch::after{content:"";position:absolute;top:.2rem;left:.2rem;width:1.35rem;height:1.35rem;border-radius:50%;background:var(--text-muted);transition:transform .2s,background .2s}
+.set-row[aria-checked="true"] .switch{background:var(--accent-primary);border-color:var(--accent-primary)}
+.set-row[aria-checked="true"] .switch::after{transform:translateX(1.3rem);background:#fff}
+.cast-help{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--bg-card);font-size:.9rem}
+.cast-help h3{margin:0 0 .4rem;font-size:.95rem}
+.cast-help ol{margin:0 0 .5rem;padding-left:1.2rem}
+.cast-help p{margin:0}
+.winner-name{font-size:clamp(2rem,8vmin,3.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .3rem;color:var(--accent-success)}
+.winner-name.lost{color:var(--accent-danger)}
+.standings{list-style:none;margin:1rem 0 0;padding:0}
+.standings li{display:flex;justify-content:space-between;gap:1rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.standings li:first-child{font-weight:800}
+
+/* =========================================================
+   3. RESPONSIVE: landscape tablets, desktop, TV, short phones
+   ========================================================= */
+@media (min-width:900px) and (min-aspect-ratio:5/4), (orientation:landscape) and (max-height:520px){
+  .shell{
+    grid-template-columns:minmax(0,1fr) clamp(200px,22vw,340px);
+    grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"header header" "main score" "dock score";
+  }
+  .scoreboard{
+    flex-direction:column;overflow-x:hidden;overflow-y:auto;
+    border-bottom:0;border-left:1px solid var(--line);
+    padding:var(--pad);
+  }
+  .chip{flex:0 0 auto;min-width:0}
+  .dock{position:static}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .topbar{padding-top:2px;padding-bottom:2px}
+  .btn{min-height:var(--tap)}
+  .timer-text{font-size:1.3rem}
+}
+@media (orientation:portrait) and (max-height:700px){
+  .chip{padding:.3rem .55rem}
+  .btn{min-height:var(--tap)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .fdie.rolling,.stamp span{animation:none}
+  .zone{transition:none}
+}
+</style>
+<style id="pocket-premium-skin">
+/* Pocket Gamebox Premium skin. Does not alter rules or game code. */
+:root{--pg-gold:#f5a8e6;--pg-deep:#080d1c;color-scheme:dark}
+html{background:#080d1c}body{background:radial-gradient(ellipse at 50% -12%,#56432f 0%,#111b30 48%,#080d1c 100%)!important;color:#f6f0e5}
+#app,.shell{--pg-outline:rgba(242,201,120,.28)}
+.topbar{background:linear-gradient(110deg,#10182a,#202238 62%,#161b2c)!important;border-bottom:1px solid #e8c37b65!important;box-shadow:0 12px 36px #0006!important}
+.topbar .title,.topbar .brand,.topbar h1{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;letter-spacing:-.035em!important;text-shadow:0 2px 15px #0009}
+.topbar .title::first-letter{color:var(--pg-gold)}
+button{transition:filter .18s ease,transform .18s ease,box-shadow .18s ease}button:hover:not(:disabled){filter:brightness(1.13)}button:active:not(:disabled){transform:scale(.975)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #f5cb78!important;outline-offset:2px}
+.icon-btn{border:1px solid #ddbb7955!important;border-radius:12px!important;background:linear-gradient(145deg,#353044,#151c2b)!important;box-shadow:inset 0 1px #ffffff1d,0 5px 12px #0004!important}
+.panel,.card,.modal-content,.dialog,.setup-card{box-shadow:0 14px 42px #0004;border-color:#dfbe7950}
+:where(input,select,textarea){accent-color:#f1ce86}
+@media(max-width:600px){.topbar .title,.topbar h1{font-size:clamp(17px,5vw,26px)!important}.topbar{min-height:55px}}
+@media(prefers-reduced-motion:reduce){button{transition:none!important}}
+</style><style id="gamebox-v10-ten-of-a-kind">
+/* Stage 6: visual design only. Gameplay logic, dice count, timing and scoring are untouched. */
+:root{--bg-primary:#071d18;--bg-surface:#10372c;--bg-card:#174d3b;--text-main:#fdf4d8;--text-muted:#c1dacc;--accent-primary:#ebc16b;--accent-success:#79e2b5;--accent-warning:#ffe095;--accent-danger:#ff8787;--line:#be995b80;--on-success:#073525;--ivory-hi:#fffefd;--ivory:#fff6df;--ivory-lo:#c7bfac;--pip:#123e33;--border-radius:14px;color-scheme:dark}
+html,body{background:#061711!important;color:#fff5db!important}
+.shell{background:radial-gradient(ellipse at 50% 10%,#215a44,#082219 58%,#061811)!important}
+.topbar{background:linear-gradient(90deg,#071f18,#1c4736 45%,#09251b)!important;border-bottom:2px solid #d3a659!important;box-shadow:0 5px 22px #0008}
+.title{font:900 clamp(1.03rem,3.6vw,1.92rem)/1.15 Georgia,serif!important;letter-spacing:.09em!important;color:#ffe6a6!important;text-transform:uppercase;text-shadow:0 2px 9px #000c}
+.gb-home{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--tap);padding:0 13px;background:linear-gradient(#386d53,#11372a);border:1px solid #e0bd72;border-radius:11px;color:#ffdf9f;text-decoration:none;font-weight:900;font-size:.79rem;white-space:nowrap;box-shadow:inset 0 1px #fff3,0 4px 11px #0008}.gb-home:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.topbar .icon-btn{background:linear-gradient(#37634c,#0d3025)!important;border:1px solid #d0aa6988!important;color:#fce1a4!important}
+.turn-label{color:#ffe4ab!important}.status-msg{color:#c4dfcc!important}
+.scoreboard{background:linear-gradient(90deg,#09291f,#1a4b37,#09291f)!important;border-bottom:2px solid #cba15c!important;scrollbar-color:#cda65e transparent}
+.chip{background:linear-gradient(145deg,#205440,#0d3026)!important;border:2px solid #bc9a6077!important;box-shadow:inset 0 1px #fff2,0 5px 12px #0006!important}.chip.active{border-color:#f0c46d!important;box-shadow:0 0 19px #edc57455!important}.chip-name,.chip-count{color:#fff6dc!important}.chip-sub{color:#b3d7c5!important}.cells i{background:#041a13!important}.cells i.on{background:#f0bf60!important;box-shadow:0 0 7px #ffd88f55}
+.viewport{background:radial-gradient(ellipse 78% 70% at 50% 50%,#28674936,transparent 70%),repeating-linear-gradient(115deg,transparent 0px,transparent 44px,#edd39b06 45px,transparent 46px),linear-gradient(#0b2a20,#051a14)!important}
+.game{max-width:1470px!important}.timer-bar{padding:3px 10px 6px;border-bottom:1px solid #e2bf6477}.timer-text{font-family:Georgia,serif!important;color:#ffe3a1!important;text-shadow:0 1px 7px #000}.timer-track{background:#092d21!important;box-shadow:inset 0 2px 5px #0008;border:1px solid #a27e4470}.timer-track span{background:linear-gradient(90deg,#a77930,#ffe49a)!important;box-shadow:0 0 12px #ffd78388}
+.zones{gap:clamp(7px,1.3vmin,18px)!important}.zone{background:radial-gradient(ellipse 80% 85% at 50% 48%,#1f6148,#103c2e 72%,#082c22)!important;border:5px ridge #bc914f!important;border-radius:clamp(14px,2.2vw,27px)!important;box-shadow:inset 0 0 0 2px #e5be74a0,inset 0 0 34px #00100c88,0 10px 22px #0009!important;isolation:isolate}
+.zone:before{content:"";position:absolute;inset:9px;pointer-events:none;border:1px solid #e1c17a66;border-radius:12px}.zone:after{content:"✦  TEN OF A KIND  ✦";position:absolute;left:50%;top:5px;transform:translateX(-50%);font:700 clamp(.5rem,1vw,.75rem) Georgia,serif;letter-spacing:.14em;color:#eed29a88;white-space:nowrap;pointer-events:none}.zone.active{border-color:#ffe2a1!important;box-shadow:0 0 25px #eed38977,inset 0 0 0 2px #f6d98b,inset 0 0 35px #052418!important}.zone-head{position:relative;z-index:1;padding-bottom:7px;border-bottom:1px solid #d6b46f80}.zone-name{color:#ffebb8!important;font-family:Georgia,serif;font-size:1.1em;text-shadow:0 2px #000}.zone-count{color:#ffe19a!important;font-size:clamp(1rem,2.5vw,1.5rem)!important}.zone-target,.zone-rolls{color:#bedac7!important}.zone-dice{position:relative;z-index:1}
+.fdie{background:radial-gradient(circle at 28% 22%,#fffef4,#f4e8cc 50%,#bba987)!important;border:1px solid #fff9d6;box-shadow:inset 0 2px 2px #fff, inset 0 -4px 7px #58402b66,0 5px 10px #0008!important}.fdie i{background:radial-gradient(circle at 35% 27%,#326c57,#082e23 70%)!important}.fdie.blank{background:#0b3427!important;border:2px dashed #d8b97a88!important;box-shadow:inset 0 2px 8px #00170f!important}.dbtn.locked .fdie{background:radial-gradient(circle at 25% 18%,#fffbe9,#ffdf98 64%,#b58a45)!important;box-shadow:0 0 0 calc(var(--s)*.065) #f5c76d,0 0 20px #e9c57499!important}.dbtn:focus-visible{outline:3px solid #fff2bc;outline-offset:3px}
+.dock{background:linear-gradient(#184d38,#092b21)!important;border-top:3px solid #d8ad65!important;box-shadow:0 -7px 22px #0009!important}.btn{border:2px solid #e0b764!important;border-radius:13px!important;box-shadow:inset 0 2px #fff5,0 4px 0 #072319,0 7px 15px #0008!important;text-transform:uppercase;letter-spacing:.05em;font-weight:900!important}.btn-primary{background:linear-gradient(#fff1b6,#eac26d 60%,#ad7a35)!important;color:#163b2b!important}.btn-success{background:linear-gradient(#caffe4,#7dd6aa 60%,#2b936b)!important;color:#0e3426!important}.btn-ghost{background:linear-gradient(#346a50,#133f30)!important;color:#fff0c7!important}.btn:disabled{background:#244034!important;color:#a9c4b1!important;border-color:#5d7661!important;box-shadow:none!important}
+.lobby{max-width:790px!important}.lobby:before{content:"✦   TEN OF A KIND   ✦";display:block;text-align:center;padding:0 0 .3em;font:900 clamp(1.5rem,4.5vw,2.75rem) Georgia,serif;letter-spacing:.12em;color:#ffdf97;text-shadow:0 3px #173e2b,0 0 22px #c5a05c70}.lede{text-align:center!important;color:#d7e4c8!important;max-width:62ch;margin:.3em auto 1em!important}.card,dialog{background:linear-gradient(155deg,#1d533c,#0c3025)!important;border:2px solid #c19a5d!important;border-radius:18px!important;box-shadow:inset 0 1px #fff3,0 10px 27px #0009!important}.card h2,.dlg-head h2{font-family:Georgia,serif!important;color:#ffe2a8!important}.name-input,.type-btn,.seg,.set-row{background:#0c3326!important;border-color:#a1885a!important;color:#fff5d8!important}.resume{border-color:#f0d182!important}.seg input:checked+span{background:#bd995a!important;color:#123322!important}dialog::backdrop{background:#03160fdc}
+@media(max-width:599px){.gb-home{padding:0 9px}.gb-home span{display:none}.zone{border-width:3px!important}.zone:before{inset:5px}.zone:after{font-size:.47rem;letter-spacing:.04em}.zone-head{gap:3px!important}.zone-count{font-size:.93rem!important}.zone-target{font-size:.65rem!important}.btn{min-height:50px!important}}
+@media(max-width:360px){.title{font-size:.98rem!important}.zone{padding:6px!important}.zone-name{font-size:.88rem!important}}
+@media(prefers-reduced-motion:reduce){.fdie,.zone,.chip,.stamp{animation:none!important;transition:none!important}}
+</style>
+<link rel="stylesheet" href="../assets/stage8-responsive.css">
+</head>
+<body>
+<div id="app" class="shell" data-view="lobby">
+
+  <!-- Top header bar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <a class="gb-home" href="../index.html" aria-label="Return to Pocket Gamebox lobby">⌂ <span>LOBBY</span></a>
+      <button id="btnHome" class="icon-btn" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 class="title">Ten of a Kind</h1>
+    </div>
+    <div class="tb-center" aria-live="polite">
+      <div id="turnLabel" class="turn-label">New game</div>
+      <div id="statusMsg" class="status-msg"></div>
+    </div>
+    <div class="tb-right">
+      <button id="btnSound" class="icon-btn" type="button" aria-label="Sound" aria-pressed="true">
+        <svg class="ico-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <svg class="ico-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>
+      </button>
+      <button id="btnRules" class="icon-btn" type="button" aria-label="Rules">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6M12 17.2v.1"/></svg>
+      </button>
+      <button id="btnSettings" class="icon-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scoreboard & player dock -->
+  <div id="scoreboard" class="scoreboard" role="list" aria-label="Progress"></div>
+
+  <!-- Main viewport -->
+  <main class="viewport">
+
+    <!-- Lobby -->
+    <section id="lobby" class="lobby" aria-labelledby="lobbyTitle">
+      <h2 id="lobbyTitle" class="sr-only">Game setup</h2>
+      <p class="lede">Ten dice each. Pick a number, tap dice to keep the ones that match it, and roll the rest. First to make all ten match wins.</p>
+
+      <div id="resumeCard" class="card resume" hidden>
+        <div>
+          <strong>Game in progress</strong>
+          <p id="resumeInfo"></p>
+        </div>
+        <button class="btn btn-primary" type="button" data-act="resume">Resume</button>
+      </div>
+
+      <div class="card">
+        <h2>Players (1 to 4)</h2>
+        <ul id="roster" class="roster"></ul>
+        <button id="btnAddPlayer" class="btn btn-ghost" type="button" style="width:100%">Add player</button>
+        <p id="rosterNote" class="note"></p>
+      </div>
+
+      <div class="card">
+        <h2>Game options</h2>
+        <h3 id="modeLbl">How to play</h3>
+        <div class="seg" role="radiogroup" aria-labelledby="modeLbl">
+          <label><input type="radio" name="mode" value="race"><span>Race<small>Everyone at once</small></span></label>
+          <label><input type="radio" name="mode" value="turns"><span>Turn by turn<small>Fewest rolls wins</small></span></label>
+        </div>
+        <div id="limitBox">
+          <h3 id="limitLbl">Solo time limit</h3>
+          <div class="seg" role="radiogroup" aria-labelledby="limitLbl">
+            <label><input type="radio" name="limit" value="30"><span>30 s</span></label>
+            <label><input type="radio" name="limit" value="45"><span>45 s</span></label>
+            <label><input type="radio" name="limit" value="60"><span>60 s</span></label>
+          </div>
+        </div>
+        <div id="speedBox">
+          <h3 id="speedLbl">Bot speed</h3>
+          <div class="seg" role="radiogroup" aria-labelledby="speedLbl">
+            <label><input type="radio" name="speed" value="easy"><span>Easy</span></label>
+            <label><input type="radio" name="speed" value="medium"><span>Medium</span></label>
+            <label><input type="radio" name="speed" value="hard"><span>Hard</span></label>
+          </div>
+        </div>
+        <p id="best" class="note"></p>
+      </div>
+
+      <div class="card">
+        <h2>How you're playing</h2>
+        <p class="muted" style="margin:0">On one device. In a race, two to four people each get their own section of the screen and play at the same time. Online rooms need a game server, which isn't switched on in this offline build.</p>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section id="game" class="game" aria-label="Game">
+      <div id="timerBar" class="timer-bar">
+        <span id="timerText" class="timer-text">0:00.0</span>
+        <span id="timerTrack" class="timer-track" aria-hidden="true"><span id="timerFill"></span></span>
+      </div>
+      <div id="zones" class="zones"></div>
+      <div id="stamp" class="stamp" aria-hidden="true"></div>
+      <div id="veil" class="veil" hidden><strong>Paused</strong><span>Dice are hidden. Press Resume to carry on.</span></div>
+    </section>
+  </main>
+
+  <!-- Action dock -->
+  <footer id="dock" class="dock">
+    <button id="btnA" class="btn btn-ghost" type="button"></button>
+    <button id="btnB" class="btn btn-primary" type="button"></button>
+  </footer>
+</div>
+
+<!-- Rules -->
+<dialog id="dlgRules" aria-labelledby="rulesTitle">
+  <div class="dlg-head">
+    <h2 id="rulesTitle">How to play</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <ol class="steps">
+      <li>Everyone gets ten dice, already rolled.</li>
+      <li>Choose a number to collect. Tap a die showing it to keep it. Kept dice turn blue and stay put.</li>
+      <li>You can only keep dice that show the same number. To switch numbers, tap your kept dice to let them go first.</li>
+      <li>Roll the dice you haven't kept. Keep any new matches and roll again.</li>
+      <li>The moment all ten dice show the same number, you're done.</li>
+    </ol>
+    <h3>Race</h3>
+    <p>Everyone plays at the same time. First to ten of a kind wins. Playing alone, you race the clock instead.</p>
+    <h3>Turn by turn</h3>
+    <p>Players take one roll each in turn. Whoever finishes in the fewest rolls wins, and everyone gets the same number of rolls before a winner is called. Playing alone, try to beat your fewest-rolls record.</p>
+    <p class="muted">Keyboard and TV remote: 1 to 9 and 0 keep dice, R or Space rolls, P pauses, arrow keys move between buttons.</p>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="dlgSettings" aria-labelledby="settingsTitle">
+  <div class="dlg-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <button class="set-row" type="button" role="switch" data-setting="sound" aria-checked="true">
+      <span>Sound effects</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="voice" aria-checked="false">
+      <span>Announcer voice<small id="voiceNote">Counts down and calls the winner.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="faceToFace" aria-checked="true">
+      <span>Face to face<small>With a phone or tablet lying flat between two people, the far player's section turns to face them.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="contrast" aria-checked="false">
+      <span>Bright light mode<small>Stronger text for outdoors and sunlight.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="tv" aria-checked="false">
+      <span>TV mode<small>Bigger dice and text, hides the mouse pointer.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button id="rowFullscreen" class="set-row" type="button" role="switch" data-setting="fullscreen" aria-checked="false">
+      <span>Full screen</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <div class="cast-help">
+      <h3>Show the game on a TV</h3>
+      <ol>
+        <li>Android: swipe down from the top, tap Screen cast or Smart View, and pick your TV.</li>
+        <li>iPhone or iPad: open Control Centre, tap Screen Mirroring, and pick your TV.</li>
+        <li>Computer with Chrome: open the ⋮ menu, choose Cast, then Cast tab.</li>
+        <li>Turn on TV mode above.</li>
+      </ol>
+      <p>Solo races and turn-by-turn games work well on a TV. A race between several people needs everyone touching the same screen, so play that on a tablet instead.</p>
+    </div>
+    <p class="muted" style="margin-top:1rem">Room code <strong id="roomCode"></strong> (local game)</p>
+  </div>
+</dialog>
+
+<!-- Game over -->
+<dialog id="dlgOver" aria-labelledby="overTitle">
+  <div class="dlg-body">
+    <p id="overTitle" class="winner-name"></p>
+    <p id="overSub" class="muted"></p>
+    <ol id="standings" class="standings"></ol>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" type="button" data-act="lobby">Change players</button>
+    <button class="btn btn-primary" type="button" data-act="rematch">Play again</button>
+  </div>
+</dialog>
+
+<script type="module">
+/* =====================================================================
+   TEN OF A KIND — single-file build
+   Modules (in order):
+     1. RULES     – tunable rule constants
+     2. Dice      – pure helpers for a ten-dice board
+     3. RNG       – fair dice
+     4. Engine    – pure, deterministic reducer (race and turn modes)
+     5. Bot       – target choice and pacing
+     6. Network   – NetworkController + Local / Online adapters
+     7. Store     – localStorage persistence and solo records
+     8. Sound     – Web Audio synthesis (no audio files)
+     9. Voice     – optional speech announcer
+    10. App       – rendering, multi-touch input, timers, bots, boot
+   ===================================================================== */
+
+// #region core  — pure logic, no DOM. Safe to unit-test in Node.
+
+/* ---------- 1. RULES ---------- */
+const RULES = Object.freeze({
+  diceCount: 10,
+  minPlayers: 1,
+  maxPlayers: 4,
+  countdownMs: 3000,
+  timeLimits: Object.freeze([30, 45, 60]),          // solo race, seconds
+  botPace: Object.freeze({                           // ms per roll / per kept die
+    easy: { roll: 1150, lock: 360 },
+    medium: { roll: 760, lock: 230 },
+    hard: { roll: 480, lock: 140 },
+  }),
+});
+
+/* ---------- 2. DICE (pure) ---------- */
+const Dice = {
+  targetOf(board) {
+    const d = board.dice.find((x) => x.locked);
+    return d ? d.v : null;
+  },
+  lockedCount(board) { return board.dice.filter((d) => d.locked).length; },
+  /** Dice that already show the board's target (or best face if none chosen yet). */
+  matchCount(board) {
+    const t = Dice.targetOf(board) || Dice.bestFace(board);
+    return board.dice.filter((d) => d.v === t).length;
+  },
+  isDone(board) {
+    const v = board.dice[0].v;
+    return v > 0 && board.dice.every((d) => d.v === v);
+  },
+  bestFace(board) {
+    const c = [0, 0, 0, 0, 0, 0, 0];
+    board.dice.forEach((d) => { if (d.v) c[d.v]++; });
+    let best = 1;
+    for (let f = 2; f <= 6; f++) if (c[f] > c[best]) best = f;
+    return best;
+  },
+};
+
+/* ---------- 3. RNG (fair, unbiased dice) ---------- */
+const RNG = {
+  die() {
+    const c = globalThis.crypto;
+    if (c && c.getRandomValues) {
+      const buf = new Uint32Array(1);
+      const limit = 4294967292; // largest multiple of 6 below 2^32 → no modulo bias
+      do c.getRandomValues(buf); while (buf[0] >= limit);
+      return (buf[0] % 6) + 1;
+    }
+    return Math.floor(Math.random() * 6) + 1;
+  },
+  dice(n) { return Array.from({ length: n }, () => RNG.die()); },
+};
+
+/* ---------- 4. ENGINE (pure, deterministic reducer) ----------
+   reduce(state, action) → new state, or the SAME object if the action is illegal.
+   Dice values and timestamps (`at`, in ms) arrive inside actions from the host,
+   so the reducer never rolls or reads the clock itself.
+   Race mode: no turns; each action names its player with actorId.
+   Turn mode: one roll per turn, in seat order. */
+const Engine = (() => {
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const blankBoard = () => ({
+    dice: Array.from({ length: RULES.diceCount }, () => ({ v: 0, locked: false })),
+    rolls: 0,
+    doneMs: null,     // race: time taken
+    doneRolls: null,
+  });
+  const cleanOptions = (o = {}) => ({
+    mode: o.mode === 'turns' ? 'turns' : 'race',
+    timeLimit: RULES.timeLimits.includes(Number(o.timeLimit)) ? Number(o.timeLimit) : 45,
+  });
+  const emptyData = (options) => ({
+    mode: options.mode,
+    timeLimit: options.timeLimit,   // used by a solo race only
+    phase: 'LOBBY',                 // LOBBY | COUNTDOWN | PLAYING | DONE
+    startAt: null,
+    pausedAt: null,
+    boards: {},
+    round: 1,
+    finishOrder: [],
+    winnerIds: [],
+    endReason: null,                // 'finish' | 'timeout'
+    seq: 0,
+  });
+
+  function createState(roomCode = '') {
+    return { gameId: 'ten_of_a_kind', roomCode, status: 'LOBBY', turnIndex: 0, players: [], gameData: emptyData(cleanOptions()), lastAction: null };
+  }
+  const currentPlayer = (s) => s.players[s.turnIndex] || null;
+  const isSolo = (s) => s.players.length === 1;
+  const hasClock = (s) => s.gameData.mode === 'race' && isSolo(s);
+  /** Milliseconds of play so far (pauses excluded). */
+  const elapsed = (s, now) => {
+    const g = s.gameData;
+    if (g.startAt === null) return 0;
+    return Math.max(0, (g.pausedAt !== null ? g.pausedAt : now) - g.startAt);
+  };
+  const validRoll = (vals, n) => Array.isArray(vals) && vals.length === n && vals.every((v) => Number.isInteger(v) && v >= 1 && v <= 6);
+
+  function stamp(s, info) {
+    s.gameData.seq += 1;
+    s.lastAction = { ...info, seq: s.gameData.seq };
+  }
+  function sync(s) {
+    s.players.forEach((p) => { p.score = Dice.lockedCount(s.gameData.boards[p.id]); });
+  }
+  function over(s, winners, reason) {
+    const g = s.gameData;
+    g.winnerIds = winners;
+    g.endReason = reason;
+    g.phase = 'DONE';
+    s.status = 'GAME_OVER';
+  }
+
+  function reduce(state, action) {
+    if (!action || typeof action.type !== 'string') return state;
+
+    if (action.type === 'START_GAME') {
+      const list = Array.isArray(action.players) ? action.players.slice(0, RULES.maxPlayers) : [];
+      if (list.length < RULES.minPlayers) return state;
+      const options = cleanOptions(action.options);
+      const s = clone(state);
+      s.players = list.map((p, i) => ({
+        id: String(p.id || `p${i + 1}`),
+        name: String(p.name || '').trim().slice(0, 16) || `Player ${i + 1}`,
+        score: 0,
+        isLocal: p.isLocal !== false,
+        isBot: !!p.isBot,
+      }));
+      s.gameData = emptyData(options);
+      const g = s.gameData;
+      s.players.forEach((p) => { g.boards[p.id] = blankBoard(); });
+      s.status = 'PLAYING';
+      s.turnIndex = 0;
+      if (options.mode === 'turns') {
+        // Everyone's opening roll happens at the start.
+        if (!s.players.every((p) => validRoll(action.dice && action.dice[p.id], RULES.diceCount))) return state;
+        s.players.forEach((p) => {
+          const b = g.boards[p.id];
+          action.dice[p.id].forEach((v, i) => { b.dice[i].v = v; });
+          b.rolls = 1;
+        });
+        g.phase = 'PLAYING';
+        g.startAt = Number(action.at) || 0;
+      } else {
+        g.phase = 'COUNTDOWN';
+      }
+      stamp(s, { type: 'START_GAME', mode: options.mode });
+      return s;
+    }
+
+    if (state.status !== 'PLAYING') return state;
+    const g0 = state.gameData;
+
+    // ---- Race-only host actions ----
+    if (action.type === 'GO') {
+      if (g0.mode !== 'race' || g0.phase !== 'COUNTDOWN') return state;
+      if (!state.players.every((p) => validRoll(action.dice && action.dice[p.id], RULES.diceCount))) return state;
+      const s = clone(state);
+      const g = s.gameData;
+      s.players.forEach((p) => {
+        const b = g.boards[p.id];
+        action.dice[p.id].forEach((v, i) => { b.dice[i].v = v; });
+        b.rolls = 1;
+      });
+      g.phase = 'PLAYING';
+      g.startAt = Number(action.at) || 0;
+      const lucky = s.players.find((p) => Dice.isDone(g.boards[p.id]));
+      if (lucky) {
+        const b = g.boards[lucky.id];
+        b.doneMs = 0;
+        b.doneRolls = 1;
+        g.finishOrder.push(lucky.id);
+        over(s, [lucky.id], 'finish');
+      }
+      stamp(s, { type: 'GO' });
+      return s;
+    }
+    if (action.type === 'PAUSE' || action.type === 'RESUME' || action.type === 'TIMEOUT') {
+      if (g0.mode !== 'race' || g0.phase !== 'PLAYING') return state;
+      const s = clone(state);
+      const g = s.gameData;
+      const at = Number(action.at) || 0;
+      if (action.type === 'PAUSE') {
+        if (g.pausedAt !== null) return state;
+        g.pausedAt = at;
+      } else if (action.type === 'RESUME') {
+        if (g.pausedAt === null) return state;
+        g.startAt += at - g.pausedAt;
+        g.pausedAt = null;
+      } else {
+        if (!hasClock(s) || g.pausedAt !== null) return state;
+        if (elapsed(s, at) < g.timeLimit * 1000 - 50) return state; // not yet
+        over(s, [], 'timeout');
+      }
+      stamp(s, { type: action.type });
+      return s;
+    }
+
+    // ---- Player actions ----
+    if (g0.phase !== 'PLAYING') return state;
+    const actor = state.players.find((p) => p.id === action.actorId);
+    if (!actor) return state;
+    if (g0.mode === 'turns' && currentPlayer(state).id !== actor.id) return state; // not your turn
+    if (g0.mode === 'race' && g0.pausedAt !== null) return state;
+    const board0 = g0.boards[actor.id];
+    if (board0.doneRolls !== null) return state;
+
+    const s = clone(state);
+    const g = s.gameData;
+    const b = g.boards[actor.id];
+
+    switch (action.type) {
+      case 'LOCK': {
+        const d = b.dice[action.index];
+        if (!d) return state;
+        if (d.locked) {
+          d.locked = false;
+        } else {
+          const t = Dice.targetOf(b);
+          if (t !== null && d.v !== t) return state; // kept dice must all match
+          d.locked = true;
+        }
+        sync(s);
+        stamp(s, { type: 'LOCK', actorId: actor.id, index: action.index, locked: d.locked });
+        return s;
+      }
+
+      case 'ROLL': {
+        const free = b.dice.map((d, i) => (d.locked ? -1 : i)).filter((i) => i >= 0);
+        if (!free.length || !validRoll(action.values, free.length)) return state;
+        free.forEach((di, k) => { b.dice[di].v = action.values[k]; });
+        b.rolls += 1;
+        const at = Number(action.at) || 0;
+        const done = Dice.isDone(b);
+        if (done) {
+          b.doneMs = elapsed(s, at);
+          b.doneRolls = b.rolls;
+          b.dice.forEach((d) => { d.locked = true; });
+          g.finishOrder.push(actor.id);
+        }
+        sync(s);
+        if (g.mode === 'race') {
+          if (done) over(s, [actor.id], 'finish');
+        } else if (isSolo(s)) {
+          if (done) over(s, [actor.id], 'finish');
+        } else {
+          // Turn mode: finish the round so everyone gets the same number of rolls.
+          const next = (s.turnIndex + 1) % s.players.length;
+          if (next === 0 && g.finishOrder.length) {
+            over(s, g.finishOrder.slice(), 'finish');
+          } else {
+            if (next === 0) g.round += 1;
+            s.turnIndex = next;
+          }
+        }
+        stamp(s, { type: 'ROLL', actorId: actor.id, rolled: free, done, gameOver: s.status === 'GAME_OVER' });
+        return s;
+      }
+
+      default:
+        return state;
+    }
+  }
+
+  return { createState, reduce, currentPlayer, isSolo, hasClock, elapsed };
+})();
+
+/* ---------- 5. BOT ---------- */
+const Bot = {
+  /** Next move for a bot's board: lock a matching die, or roll. */
+  next(board) {
+    const target = Dice.targetOf(board) || Dice.bestFace(board);
+    const i = board.dice.findIndex((d) => !d.locked && d.v === target);
+    if (i >= 0) return { type: 'LOCK', index: i };
+    return { type: 'ROLL' };
+  },
+};
+
+// #endregion core
+
+/* ---------- 6. NETWORK LAYER ----------
+   The UI only ever talks to NetworkController. Swap the adapter to change
+   how actions travel; the rules and UI stay the same. */
+
+/** Local adapter: everyone on one device. Acts as the host (dice and clock). */
+class LocalAdapter {
+  constructor(initialState) {
+    this.kind = 'local';
+    this.state = initialState;
+    this.onState = null;
+  }
+  send(action) {
+    let a = { at: Date.now(), ...action };
+    const s = this.state;
+    const needsBoards = (a.type === 'START_GAME' && a.options && a.options.mode === 'turns') || a.type === 'GO';
+    if (needsBoards && !a.dice) {
+      const ids = a.type === 'START_GAME' ? (a.players || []).map((p, i) => String(p.id || `p${i + 1}`)) : s.players.map((p) => p.id);
+      a = { ...a, dice: Object.fromEntries(ids.map((id) => [id, RNG.dice(RULES.diceCount)])) };
+    }
+    if (a.type === 'ROLL' && !a.values) {
+      const b = s.gameData.boards[a.actorId];
+      if (!b) return false;
+      a = { ...a, values: RNG.dice(b.dice.filter((d) => !d.locked).length) };
+    }
+    const next = Engine.reduce(s, a);
+    if (next === s) return false;
+    this.state = next;
+    if (this.onState) this.onState(next);
+    return true;
+  }
+  replace(state) {
+    this.state = state;
+    if (this.onState) this.onState(state);
+  }
+}
+
+/** Online adapter — PROTOCOL STUB. It makes no network requests.
+    To enable online rooms later:
+      1. Run a server that holds the authoritative state, the clock and the same Engine.
+      2. Client → server: { t: 'action', room, action }   (ROLL sent without values or time)
+      3. Server stamps `at` with its own clock, rolls, calls Engine.reduce, then
+         broadcasts → clients: { t: 'state', state }. Using the server's clock keeps
+         a real-time race fair whatever each player's connection speed.
+      4. The server also sends GO after the countdown and TIMEOUT for solo races.
+      5. In connect(), open the WebSocket / Firebase listener and call receive().
+      6. Set controller.localPlayerId to this device's player id. */
+class OnlineAdapter {
+  constructor(options = {}) {
+    this.kind = 'online';
+    this.url = options.url || '';
+    this.state = Engine.createState();
+    this.onState = null;
+    this.connected = false;
+  }
+  async connect() {
+    throw new Error('Online play is not enabled in this offline build.');
+  }
+  send(action) {
+    if (!this.connected) return false;
+    // this.socket.send(JSON.stringify({ t: 'action', room: this.state.roomCode, action }));
+    return false;
+  }
+  receive(message) {
+    if (message && message.t === 'state' && message.state && message.state.gameId === 'ten_of_a_kind') {
+      this.state = message.state;
+      if (this.onState) this.onState(this.state);
+    }
+  }
+}
+
+class NetworkController {
+  #adapter = null;
+  #subs = new Set();
+  localPlayerId = null; // online only
+
+  use(adapter) {
+    this.#adapter = adapter;
+    adapter.onState = (s) => this.#subs.forEach((fn) => fn(s));
+    return this;
+  }
+  get state() { return this.#adapter.state; }
+  get kind() { return this.#adapter.kind; }
+  subscribe(fn) { this.#subs.add(fn); return () => this.#subs.delete(fn); }
+  /** Race actions name their own player; turn actions default to whoever's turn it is. */
+  dispatch(action) {
+    let actorId = action.actorId;
+    if (this.#adapter.kind === 'online') actorId = this.localPlayerId;
+    else if (!actorId) { const cur = Engine.currentPlayer(this.state); actorId = cur ? cur.id : null; }
+    return this.#adapter.send({ ...action, actorId });
+  }
+  start(players, options) { return this.dispatch({ type: 'START_GAME', players, options }); }
+  go() { return this.dispatch({ type: 'GO' }); }
+  roll(playerId) { return this.dispatch({ type: 'ROLL', actorId: playerId }); }
+  lock(playerId, index) { return this.dispatch({ type: 'LOCK', actorId: playerId, index }); }
+  pause() { return this.dispatch({ type: 'PAUSE' }); }
+  resume() { return this.dispatch({ type: 'RESUME' }); }
+  timeout() { return this.dispatch({ type: 'TIMEOUT' }); }
+  load(state) { if (this.#adapter.replace) this.#adapter.replace(state); }
+}
+
+/* ---------- 7. STORE (localStorage) ---------- */
+const Store = (() => {
+  const K = { game: 'tenofakind.v1.game', settings: 'tenofakind.v1.settings', setup: 'tenofakind.v1.setup', best: 'tenofakind.v1.best' };
+  const get = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+  const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked or full */ } };
+  return {
+    loadGame() {
+      const s = get(K.game);
+      const ok = s && s.gameId === 'ten_of_a_kind' && Array.isArray(s.players) && s.gameData && s.gameData.boards;
+      return ok ? s : null;
+    },
+    saveGame: (s) => set(K.game, s),
+    loadSettings: () => get(K.settings),
+    saveSettings: (v) => set(K.settings, v),
+    loadSetup: () => get(K.setup),
+    saveSetup: (v) => set(K.setup, v),
+    /** { "race30": fastest ms, "turns": fewest rolls } */
+    loadBests: () => get(K.best) || {},
+    saveBests: (v) => set(K.best, v),
+  };
+})();
+
+/* ---------- 8. SOUND (Web Audio, generated live — no files) ---------- */
+const Sound = (() => {
+  let ctx = null;
+  let master = null;
+  let noiseBuf = null;
+  let enabled = true;
+
+  function ready() {
+    if (!enabled) return null;
+    if (!ctx) {
+      const AC = null; // Legacy synthesised effects removed: Creative Claw only
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.6;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(freq, at, dur, { type = 'sine', gain = 0.2, slideTo = 0 } = {}) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, at);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, at + dur);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(master);
+    o.start(at);
+    o.stop(at + dur + 0.03);
+  }
+  function noise(at, dur, gain, freq) {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(bp).connect(g).connect(master);
+    src.start(at, Math.random() * 0.3, dur + 0.03);
+  }
+
+  return {
+    get enabled() { return enabled; },
+    set enabled(v) { enabled = !!v; if (!enabled && ctx && ctx.state === 'running') ctx.suspend(); },
+    unlock() { ready(); },
+    roll(count, quiet = false) {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      const g = quiet ? 0.45 : 1;
+      for (let i = 0; i < 3 + Math.ceil(count * 1.2); i++) {
+        noise(t + Math.random() * 0.22, 0.02 + Math.random() * 0.03, (0.18 + Math.random() * 0.25) * g, 1800 + Math.random() * 2400);
+      }
+    },
+    lock(n) { if (ready()) tone(700 + Math.min(n, 10) * 70, ctx.currentTime, 0.05, { type: 'triangle', gain: 0.12 }); },
+    unlock2() { if (ready()) tone(500, ctx.currentTime, 0.05, { type: 'triangle', gain: 0.1 }); },
+    beep(final = false) { if (ready()) tone(final ? 1046.5 : 523.25, ctx.currentTime, final ? 0.35 : 0.15, { type: 'square', gain: 0.1 }); },
+    tick() { if (ready()) tone(1600, ctx.currentTime, 0.03, { type: 'square', gain: 0.05 }); },
+    done() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568].forEach((f, i) => tone(f, t + i * 0.06, 0.25, { type: 'square', gain: 0.07 }));
+    },
+    lose() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      tone(330, t, 0.25, { type: 'sawtooth', gain: 0.12 });
+      tone(247, t + 0.22, 0.6, { type: 'sawtooth', gain: 0.12, slideTo: 140 });
+    },
+    win() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [[523.25, 0], [659.25, 0.14], [783.99, 0.28], [1046.5, 0.42], [783.99, 0.62], [1046.5, 0.76]]
+        .forEach(([f, d]) => tone(f, t + d, 0.35, { type: 'triangle', gain: 0.18 }));
+    },
+  };
+})();
+
+/* ---------- 9. VOICE (optional announcer; uses on-device voices) ---------- */
+const Voice = {
+  enabled: false,
+  supported: 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function',
+  say(text) {
+    if (!this.enabled || !this.supported) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.1;
+      if(!window.PocketVoice?.enabled()) void 0;
+    } catch { /* no voice available */ }
+  },
+};
+
+/* ---------- 10. APP ---------- */
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+const el = {
+  shell: $('app'), turn: $('turnLabel'), status: $('statusMsg'), scoreboard: $('scoreboard'),
+  game: $('game'), timerBar: $('timerBar'), timerText: $('timerText'), timerTrack: $('timerTrack'), timerFill: $('timerFill'),
+  zones: $('zones'), stamp: $('stamp'), veil: $('veil'),
+  dock: $('dock'), btnA: $('btnA'), btnB: $('btnB'),
+  roster: $('roster'), rosterNote: $('rosterNote'), resume: $('resumeCard'), resumeInfo: $('resumeInfo'), addPlayer: $('btnAddPlayer'),
+  limitBox: $('limitBox'), speedBox: $('speedBox'), best: $('best'),
+  btnHome: $('btnHome'), btnSound: $('btnSound'), btnRules: $('btnRules'), btnSettings: $('btnSettings'),
+  dlgRules: $('dlgRules'), dlgSettings: $('dlgSettings'), dlgOver: $('dlgOver'),
+  overTitle: $('overTitle'), overSub: $('overSub'), standings: $('standings'), roomCode: $('roomCode'),
+  voiceNote: $('voiceNote'),
+};
+
+const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444'];
+const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const initial = (name) => (String(name).trim()[0] || '?').toUpperCase();
+const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch { /* unsupported */ } };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const pips = (v) => Array.from({ length: 9 }, (_, k) => `<i${PIPS[v] && PIPS[v].includes(k) ? ' class="on"' : ''}></i>`).join('');
+const dieHTML = (v) => `<span class="fdie${v ? '' : ' blank'}">${v ? pips(v) : ''}</span>`;
+const fmtTime = (ms) => {
+  const t = Math.max(0, ms) / 1000;
+  const m = Math.floor(t / 60);
+  const sec = t - m * 60;
+  return `${m}:${sec < 10 ? '0' : ''}${sec.toFixed(1)}`;
+};
+const makeRoomCode = () => {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
+};
+const nameOf = (s, id) => (s.players.find((p) => p.id === id) || {}).name || '';
+
+/* UI-only state (never sent over the network) */
+const ui = {
+  view: 'lobby',
+  seenSeq: 0,
+  stamp: null,
+  stampId: 0,
+  timers: [],
+  counting: false,         // 3-2-1 countdown on screen
+  zoneKey: '',
+  settings: { sound: true, voice: false, faceToFace: true, contrast: false, tv: false },
+  setup: {
+    mode: 'race',
+    limit: 45,
+    speed: 'medium',
+    roster: [{ name: 'Player 1', isBot: false }, { name: 'Bot 2', isBot: true }],
+  },
+  keys: { board: '' },
+  timeoutTimer: 0,
+  overShown: false,
+};
+
+const humansOf = (s) => s.players.filter((p) => !p.isBot && p.isLocal);
+/** Which players get a full, tappable section of the screen. */
+function zonePlayers(s) {
+  if (s.gameData.mode === 'turns') return [Engine.currentPlayer(s)];
+  const humans = humansOf(s);
+  return humans.length ? humans : s.players; // all bots: watch every board
+}
+/** Is there exactly one person playing a race (so their Roll button lives in the dock)? */
+const soloHumanRace = (s) => s.gameData.mode === 'race' && humansOf(s).length === 1;
+
+/* ---- Timers ---- */
+function clearTimers() { ui.timers.forEach(clearTimeout); ui.timers = []; clearTimeout(ui.timeoutTimer); }
+function later(fn, ms) { ui.timers.push(setTimeout(fn, ms)); }
+function showStamp(text, tone, ms, sub = '') {
+  ui.stamp = { text, sub, tone, until: Date.now() + ms, id: ++ui.stampId };
+  scheduleRender();
+  setTimeout(scheduleRender, ms + 30);
+}
+function runCountdown() {
+  ui.counting = true;
+  const step = reduceMotion ? 600 : 1000;
+  [3, 2, 1].forEach((n, i) => later(() => { showStamp(String(n), 'primary', step - 80); Sound.beep(); Voice.say(String(n)); }, i * step));
+  later(() => {
+    ui.counting = false;
+    controller.go();
+    showStamp('Go!', 'success', 700);
+    Sound.beep(true);
+  }, 3 * step);
+}
+function armTimeout(s) {
+  clearTimeout(ui.timeoutTimer);
+  const g = s.gameData;
+  if (!Engine.hasClock(s) || g.phase !== 'PLAYING' || g.pausedAt !== null || s.status !== 'PLAYING') return;
+  const left = g.timeLimit * 1000 - Engine.elapsed(s, Date.now());
+  ui.timeoutTimer = setTimeout(() => controller.timeout(), Math.max(0, left) + 20);
+}
+
+/* ---- React to each new action exactly once ---- */
+const rollMarks = new Map(); // playerId → rolled indices to animate on next render
+function pocketTenAudio(key) {
+  try { window.parent.postMessage({type:'pocket-audio',key:'ten-'+key}, '*'); } catch (_) {}
+}
+function handleAction(s) {
+  const la = s.lastAction;
+  if (!la || la.seq === ui.seenSeq) return;
+  ui.seenSeq = la.seq;
+  const actor = s.players.find((p) => p.id === la.actorId);
+  switch (la.type) {
+    case 'START_GAME':
+      pocketTenAudio('start');
+      ui.overShown = false;
+      ui.zoneKey = '';
+      if (la.mode === 'race') runCountdown();
+      else Sound.roll(10);
+      break;
+    case 'GO':
+      pocketTenAudio('dice-fx');
+      s.players.forEach((p) => rollMarks.set(p.id, [...Array(RULES.diceCount).keys()]));
+      Sound.roll(10);
+      armTimeout(s);
+      break;
+    case 'LOCK':
+      if(la.locked){pocketTenAudio('lock-fx');}
+      if (actor && !actor.isBot) {
+        if (la.locked) Sound.lock(Dice.lockedCount(s.gameData.boards[actor.id])); else Sound.unlock2();
+        vibrate(8);
+      } else if (la.locked) {
+        Sound.tick();
+      }
+      break;
+    case 'ROLL':
+      pocketTenAudio('dice-fx');
+      if(actor&&!actor.isBot)pocketTenAudio('roll');
+      rollMarks.set(la.actorId, la.rolled);
+      Sound.roll(la.rolled.length, actor && actor.isBot);
+      if (la.done && actor) {
+        pocketTenAudio('perfect');
+        pocketTenAudio('perfect-fx');
+        const b = s.gameData.boards[actor.id];
+        const sub = s.gameData.mode === 'race' ? `${fmtTime(b.doneMs)}, ${b.doneRolls} rolls` : `${b.doneRolls} rolls`;
+        showStamp(s.gameData.mode === 'turns' && !la.gameOver ? `${actor.name} made it!` : 'Ten of a kind!', 'success', 1800, sub);
+        Sound.done();
+        vibrate([60, 40, 120]);
+      }
+      if (la.gameOver) finishGame(s);
+      break;
+    case 'PAUSE':
+      clearTimeout(ui.timeoutTimer);
+      break;
+    case 'RESUME':
+      armTimeout(s);
+      break;
+    case 'TIMEOUT':
+      showStamp("Time's up!", 'danger', 1800);
+      Sound.lose();
+      vibrate(250);
+      /* Previous speech replaced by Creative Claw */
+      finishGame(s);
+      break;
+    default:
+      break;
+  }
+}
+function finishGame(s) {
+  clearTimeout(ui.timeoutTimer);
+  BotDriver.stopAll();
+  if (s.gameData.endReason === 'finish') {
+    pocketTenAudio('win');
+    const names = s.gameData.winnerIds.map((id) => nameOf(s, id));
+    /* Winner voice via Creative Claw */
+  }
+  later(() => { if (s.gameData.endReason === 'finish') Sound.win(); openGameOver(); }, 1700);
+}
+
+/* ---- Render ---- */
+let rafId = 0;
+function scheduleRender() { if (!rafId) rafId = requestAnimationFrame(render); }
+const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+
+function setBtn(btn, { label, small = '', act = '', variant = 'primary', enabled = true, hidden = false }) {
+  btn.hidden = hidden;
+  if (hidden) return;
+  const cls = `btn btn-${variant}`;
+  if (btn.className !== cls) btn.className = cls;
+  btn.dataset.act = act;
+  btn.disabled = !enabled;
+  const key = `${label}|${small}`;
+  if (btn.dataset.key !== key) {
+    btn.dataset.key = key;
+    btn.textContent = '';
+    const main = document.createElement('span');
+    main.textContent = label;
+    btn.appendChild(main);
+    if (small) {
+      const sm = document.createElement('small');
+      sm.textContent = small;
+      btn.appendChild(sm);
+    }
+  }
+}
+
+/** Can this person act on their own board right now? */
+function canPlay(s, pid) {
+  const g = s.gameData;
+  if (s.status !== 'PLAYING' || g.phase !== 'PLAYING' || ui.counting) return false;
+  const p = s.players.find((x) => x.id === pid);
+  if (!p || p.isBot || !p.isLocal) return false;
+  if (g.boards[pid].doneRolls !== null) return false;
+  if (g.mode === 'race') return g.pausedAt === null;
+  return Engine.currentPlayer(s).id === pid;
+}
+
+function headerFor(s) {
+  const g = s.gameData;
+  if (s.status === 'GAME_OVER') {
+    if (g.endReason === 'timeout') return { turn: "Time's up!", msg: `${Dice.lockedCount(g.boards[s.players[0].id])} of 10 kept.`, tone: 'danger' };
+    const names = g.winnerIds.map((id) => nameOf(s, id));
+    if (Engine.isSolo(s)) {
+      const b = g.boards[s.players[0].id];
+      return { turn: 'Ten of a kind!', msg: g.mode === 'race' ? `${fmtTime(b.doneMs)} in ${b.doneRolls} rolls.` : `Done in ${b.doneRolls} rolls.`, tone: 'success' };
+    }
+    return { turn: names.length > 1 ? `Tie: ${names.join(' and ')}` : `${names[0]} wins!`, msg: 'First to ten of a kind.', tone: 'success' };
+  }
+  if (g.mode === 'race') {
+    if (g.phase === 'COUNTDOWN') return { turn: 'Get ready…', msg: 'Pick a number as soon as the dice land.', tone: 'warning' };
+    if (g.pausedAt !== null) return { turn: 'Paused', msg: 'The clock has stopped.', tone: 'warning' };
+    return Engine.isSolo(s)
+      ? { turn: 'Beat the clock', msg: 'Keep matching dice, roll the rest.', tone: '' }
+      : { turn: 'Race!', msg: 'First to ten of a kind wins.', tone: '' };
+  }
+  const cur = Engine.currentPlayer(s);
+  const turn = Engine.isSolo(s) ? `Roll ${g.boards[cur.id].rolls + 1}` : `${cur.name}'s turn, round ${g.round}`;
+  if (cur.isBot) return { turn, msg: `${cur.name} is thinking…`, tone: '' };
+  const b = g.boards[cur.id];
+  const t = Dice.targetOf(b);
+  return { turn, msg: t ? `Keep any new ${t}s, then roll.` : 'Tap dice to keep a number, then roll.', tone: '' };
+}
+
+function renderTimer(s) {
+  const g = s.gameData;
+  const race = g.mode === 'race';
+  el.timerBar.hidden = !race;
+  if (!race) return;
+  const now = Date.now();
+  let ms = Engine.elapsed(s, now);
+  if (s.status === 'GAME_OVER' && g.winnerIds.length) ms = g.boards[g.winnerIds[0]].doneMs;
+  if (Engine.hasClock(s)) {
+    const limit = g.timeLimit * 1000;
+    const left = s.status === 'GAME_OVER' && g.endReason === 'timeout' ? 0 : limit - ms;
+    setText(el.timerText, fmtTime(g.phase === 'COUNTDOWN' ? limit : left));
+    const frac = g.phase === 'COUNTDOWN' ? 1 : Math.max(0, left / limit);
+    el.timerFill.style.transform = `scaleX(${frac.toFixed(4)})`;
+    const urgent = left <= 10000 && g.phase === 'PLAYING';
+    el.timerText.dataset.tone = s.status === 'GAME_OVER' && g.endReason === 'finish' ? 'success' : urgent ? 'danger' : '';
+    el.timerTrack.dataset.tone = urgent ? 'danger' : '';
+    el.timerTrack.hidden = false;
+  } else {
+    setText(el.timerText, fmtTime(ms));
+    el.timerText.dataset.tone = s.status === 'GAME_OVER' ? 'success' : '';
+    el.timerTrack.hidden = true;
+  }
+}
+
+function renderScoreboard(s) {
+  const g = s.gameData;
+  const html = s.players.map((p, i) => {
+    const b = g.boards[p.id];
+    const kept = Dice.lockedCount(b);
+    const t = Dice.targetOf(b);
+    const active = s.status === 'PLAYING' && g.mode === 'turns' && Engine.currentPlayer(s).id === p.id;
+    const winner = g.winnerIds.includes(p.id);
+    let sub = g.phase === 'COUNTDOWN' ? 'Ready' : t ? `Collecting ${t}s, roll ${b.rolls}` : `Roll ${b.rolls}`;
+    if (b.doneRolls !== null) sub = g.mode === 'race' ? `Done in ${fmtTime(b.doneMs)}` : `Done in ${b.doneRolls} rolls`;
+    const cells = b.dice.map((d) => `<i${d.locked ? ' class="on"' : ''}></i>`).join('');
+    return `<div class="chip${active ? ' active' : ''}${winner ? ' winner' : ''}" role="listitem" style="--c:${COLORS[i % COLORS.length]}"${active ? ' aria-current="true"' : ''}>`
+      + `<span class="avatar" aria-hidden="true">${esc(initial(p.name))}</span>`
+      + `<span class="chip-name">${esc(p.name)}${p.isBot ? '<span class="tag">Bot</span>' : ''}</span>`
+      + `<span class="chip-count" aria-label="${kept} of 10 kept">${kept}/10</span>`
+      + `<span class="chip-sub${b.doneRolls !== null ? ' done' : ''}">${sub}</span>`
+      + `<span class="cells" aria-hidden="true">${cells}</span></div>`;
+  }).join('');
+  if (ui.keys.board !== html) {
+    ui.keys.board = html;
+    el.scoreboard.innerHTML = html;
+  }
+}
+
+/* Zones are built once per layout, then updated in place so roll animations survive renders. */
+function buildZones(s, list) {
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  const flipTop = ui.settings.faceToFace && !ui.settings.tv && portrait && list.length >= 2 && s.gameData.mode === 'race';
+  const showRoll = s.gameData.mode === 'race' && !soloHumanRace(s) && humansOf(s).length > 0;
+  el.zones.dataset.count = String(list.length);
+  el.zones.innerHTML = list.map((p, i) => {
+    const idx = s.players.indexOf(p);
+    const flip = flipTop && (list.length === 2 ? i === 0 : i < 2);
+    return `<section class="zone${flip ? ' flip' : ''}" data-pid="${p.id}" style="--c:${COLORS[idx % COLORS.length]}" aria-label="${esc(p.name)}'s dice">`
+      + `<div class="zone-head"><span class="avatar" aria-hidden="true">${esc(initial(p.name))}</span>`
+      + `<span class="zone-name">${esc(p.name)}</span>`
+      + `<span class="zone-target" data-target></span>`
+      + `<span class="zone-rolls" data-rolls></span><span class="zone-count" data-count></span></div>`
+      + `<div class="zone-dice">${Array.from({ length: RULES.diceCount }, (_, k) =>
+        `<button class="dbtn" type="button" data-pid="${p.id}" data-i="${k}"><span class="fdie blank"></span></button>`).join('')}</div>`
+      + (showRoll && !p.isBot ? `<button class="btn btn-primary zone-roll" type="button" data-roll="${p.id}"></button>` : '<span></span>')
+      + `</section>`;
+  }).join('');
+}
+
+function renderZones(s) {
+  const g = s.gameData;
+  const list = zonePlayers(s);
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  const key = `${list.map((p) => p.id).join(',')}|${portrait}|${ui.settings.faceToFace}|${ui.settings.tv}|${g.mode}`;
+  if (key !== ui.zoneKey) { ui.zoneKey = key; buildZones(s, list); }
+  el.zones.querySelectorAll('.zone').forEach((zone) => {
+    const pid = zone.dataset.pid;
+    const b = g.boards[pid];
+    const live = canPlay(s, pid);
+    const t = Dice.targetOf(b);
+    zone.classList.toggle('active', live || (g.mode === 'turns' && s.status === 'PLAYING'));
+    zone.classList.toggle('done', b.doneRolls !== null);
+    const tEl = zone.querySelector('[data-target]');
+    const tKey = String(t || 0);
+    if (tEl.dataset.key !== tKey) { tEl.dataset.key = tKey; tEl.innerHTML = t ? `Collecting ${dieHTML(t)}` : ''; }
+    setText(zone.querySelector('[data-rolls]'), g.phase === 'COUNTDOWN' ? '' : `Roll ${b.rolls}`);
+    setText(zone.querySelector('[data-count]'), `${Dice.lockedCount(b)}/10`);
+    const marks = rollMarks.get(pid);
+    zone.querySelectorAll('.dbtn').forEach((btn) => {
+      const i = Number(btn.dataset.i);
+      const d = b.dice[i];
+      const hide = g.pausedAt !== null || g.phase === 'COUNTDOWN';
+      const v = hide ? 0 : d.v;
+      const vKey = `${v}`;
+      if (btn.dataset.v !== vKey) { btn.dataset.v = vKey; btn.innerHTML = dieHTML(v); }
+      if (marks && marks.includes(i) && !reduceMotion && v) {
+        const f = btn.firstElementChild;
+        f.classList.remove('rolling');
+        void f.offsetWidth;
+        f.classList.add('rolling');
+      }
+      btn.classList.toggle('locked', d.locked && !hide);
+      const lockable = live && (d.locked || t === null || d.v === t);
+      btn.disabled = !lockable;
+      btn.setAttribute('aria-pressed', String(d.locked));
+      btn.setAttribute('aria-label', hide ? 'Hidden die' : `Die ${i + 1}: ${d.v}${d.locked ? ', kept' : ''}`);
+    });
+    rollMarks.delete(pid);
+    const rb = zone.querySelector('[data-roll]');
+    if (rb) {
+      const free = b.dice.filter((d) => !d.locked).length;
+      const label = b.doneRolls !== null ? 'Done!' : `Roll ${free}`;
+      setText(rb, label);
+      rb.disabled = !live || free === 0;
+      rb.className = `btn ${b.doneRolls !== null ? 'btn-success' : 'btn-primary'} zone-roll`;
+    }
+  });
+}
+
+function renderDock(s) {
+  let single = false;
+  if (ui.view === 'lobby') {
+    const n = ui.setup.roster.length;
+    setBtn(el.btnA, { hidden: true });
+    setBtn(el.btnB, { label: 'Start game', small: n === 1 ? (ui.setup.mode === 'race' ? `Beat ${ui.setup.limit} seconds` : 'Fewest rolls') : `${n} players`, act: 'start' });
+    single = true;
+  } else if (s.status === 'GAME_OVER') {
+    setBtn(el.btnA, { label: 'New game', act: 'lobby', variant: 'ghost' });
+    setBtn(el.btnB, { label: 'Play again', small: Engine.isSolo(s) ? 'Same options' : 'Same players', act: 'rematch' });
+  } else {
+    const g = s.gameData;
+    if (g.mode === 'race') {
+      const paused = g.pausedAt !== null;
+      const canPause = g.phase === 'PLAYING' && humansOf(s).length > 0;
+      if (soloHumanRace(s)) {
+        const me = humansOf(s)[0];
+        const b = g.boards[me.id];
+        const free = b.dice.filter((d) => !d.locked).length;
+        setBtn(el.btnA, { label: paused ? 'Resume' : 'Pause', act: paused ? 'resume' : 'pause', variant: 'ghost', enabled: canPause });
+        setBtn(el.btnB, {
+          label: g.phase === 'COUNTDOWN' ? 'Get ready…' : paused ? 'Paused' : `Roll ${free}`,
+          small: g.phase === 'PLAYING' && !paused ? (free === 10 ? 'Or tap dice to keep them' : `${10 - free} kept`) : '',
+          act: 'roll',
+          enabled: canPlay(s, me.id) && free > 0,
+        });
+      } else {
+        setBtn(el.btnA, { hidden: true });
+        setBtn(el.btnB, {
+          label: paused ? 'Resume' : 'Pause',
+          small: humansOf(s).length > 1 ? 'Everyone rolls in their own section' : '',
+          act: paused ? 'resume' : 'pause',
+          variant: paused ? 'primary' : 'ghost',
+          enabled: canPause,
+        });
+        single = true;
+      }
+    } else {
+      const cur = Engine.currentPlayer(s);
+      const b = g.boards[cur.id];
+      const free = b.dice.filter((d) => !d.locked).length;
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, cur.isBot
+        ? { label: `${cur.name} is playing`, enabled: false }
+        : { label: `Roll ${free}`, small: `${10 - free} kept, ends your turn`, act: 'roll', enabled: canPlay(s, cur.id) && free > 0 });
+      single = true;
+    }
+  }
+  el.dock.classList.toggle('single', single);
+}
+
+function renderStamp() {
+  const st = ui.stamp && Date.now() < ui.stamp.until ? ui.stamp : null;
+  const key = st ? `${st.id}` : '';
+  if (el.stamp.dataset.key === key) return;
+  el.stamp.dataset.key = key;
+  el.stamp.dataset.tone = st ? st.tone : '';
+  el.stamp.innerHTML = st ? `<span>${esc(st.text)}${st.sub ? `<small>${esc(st.sub)}</small>` : ''}</span>` : '';
+}
+
+function render() {
+  rafId = 0;
+  const s = controller.state;
+  if (el.shell.dataset.view !== ui.view) el.shell.dataset.view = ui.view;
+  if (ui.view === 'lobby') {
+    setText(el.turn, 'New game');
+    setText(el.status, 'One player races the clock or chases a record.');
+    el.status.dataset.tone = '';
+    renderDock(s);
+    Wake.want(false);
+    return;
+  }
+  const h = headerFor(s);
+  setText(el.turn, h.turn);
+  setText(el.status, h.msg);
+  el.status.dataset.tone = h.tone;
+  renderTimer(s);
+  renderScoreboard(s);
+  renderZones(s);
+  el.veil.hidden = !(s.gameData.mode === 'race' && s.gameData.pausedAt !== null && s.status === 'PLAYING');
+  renderStamp();
+  renderDock(s);
+  Wake.want(s.status === 'PLAYING');
+}
+
+// The race clock ticks between state changes.
+setInterval(() => {
+  if (ui.view !== 'game') return;
+  const s = controller.state;
+  if (s.gameData.mode === 'race' && s.status === 'PLAYING' && s.gameData.phase === 'PLAYING' && s.gameData.pausedAt === null) renderTimer(s);
+}, 100);
+
+/* ---- Lobby ---- */
+const isDefaultName = (name) => /^(Player|Bot) \d+$/.test(name.trim()) || name.trim() === '';
+function saveSetup() { Store.saveSetup(ui.setup); }
+
+function renderLobby() {
+  const roster = ui.setup.roster;
+  el.roster.innerHTML = roster.map((p, i) => `
+    <li class="player-row">
+      <span class="avatar" style="--c:${COLORS[i % COLORS.length]}" aria-hidden="true">${esc(initial(p.name))}</span>
+      <input class="name-input" type="text" maxlength="16" autocomplete="off" enterkeyhint="done"
+        value="${esc(p.name)}" data-index="${i}" aria-label="Name for player ${i + 1}">
+      <button class="type-btn" type="button" data-roster="type" data-index="${i}" aria-pressed="${p.isBot}"
+        aria-label="Player ${i + 1} is ${p.isBot ? 'a bot' : 'a person'}. Tap to switch.">${p.isBot ? 'Bot' : 'Person'}</button>
+      <button class="icon-btn" type="button" data-roster="remove" data-index="${i}" aria-label="Remove player ${i + 1}"${roster.length <= RULES.minPlayers ? ' disabled' : ''}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </li>`).join('');
+  el.addPlayer.disabled = roster.length >= RULES.maxPlayers;
+  setText(el.addPlayer, roster.length >= RULES.maxPlayers ? 'Four players is the maximum' : 'Add player');
+  const humans = roster.filter((p) => !p.isBot).length;
+  const solo = roster.length === 1;
+  setText(el.rosterNote, ui.setup.mode === 'race' && humans >= 3
+    ? 'Three or four people racing on one screen works best on a tablet.'
+    : ui.setup.mode === 'race' && humans === 2 ? 'Two people racing get half the screen each.' : '');
+  el.limitBox.hidden = !(solo && ui.setup.mode === 'race');
+  el.speedBox.hidden = !roster.some((p) => p.isBot);
+  const bests = Store.loadBests();
+  let bestText = '';
+  if (solo && ui.setup.mode === 'race' && bests[`race${ui.setup.limit}`]) bestText = `Your fastest with ${ui.setup.limit} seconds: ${fmtTime(bests[`race${ui.setup.limit}`])}.`;
+  if (solo && ui.setup.mode === 'turns' && bests.turns) bestText = `Your fewest rolls: ${bests.turns}.`;
+  setText(el.best, bestText);
+  document.querySelectorAll('input[name="mode"]').forEach((r) => { r.checked = r.value === ui.setup.mode; });
+  document.querySelectorAll('input[name="limit"]').forEach((r) => { r.checked = Number(r.value) === ui.setup.limit; });
+  document.querySelectorAll('input[name="speed"]').forEach((r) => { r.checked = r.value === ui.setup.speed; });
+
+  const s = controller.state;
+  const resumable = s.status === 'PLAYING' && s.players.length > 0;
+  el.resume.hidden = !resumable;
+  if (resumable) setText(el.resumeInfo, s.gameData.mode === 'race' ? 'A race is paused.' : `Round ${s.gameData.round}. ${Engine.currentPlayer(s).name} to roll.`);
+  scheduleRender();
+}
+
+el.roster.addEventListener('input', (e) => {
+  const input = e.target.closest('.name-input');
+  if (!input) return;
+  const i = Number(input.dataset.index);
+  ui.setup.roster[i].name = input.value.slice(0, 16);
+  const av = input.parentElement.querySelector('.avatar');
+  if (av) av.textContent = initial(input.value);
+  saveSetup();
+});
+el.roster.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-roster]');
+  if (!btn || btn.disabled) return;
+  const i = Number(btn.dataset.index);
+  const roster = ui.setup.roster;
+  if (btn.dataset.roster === 'type') {
+    const p = roster[i];
+    p.isBot = !p.isBot;
+    if (isDefaultName(p.name)) p.name = `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`;
+  } else if (btn.dataset.roster === 'remove' && roster.length > RULES.minPlayers) {
+    roster.splice(i, 1);
+  }
+  saveSetup();
+  renderLobby();
+});
+el.addPlayer.addEventListener('click', () => {
+  const roster = ui.setup.roster;
+  if (roster.length >= RULES.maxPlayers) return;
+  roster.push({ name: `Bot ${roster.length + 1}`, isBot: true });
+  saveSetup();
+  renderLobby();
+});
+[['mode', String], ['limit', Number], ['speed', String]].forEach(([name, cast]) => {
+  document.querySelectorAll(`input[name="${name}"]`).forEach((r) => {
+    r.addEventListener('change', () => { if (r.checked) { ui.setup[name] = cast(r.value); saveSetup(); renderLobby(); } });
+  });
+});
+
+/* ---- Navigation & game commands ---- */
+function startGame(players) {
+  BotDriver.stopAll();
+  clearTimers();
+  ui.stamp = null;
+  ui.counting = false;
+  ui.seenSeq = 0;
+  ui.view = 'game';
+  rollMarks.clear();
+  if (el.dlgOver.open) el.dlgOver.close();
+  controller.start(players, { mode: ui.setup.mode, timeLimit: ui.setup.limit });
+  scheduleRender();
+}
+function goLobby() {
+  const s = controller.state;
+  if (s.status === 'PLAYING' && s.gameData.mode === 'race' && s.gameData.phase === 'PLAYING' && s.gameData.pausedAt === null) controller.pause();
+  BotDriver.stopAll();
+  clearTimers();
+  ui.counting = false;
+  if (el.dlgOver.open) el.dlgOver.close();
+  ui.view = 'lobby';
+  renderLobby();
+}
+function resumeGame() {
+  ui.view = 'game';
+  ui.zoneKey = '';
+  const s = controller.state;
+  if (s.gameData.mode === 'race' && s.gameData.phase === 'COUNTDOWN') runCountdown();
+  scheduleRender();
+  BotDriver.sync();
+}
+function openGameOver() {
+  const s = controller.state;
+  if (s.status !== 'GAME_OVER' || ui.overShown) return;
+  ui.overShown = true;
+  const g = s.gameData;
+  el.overTitle.classList.toggle('lost', g.endReason === 'timeout');
+  const ranked = [...s.players].sort((a, b) => {
+    const A = g.boards[a.id];
+    const B = g.boards[b.id];
+    if ((A.doneRolls !== null) !== (B.doneRolls !== null)) return A.doneRolls !== null ? -1 : 1;
+    if (A.doneRolls !== null) return g.mode === 'race' ? A.doneMs - B.doneMs : A.doneRolls - B.doneRolls;
+    return Dice.lockedCount(B) - Dice.lockedCount(A);
+  });
+  if (Engine.isSolo(s)) {
+    const b = g.boards[s.players[0].id];
+    const bests = Store.loadBests();
+    if (g.endReason === 'timeout') {
+      setText(el.overTitle, "Time's up!");
+      setText(el.overSub, `You kept ${Dice.lockedCount(b)} of 10 in ${b.rolls} rolls. Try again, or give yourself more time.`);
+    } else if (g.mode === 'race') {
+      const key = `race${g.timeLimit}`;
+      const prev = bests[key];
+      const isBest = !prev || b.doneMs < prev;
+      if (isBest) { bests[key] = b.doneMs; Store.saveBests(bests); }
+      setText(el.overTitle, fmtTime(b.doneMs));
+      setText(el.overSub, `${b.doneRolls} rolls. ${isBest ? (prev ? `New record! Previous best ${fmtTime(prev)}.` : 'Your first record for this time limit.') : `Your record is ${fmtTime(prev)}.`}`);
+    } else {
+      const prev = bests.turns;
+      const isBest = !prev || b.doneRolls < prev;
+      if (isBest) { bests.turns = b.doneRolls; Store.saveBests(bests); }
+      setText(el.overTitle, `${b.doneRolls} rolls`);
+      setText(el.overSub, isBest ? (prev ? `New record! Previous best ${prev} rolls.` : 'Your first record. The average is about 15.') : `Your record is ${prev} rolls.`);
+    }
+  } else {
+    const names = g.winnerIds.map((id) => nameOf(s, id));
+    setText(el.overTitle, names.length > 1 ? 'It\'s a tie!' : `${names[0]} wins!`);
+    const w = g.boards[g.winnerIds[0]];
+    setText(el.overSub, g.mode === 'race'
+      ? `Ten of a kind in ${fmtTime(w.doneMs)} and ${w.doneRolls} rolls.`
+      : names.length > 1 ? `${names.join(' and ')} both finished in ${w.doneRolls} rolls.` : `Finished in ${w.doneRolls} rolls.`);
+  }
+  el.standings.innerHTML = ranked.map((p) => {
+    const b = g.boards[p.id];
+    const res = b.doneRolls !== null
+      ? (g.mode === 'race' ? `${fmtTime(b.doneMs)}, ${b.doneRolls} rolls` : `${b.doneRolls} rolls`)
+      : `${Dice.lockedCount(b)} of 10 kept`;
+    return `<li><span>${esc(p.name)}</span><span>${res}</span></li>`;
+  }).join('');
+  if (!el.dlgOver.open) el.dlgOver.showModal();
+}
+
+function lockDie(pid, i) {
+  const s = controller.state;
+  if (!canPlay(s, pid)) return;
+  controller.lock(pid, i);
+}
+function rollFor(pid) {
+  const s = controller.state;
+  if (!canPlay(s, pid)) return;
+  controller.roll(pid);
+}
+
+function runAct(act) {
+  const s = controller.state;
+  switch (act) {
+    case 'start': {
+      const players = ui.setup.roster.map((p, i) => ({
+        id: `p${i + 1}`,
+        name: p.name.trim() || `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`,
+        isBot: p.isBot,
+        isLocal: true,
+      }));
+      startGame(players);
+      break;
+    }
+    case 'resume': {
+      if (ui.view === 'lobby') { resumeGame(); break; }
+      controller.resume();
+      BotDriver.sync();
+      break;
+    }
+    case 'pause': controller.pause(); BotDriver.stopAll(); break;
+    case 'roll': {
+      if (s.gameData.mode === 'race') { const me = humansOf(s)[0]; if (me) rollFor(me.id); }
+      else rollFor(Engine.currentPlayer(s).id);
+      break;
+    }
+    case 'rematch':
+      startGame(s.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, isLocal: p.isLocal })));
+      break;
+    case 'lobby': goLobby(); break;
+    default: break;
+  }
+}
+
+/* Fast, multi-touch input: act on pointerdown; keyboard presses arrive as click with detail 0. */
+function onPress(container, selector, fn) {
+  container.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const t = e.target.closest(selector);
+    if (!t || t.disabled) return;
+    e.preventDefault();
+    fn(t);
+  });
+  container.addEventListener('click', (e) => {
+    if (e.detail !== 0) return;
+    const t = e.target.closest(selector);
+    if (t && !t.disabled) fn(t);
+  });
+}
+onPress(el.zones, '.dbtn', (b) => lockDie(b.dataset.pid, Number(b.dataset.i)));
+onPress(el.zones, '[data-roll]', (b) => rollFor(b.dataset.roll));
+onPress(el.dock, 'button', (b) => { if (b.dataset.act) runAct(b.dataset.act); });
+
+el.resume.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.dlgOver.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.btnHome.addEventListener('click', () => { if (ui.view === 'game') goLobby(); });
+el.btnRules.addEventListener('click', () => el.dlgRules.showModal());
+el.btnSettings.addEventListener('click', () => { renderSettings(); el.dlgSettings.showModal(); });
+el.btnSound.addEventListener('click', () => setSetting('sound', !ui.settings.sound));
+document.querySelectorAll('dialog').forEach((dlg) => {
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
+  });
+});
+window.addEventListener('resize', () => { ui.zoneKey = ''; scheduleRender(); });
+
+/* ---- Settings ---- */
+function applySettings() {
+  const st = ui.settings;
+  Sound.enabled = st.sound;
+  Voice.enabled = st.voice && Voice.supported;
+  if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
+  if (st.tv) root.dataset.tv = 'on'; else { delete root.dataset.tv; delete root.dataset.idle; }
+  el.btnSound.setAttribute('aria-pressed', String(st.sound));
+  el.btnSound.setAttribute('aria-label', st.sound ? 'Sound on. Tap to mute.' : 'Sound off. Tap to turn on.');
+}
+function renderSettings() {
+  el.dlgSettings.querySelectorAll('[data-setting]').forEach((row) => {
+    const key = row.dataset.setting;
+    const on = key === 'fullscreen' ? !!document.fullscreenElement : !!ui.settings[key];
+    row.setAttribute('aria-checked', String(on));
+  });
+  if (!Voice.supported) {
+    el.dlgSettings.querySelector('[data-setting="voice"]').disabled = true;
+    setText(el.voiceNote, 'Not available on this device.');
+  }
+  $('rowFullscreen').hidden = !(document.documentElement.requestFullscreen && document.fullscreenEnabled);
+  setText(el.roomCode, controller.state.roomCode || '—');
+}
+function setSetting(key, value) {
+  ui.settings[key] = value;
+  Store.saveSettings(ui.settings);
+  applySettings();
+  renderSettings();
+  ui.zoneKey = '';
+  if (key === 'sound' && value) { Sound.unlock(); Sound.tick(); }
+  scheduleRender();
+}
+el.dlgSettings.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-setting]');
+  if (!row || row.disabled) return;
+  const key = row.dataset.setting;
+  if (key === 'fullscreen') {
+    const req = document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    Promise.resolve(req).catch(() => {}).finally(renderSettings);
+    return;
+  }
+  setSetting(key, !ui.settings[key]);
+});
+document.addEventListener('fullscreenchange', renderSettings);
+
+/* ---- TV support: keep screen awake, hide idle pointer ---- */
+const Wake = {
+  lock: null,
+  pending: false,
+  async want(on) {
+    if (!('wakeLock' in navigator) || this.pending) return;
+    try {
+      if (on && !this.lock && document.visibilityState === 'visible') {
+        this.pending = true;
+        this.lock = await navigator.wakeLock.request('screen');
+        this.lock.addEventListener('release', () => { this.lock = null; });
+      } else if (!on && this.lock) {
+        this.pending = true;
+        await this.lock.release();
+        this.lock = null;
+      }
+    } catch { /* denied or unsupported */ } finally {
+      this.pending = false;
+    }
+  },
+};
+let idleTimer = 0;
+document.addEventListener('pointermove', () => {
+  if (root.dataset.idle) delete root.dataset.idle;
+  clearTimeout(idleTimer);
+  if (ui.settings.tv) idleTimer = setTimeout(() => { root.dataset.idle = 'true'; }, 2500);
+}, { passive: true });
+
+/* ---- Keyboard & TV remote ---- */
+function focusables() {
+  const dlg = document.querySelector('dialog[open]');
+  const scope = dlg || document;
+  return [...scope.querySelectorAll('button, input')].filter((n) =>
+    !n.disabled && !n.hidden && n.offsetParent !== null && (dlg || !n.closest('dialog')));
+}
+document.addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const inField = e.target instanceof HTMLInputElement && e.target.type === 'text';
+  const arrows = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  if (!inField && e.key in arrows) {
+    const list = focusables();
+    if (!list.length) return;
+    const at = list.indexOf(document.activeElement);
+    const next = at === -1 ? list[0] : list[(at + arrows[e.key] + list.length) % list.length];
+    next.focus();
+    e.preventDefault();
+    return;
+  }
+  if (inField || document.querySelector('dialog[open]') || ui.view !== 'game') return;
+  const s = controller.state;
+  // Keys drive the single person playing (solo race) or whoever's turn it is.
+  const pid = s.gameData.mode === 'race' ? (humansOf(s).length === 1 ? humansOf(s)[0].id : null) : Engine.currentPlayer(s)?.id;
+  const k = e.key.toLowerCase();
+  if (pid && /^[0-9]$/.test(k)) {
+    const i = k === '0' ? 9 : Number(k) - 1;
+    const b = s.gameData.boards[pid];
+    const t = Dice.targetOf(b);
+    if (b.dice[i] && (b.dice[i].locked || t === null || b.dice[i].v === t)) lockDie(pid, i);
+    e.preventDefault();
+  } else if (pid && (k === 'r' || (k === ' ' && !(e.target instanceof HTMLButtonElement)))) {
+    rollFor(pid);
+    e.preventDefault();
+  } else if (k === 'p') {
+    runAct(s.gameData.pausedAt !== null ? 'resume' : 'pause');
+  }
+});
+
+document.addEventListener('pointerdown', () => Sound.unlock(), { passive: true });
+document.addEventListener('keydown', () => Sound.unlock());
+
+/* ---- Bot driver: each bot plays its own board on its own timer ---- */
+const BotDriver = (() => {
+  const loops = new Map(); // botId → token
+  let gen = 0;
+
+  function pace() { return RULES.botPace[ui.setup.speed] || RULES.botPace.medium; }
+  const jitter = (ms) => ms * (0.75 + Math.random() * 0.5);
+
+  async function run(botId, token) {
+    // Turn mode: wait for this bot's turn, then lock and roll once.
+    // Race mode: keep going until the race ends.
+    while (loops.get(botId) === token) {
+      const s = controller.state;
+      const g = s.gameData;
+      if (ui.view !== 'game' || s.status !== 'PLAYING' || g.phase !== 'PLAYING' || g.pausedAt !== null || ui.counting) break;
+      const turnMode = g.mode === 'turns';
+      if (turnMode && Engine.currentPlayer(s).id !== botId) break;
+      const b = g.boards[botId];
+      if (b.doneRolls !== null) break;
+      const move = Bot.next(b);
+      if (move.type === 'LOCK') {
+        await sleep(jitter(pace().lock));
+        if (loops.get(botId) !== token) break;
+        controller.lock(botId, move.index);
+      } else {
+        await sleep(jitter(turnMode ? Math.max(650, pace().roll) : pace().roll));
+        if (loops.get(botId) !== token) break;
+        controller.roll(botId);
+        if (turnMode) break; // one roll per turn
+      }
+    }
+    if (loops.get(botId) === token) {
+      loops.delete(botId);
+      setTimeout(sync, 30); // pick up the next bot turn (or the same bot playing alone)
+    }
+  }
+
+  /** Start loops for any bot that should be playing now. */
+  function sync() {
+    const s = controller.state;
+    const g = s.gameData;
+    if (ui.view !== 'game' || s.status !== 'PLAYING' || g.phase !== 'PLAYING' || g.pausedAt !== null || ui.counting) return;
+    const bots = g.mode === 'race'
+      ? s.players.filter((p) => p.isBot && p.isLocal)
+      : [Engine.currentPlayer(s)].filter((p) => p.isBot && p.isLocal);
+    bots.forEach((p) => {
+      if (loops.has(p.id)) return;
+      const token = ++gen;
+      loops.set(p.id, token);
+      setTimeout(() => run(p.id, token), g.mode === 'turns' ? 500 : 0);
+    });
+  }
+  function stopAll() { loops.clear(); }
+  return { sync, stopAll };
+})();
+
+/* ---- Boot ---- */
+const controller = new NetworkController();
+
+(function boot() {
+  const savedSettings = Store.loadSettings();
+  if (savedSettings) Object.assign(ui.settings, savedSettings);
+  const savedSetup = Store.loadSetup();
+  if (savedSetup && Array.isArray(savedSetup.roster) && savedSetup.roster.length >= RULES.minPlayers) {
+    ui.setup = {
+      mode: savedSetup.mode === 'turns' ? 'turns' : 'race',
+      limit: RULES.timeLimits.includes(savedSetup.limit) ? savedSetup.limit : 45,
+      speed: ['easy', 'medium', 'hard'].includes(savedSetup.speed) ? savedSetup.speed : 'medium',
+      roster: savedSetup.roster.slice(0, RULES.maxPlayers).map((p) => ({ name: String(p.name || ''), isBot: !!p.isBot })),
+    };
+  }
+
+  const saved = Store.loadGame();
+  const startState = saved && saved.status === 'PLAYING' ? saved : Engine.createState(makeRoomCode());
+  controller.use(new LocalAdapter(startState));
+
+  controller.subscribe((state) => {
+    Store.saveGame(state);
+    handleAction(state);
+    scheduleRender();
+    BotDriver.sync();
+  });
+
+  applySettings();
+  ui.seenSeq = startState.gameData.seq;
+
+  if (startState.status === 'PLAYING') {
+    // A race that was cut off mid-play comes back paused, so no time is lost.
+    if (startState.gameData.mode === 'race' && startState.gameData.phase === 'PLAYING' && startState.gameData.pausedAt === null) controller.pause();
+    resumeGame();
+  } else {
+    renderLobby();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    const s = controller.state;
+    if (document.visibilityState === 'hidden') {
+      // Instantly interruptible: leaving the app pauses a race.
+      if (s.status === 'PLAYING' && s.gameData.mode === 'race' && s.gameData.phase === 'PLAYING' && s.gameData.pausedAt === null && humansOf(s).length) {
+        controller.pause();
+        BotDriver.stopAll();
+      }
+      Store.saveGame(controller.state);
+      Wake.lock = null;
+    } else {
+      scheduleRender();
+    }
+  });
+})();
+</script>
+<script src="../assets/clean-audio.js"></script></body>
+</html>

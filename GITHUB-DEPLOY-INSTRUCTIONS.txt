@@ -1,0 +1,7 @@
+1. Extract this ZIP.
+2. Double-click UPLOAD-EVERYTHING-TO-GITHUB.bat.
+3. If prompted, sign into your GitHub account.
+4. The script checks all 94 MP3 recordings, downloads missing files, then uploads every file to connex222/DICE-GAMES main.
+5. A successful upload ends with UPLOAD COMPLETE.
+
+Git for Windows must be installed. The ZIP does not include MP3 files; the one-click upload script obtains them first. Do not just drag this ZIP into GitHub.

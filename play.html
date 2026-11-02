@@ -1,0 +1,83 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0d1020"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Play · Pocket Gamebox</title><style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0d1020;color:#f8f4ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #f8d294;outline-offset:2px}.screen{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);background:#0d1020}.bar{min-height:48px;flex:0 0 48px;padding:4px max(9px,env(safe-area-inset-right)) 4px max(9px,env(safe-area-inset-left));background:#141626;border-bottom:1px solid #ffffff20;display:flex;align-items:center;gap:7px;z-index:3}.home,.expand{display:flex;align-items:center;justify-content:center;gap:7px;min-height:38px;min-width:38px;padding:0 10px;border-radius:10px;border:1px solid #ffffff28;background:#24243a;color:#f4efff;font-weight:750;font-size:12px}.home{color:#ffdb98;border-color:#c8a76a50}.home svg,.expand svg{width:17px;height:17px;stroke:currentColor;stroke-width:2;fill:none}.label{font-size:14px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:4px;flex:1}.expand{color:#c9c3d5}#game{display:block;flex:1;min-height:0;width:100%;border:0;background:#121826}#error{display:none;margin:auto;padding:25px;text-align:center}#error a{color:#f7d294}.immersive .bar{display:none}.float{display:none;position:fixed;z-index:4;top:calc(7px + env(safe-area-inset-top));right:calc(7px + env(safe-area-inset-right));border-radius:10px;background:rgba(15,16,32,.88);border:1px solid #ffffff55;color:#fff;padding:8px;min-width:40px;min-height:40px;font-size:19px;box-shadow:0 3px 9px #0008}.immersive .float{display:block;opacity:.33}.immersive .float:focus-visible,.immersive .float:hover{opacity:1}.overlay{display:none;position:fixed;z-index:8;inset:0;background:#050611c9;align-items:center;justify-content:center;padding:18px}.overlay.open{display:flex}.dialog{background:#1c2034;border:1px solid #ffffff32;box-shadow:0 30px 80px #000c;border-radius:22px;padding:26px;max-width:360px;width:100%;text-align:center}.dialog h2{margin:0 0 8px;font-size:23px}.dialog p{margin:0 0 20px;color:#c1bdd0;font-size:14px;line-height:1.55}.actions{display:flex;gap:9px}.actions button{flex:1;min-height:45px;border-radius:11px;font-weight:800;border:1px solid #ffffff35;background:#32334c;color:#fff}.actions .quit{background:#fbd28f;color:#1a1424;border-color:#fbd28f}
+.bar{background:linear-gradient(90deg,#0d1325,#302536 60%,#12182a)!important;border-bottom:1px solid #e1bc7459!important;min-height:55px!important;flex-basis:55px!important}.home,.expand{border-color:#d9b86c75!important;background:#201f31!important;color:#f7d58d!important}.label{font-family:Georgia,serif!important;color:#f6d79a!important;font-size:18px!important;letter-spacing:.01em}.dialog{border-color:#d6b57470!important;background:linear-gradient(135deg,#23263b,#121a2d)!important}.actions .quit{background:linear-gradient(120deg,#ffedb4,#dda752)!important}</style><style id="stage8-wrapper">
+html,body{width:100%;height:100%;max-width:100%;overscroll-behavior:none}
+.screen{height:100dvh;height:100svh;max-width:100%;overflow:hidden}
+#game{min-width:0;min-height:0}
+.bar{flex-wrap:nowrap;max-width:100%;min-width:0}
+.bar .label{min-width:0}
+@media(max-width:390px){.bar{gap:3px}.bar .label{font-size:12px;margin-left:0}.home,.expand{padding:0 7px;min-height:44px}}
+@media(pointer:coarse){.home,.expand,.float,.dialog button{min-height:44px;min-width:44px}}
+@media(orientation:landscape) and (max-height:500px){.bar{min-height:42px;flex-basis:42px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style></head><body><main class="screen"><div class="bar"><button class="home" id="home" aria-label="Back to all games"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>Games</button><span class="label" id="title">Loading…</span><button class="expand" id="listen" aria-label="Hear game introduction" title="Hear introduction">♫</button><button class="expand" id="expand" aria-label="Full-screen game" title="Full screen"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><iframe id="game" title="Game" allow="autoplay; fullscreen; screen-wake-lock" referrerpolicy="same-origin"></iframe><div id="error">Game not found. <a href="index.html">Return to games</a>.</div><button id="float" class="float" aria-label="Show game menu">☰</button></main><div class="overlay" id="confirm" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="dialog"><h2 id="dialog-title">Back to games?</h2><p>If you are in the middle of a game, use its save, pause or resume options first. Each game controls its own saved progress.</p><div class="actions"><button id="stay">Keep playing</button><button id="quit" class="quit">Go to games</button></div></div></div>
+<script>
+'use strict';
+const GAMES={
+'gilded-five':['Gilded Five','games/gilded-five.html'],
+'shut-the-box':['Shut the Box','games/shut-the-box.html'],
+'liars-dice':["Liar’s Dice",'games/liars-dice.html'],
+'bust-or-bank':['Bust or Bank','games/bust-or-bank.html'],
+'generala':['Generala','games/generala.html'],
+ 'ten-of-a-kind':['Ten of a Kind','games/ten-of-a-kind.html'],
+'brain-raid':['Brain Raid','games/brain-raid.html']
+};
+const slug=new URLSearchParams(location.search).get('game');const item=Object.hasOwn(GAMES,slug)?GAMES[slug]:null;
+const frame=document.getElementById('game'),title=document.getElementById('title'),modal=document.getElementById('confirm');
+if(item){title.textContent=item[0];document.title=item[0]+' · Pocket Gamebox';frame.title=item[0];frame.src=item[1];}else{frame.style.display='none';document.getElementById('error').style.display='block';title.textContent='Choose a game';}
+// Alpha quiet-audio correction: independent effects and persistent narration toggle.
+const AUDIO_BASE='assets/audio/';
+const voiceBtn=document.getElementById('listen');
+const effectKeys=new Set(['dice','zombie','zombie-shotgun-fx','zombie-brain-fx','zombie-bust-fx','zombie-bank-fx','zombie-dice-fx','zombie-victory-fx','shut-dice-fx','shut-tile-fx','shut-victory-fx','liar-cup-fx','liar-slam-fx','liar-reveal-fx','liar-win-fx','bust-rocket-fx','bust-dice-fx','bust-tension-fx','bust-bank-fx','bust-bust-fx','gen-dice-fx','gen-hold-fx','gen-combo-fx','gen-victory-fx','ten-dice-fx','ten-lock-fx','ten-combo-fx','ten-perfect-fx']);
+const announcements={
+ 'gilded-five':new Set(['gilded-new-game','gilded-jackpot','gilded-winner','gilded-final-round']),
+ 'shut-the-box':new Set(['shut-start','shut-victory']),
+ 'liars-dice':new Set(['liar-start','liar-winner']),
+ 'bust-or-bank':new Set(['bust-start','bust-win']),
+ 'generala':new Set(['gen-start','gen-generala','gen-win']),
+ 'ten-of-a-kind':new Set(['ten-start','ten-perfect','ten-win']),
+ 'brain-raid':new Set(['brain-winner','brain-genius'])
+};
+const alternates={'gilded-jackpot':['gilded-jackpot','gilded-jackpot-b','gilded-jackpot-c']};
+const alternation={};let voice=null,effect=null,lastVoiceAt=0,lastEffectAt=0,lastEffectKey='';
+let voiceOn=localStorage.getItem('pg-quiet-voice')==='on'; // default quiet
+function paintVoice(){voiceBtn.textContent=voiceOn?'🔊 Voice ON':'🔇 Voice OFF';voiceBtn.setAttribute('aria-pressed',String(voiceOn));voiceBtn.title='Turn spoken announcements '+(voiceOn?'off':'on');}
+function stopVoice(){if(voice){voice.pause();voice.currentTime=0;voice=null;}}
+function playFx(key){
+ if(!effectKeys.has(key)||localStorage.getItem('pg-effects-off')==='yes')return;
+ if(lastEffectKey===key&&Date.now()-lastEffectAt<160)return;
+ lastEffectKey=key;lastEffectAt=Date.now();
+ if(effect){effect.pause();effect.currentTime=0;}
+ effect=new Audio(AUDIO_BASE+key+'.mp3');effect.volume=.55;
+ effect.play().catch(()=>{});
+}
+function speak(key){
+ if(!voiceOn||!announcements[slug]?.has(key))return;
+ if(Date.now()-lastVoiceAt<3500)return; // never chatter over another announcement
+ lastVoiceAt=Date.now();stopVoice();
+ const arr=alternates[key];if(arr){const n=alternation[key]||0;alternation[key]=n+1;key=arr[n%arr.length];}
+ voice=new Audio(AUDIO_BASE+key+'.mp3');voice.volume=.75;
+ voice.onended=()=>{voice=null};voice.play().catch(()=>{voice=null});
+}
+voiceBtn.addEventListener('click',()=>{voiceOn=!voiceOn;localStorage.setItem('pg-quiet-voice',voiceOn?'on':'off');if(!voiceOn)stopVoice();paintVoice();});
+paintVoice();
+window.addEventListener('message',e=>{
+ if(e.source!==frame.contentWindow||!e.data||e.data.type!=='pocket-audio'||typeof e.data.key!=='string')return;
+ const key=e.data.key;
+ if(effectKeys.has(key)){playFx(key);return;}
+ speak(key);
+});
+frame.addEventListener('load',stopVoice);
+window.addEventListener('pagehide',()=>{stopVoice();if(effect)effect.pause();});
+
+const ask=()=>{modal.classList.add('open');document.getElementById('stay').focus();};
+document.getElementById('home').addEventListener('click',ask);
+document.getElementById('stay').addEventListener('click',()=>{modal.classList.remove('open');document.getElementById('home').focus();});
+document.getElementById('quit').addEventListener('click',()=>{location.assign('index.html');});
+modal.addEventListener('click',e=>{if(e.target===modal)document.getElementById('stay').click();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))document.getElementById('stay').click();});
+document.getElementById('expand').addEventListener('click',()=>document.body.classList.add('immersive'));
+document.getElementById('float').addEventListener('click',()=>document.body.classList.remove('immersive'));
+// No old offline audio caches; disable previously installed service workers.
+if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
+</script></body></html>

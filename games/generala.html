@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121826">
+<meta name="color-scheme" content="dark">
+<title>Generala</title>
+<style>
+/* =========================================================
+   1. MASTER DESIGN TOKENS (shared across the game suite)
+   ========================================================= */
+:root{
+  --bg-primary:#121826;
+  --bg-surface:#1B2436;
+  --bg-card:#25334D;
+  --text-main:#F3F4F6;
+  --text-muted:#9CA3AF;
+  --accent-primary:#6366F1;
+  --accent-success:#10B981;
+  --accent-warning:#F59E0B;
+  --accent-danger:#EF4444;
+  --border-radius:12px;
+  --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+  /* Shell tokens derived from the master set */
+  --line:rgba(243,244,246,.12);
+  --pad:clamp(8px,2.2vmin,22px);
+  --gap:clamp(6px,1.6vmin,16px);
+  --tap:48px;
+  --roll-ms:1000ms;
+  --on-success:#04261B;
+
+  /* Dice */
+  --ivory-hi:#FFFFFF;
+  --ivory:#EEEBE3;
+  --ivory-lo:#CBC5B7;
+  --pip:#121826;
+
+  color-scheme:dark;
+  box-sizing:border-box;
+  height:100%;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  scroll-padding-top:env(safe-area-inset-top,0px);
+  font-size:clamp(15px,calc(12px + .45vmin),20px);
+  background:var(--bg-primary);
+}
+:root[data-contrast="high"]{
+  --text-muted:#E5E7EB;
+  --line:rgba(243,244,246,.5);
+  --bg-card:#2E4066;
+}
+:root[data-tv="on"]{
+  --tap:58px;
+  font-size:clamp(18px,calc(8px + 1.55vmin),32px);
+}
+:root[data-idle="true"],:root[data-idle="true"] *{cursor:none !important}
+
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0;height:100%;
+  background:var(--bg-primary);color:var(--text-main);
+  font-family:var(--font-family);
+  font-variant-numeric:tabular-nums;
+  line-height:1.4;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+}
+button,input{font:inherit;color:inherit}
+button{touch-action:manipulation}
+[hidden]{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--accent-primary);outline-offset:2px}
+
+/* =========================================================
+   2. SHELL LAYOUT (identical across every game in the suite)
+   ========================================================= */
+.shell{
+  height:100%;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "score" "main" "dock";
+}
+.shell[data-view="lobby"]{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "main" "dock";
+}
+.shell[data-view="lobby"] .scoreboard,
+.shell[data-view="lobby"] #table,
+.shell[data-view="game"] #lobby{display:none}
+
+/* ---- Top header bar ---- */
+.topbar{
+  grid-area:header;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"left center right";
+  align-items:center;gap:var(--gap);
+  padding:calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-right,0px)) calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-bottom:1px solid var(--line);
+}
+.tb-left{grid-area:left;display:flex;align-items:center;gap:6px}
+.tb-center{grid-area:center;text-align:center;min-width:0}
+.tb-right{grid-area:right;display:flex;gap:4px}
+.title{margin:0;font-size:clamp(1.05rem,4.4vw,1.3rem);font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.turn-label{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-msg{font-size:.88rem;color:var(--text-muted);min-height:1.3em}
+.status-msg[data-tone="success"]{color:var(--accent-success)}
+.status-msg[data-tone="warning"]{color:var(--accent-warning);font-weight:700}
+.status-msg[data-tone="danger"]{color:var(--accent-danger);font-weight:700}
+@media (max-width:599px){
+  .topbar{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"left right" "center center";row-gap:4px}
+  .tb-center{text-align:left;padding:0 4px 4px}
+}
+@media (max-width:359px){ .tb-left,.tb-right{gap:0} }
+
+.icon-btn{
+  min-width:var(--tap);min-height:var(--tap);
+  display:inline-grid;place-items:center;
+  background:transparent;border:1px solid transparent;border-radius:var(--border-radius);
+  cursor:pointer;
+}
+.icon-btn:hover{background:var(--bg-card)}
+.icon-btn:disabled{opacity:.4;cursor:not-allowed}
+.icon-btn svg{width:1.4em;height:1.4em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn[aria-pressed="false"] .ico-on,
+.icon-btn[aria-pressed="true"] .ico-off{display:none}
+
+/* ---- Scoreboard & player dock ---- */
+.scoreboard{
+  grid-area:score;
+  display:flex;gap:var(--gap);
+  overflow-x:auto;overflow-y:hidden;
+  padding:var(--gap) max(var(--pad),env(safe-area-inset-right,0px)) var(--gap) max(var(--pad),env(safe-area-inset-left,0px));
+  border-bottom:1px solid var(--line);
+  scrollbar-width:none;
+}
+.scoreboard::-webkit-scrollbar{display:none}
+.chip{
+  flex:1 0 auto;min-width:8rem;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-areas:"av name" "av score" "bar bar";
+  column-gap:.6rem;align-items:center;
+  padding:.45rem .75rem;
+  background:var(--bg-surface);
+  border:2px solid transparent;border-radius:var(--border-radius);
+  transition:border-color .2s,background .2s;
+}
+.chip.active{border-color:var(--accent-primary);background:var(--bg-card)}
+.chip.winner{border-color:var(--accent-success)}
+.avatar{
+  grid-area:av;width:2.2rem;height:2.2rem;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--c);color:#121826;font-weight:800;
+}
+.chip-name{grid-area:name;font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:.68rem;font-weight:700;color:var(--text-muted);border:1px solid var(--line);border-radius:6px;padding:0 .3em;margin-left:.25em}
+.chip-score{grid-area:score;font-size:1.2rem;font-weight:800;line-height:1.1}
+.chip-bar{grid-area:bar;height:4px;margin-top:.35rem;border-radius:2px;background:var(--bg-primary);overflow:hidden}
+.chip-bar span{display:block;height:100%;background:var(--c);transition:width .5s ease}
+
+/* ---- Main viewport ---- */
+.viewport{
+  grid-area:main;min-height:0;
+  display:flex;flex-direction:column;
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  overflow:hidden;
+}
+.shell[data-view="lobby"] .viewport{overflow:auto}
+.table{
+  flex:1;min-height:0;width:100%;max-width:1300px;margin:0 auto;
+  display:grid;grid-template-rows:auto minmax(0,1fr);gap:var(--gap);
+}
+:root[data-tv="on"] .table{max-width:none}
+
+/* ---- Dice board ---- */
+.board-wrap{
+  position:relative;
+  display:grid;justify-items:center;align-content:center;gap:.4rem;
+  padding:calc(var(--pad)*.8) var(--pad);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*2);
+  background:radial-gradient(ellipse 80% 75% at 50% 45%,var(--bg-card),var(--bg-surface) 75%);
+  overflow:hidden;
+  container-type:inline-size;
+}
+.meter{display:flex;align-items:center;gap:.6rem;font-size:.85rem;color:var(--text-muted)}
+.meter b{color:var(--text-main)}
+.dots{display:flex;gap:5px}
+.dots i{width:.6rem;height:.6rem;border-radius:50%;border:2px solid var(--text-muted)}
+.dots i.used{background:var(--accent-primary);border-color:var(--accent-primary)}
+.board{
+  --die:clamp(46px,min(13vw,11vh),130px);
+  display:grid;grid-template-columns:repeat(5,auto);
+  gap:calc(var(--die)*.26);justify-content:center;
+}
+@supports (width:1cqi){
+  .board{--die:clamp(40px,min(12vh,calc((100cqi - 16px) / 7.9)),140px)}
+}
+
+.slot{
+  position:relative;
+  display:grid;justify-items:center;gap:.15rem;
+  min-width:var(--tap);min-height:var(--tap);
+  padding:calc(var(--die)*.1) calc(var(--die)*.08) calc(var(--die)*.04);
+  background:transparent;border:2px solid transparent;border-radius:calc(var(--border-radius)*1.2);
+  cursor:pointer;transition:background .18s,border-color .18s;
+}
+.slot:disabled{cursor:default}
+.slot[data-state="free"]:not(:disabled):hover{background:rgba(99,102,241,.1)}
+.die{
+  --half:calc(var(--die) / 2);
+  position:relative;display:block;width:var(--die);height:var(--die);
+  perspective:calc(var(--die)*6);
+  transition:transform .2s ease,opacity .25s,filter .25s;
+}
+.cube{
+  position:relative;display:block;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform var(--roll-ms) cubic-bezier(.15,.75,.25,1);
+}
+.face{
+  position:absolute;inset:0;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  padding:15%;border-radius:14%;
+  background:radial-gradient(circle at 28% 22%,var(--ivory-hi),var(--ivory) 45%,var(--ivory-lo));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 calc(var(--die)*-.07) calc(var(--die)*.12) rgba(0,0,0,.16);
+  -webkit-backface-visibility:hidden;backface-visibility:hidden;
+}
+.f1{transform:translateZ(var(--half))}
+.f6{transform:rotateY(180deg) translateZ(var(--half))}
+.f3{transform:rotateY(90deg) translateZ(var(--half))}
+.f4{transform:rotateY(-90deg) translateZ(var(--half))}
+.f2{transform:rotateX(90deg) translateZ(var(--half))}
+.f5{transform:rotateX(-90deg) translateZ(var(--half))}
+.pip{
+  width:64%;aspect-ratio:1;justify-self:center;align-self:center;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3D4864,var(--pip) 70%);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.6);
+  visibility:hidden;
+}
+.pip.on{visibility:visible}
+.die-shadow{
+  width:70%;height:calc(var(--die)*.12);margin-top:calc(var(--die)*-.04);
+  background:radial-gradient(closest-side,rgba(0,0,0,.5),transparent);
+}
+.held-tag{
+  font-size:.72rem;font-weight:800;line-height:1;
+  padding:.2rem .45rem;border-radius:999px;
+  color:#fff;background:var(--accent-primary);
+  visibility:hidden;
+}
+.slot[data-state="idle"] .die{opacity:.5;filter:saturate(.5)}
+.slot[data-state="held"]{background:rgba(99,102,241,.22);border-color:var(--accent-primary)}
+.slot[data-state="held"] .die{transform:translateY(calc(var(--die)*-.06))}
+.slot[data-state="held"] .face{box-shadow:inset 0 0 0 calc(var(--die)*.05) var(--accent-primary),inset 0 calc(var(--die)*-.07) calc(var(--die)*.12) rgba(0,0,0,.16)}
+.slot[data-state="held"] .held-tag{visibility:visible}
+
+.die.rolling{animation:hop var(--roll-ms) cubic-bezier(.3,.6,.4,1)}
+@keyframes hop{
+  0%{transform:translateY(0)}
+  22%{transform:translateY(-38%)}
+  48%{transform:translateY(0)}
+  64%{transform:translateY(-10%)}
+  78%,100%{transform:translateY(0)}
+}
+
+/* Stamps: Servida!, Generala!, +30 */
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.stamp span{
+  font-size:clamp(2rem,10vmin,6rem);font-weight:900;letter-spacing:-.03em;line-height:1;text-align:center;
+  padding:.12em .4em;border:.07em solid currentColor;border-radius:.22em;
+  background:rgba(18,24,38,.88);
+  transform:rotate(-6deg);
+  animation:stampIn .45s cubic-bezier(.2,1.5,.4,1) both;
+}
+.stamp[data-tone="danger"]{color:var(--accent-danger)}
+.stamp[data-tone="warning"]{color:var(--accent-warning)}
+.stamp[data-tone="success"]{color:var(--accent-success)}
+.stamp[data-tone="muted"]{color:var(--text-muted)}
+@keyframes stampIn{from{transform:rotate(-6deg) scale(2.2);opacity:0}to{transform:rotate(-6deg) scale(1);opacity:1}}
+
+/* ---- Score card ---- */
+.card-wrap{
+  min-height:0;overflow:auto;
+  background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--border-radius);
+}
+.scorecard{width:100%;border-collapse:separate;border-spacing:0;font-size:.95rem}
+.scorecard th,.scorecard td{padding:.2rem .35rem;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+.scorecard thead th{
+  position:sticky;top:0;z-index:2;background:var(--bg-surface);
+  font-size:.8rem;font-weight:700;padding-top:.45rem;padding-bottom:.35rem;
+  border-bottom:3px solid var(--c,var(--line));
+  white-space:nowrap;max-width:7rem;overflow:hidden;text-overflow:ellipsis;
+}
+.scorecard th.cat{
+  position:sticky;left:0;z-index:1;background:var(--bg-surface);
+  text-align:left;min-width:7.2rem;
+}
+.scorecard thead th.cat{z-index:3}
+.cat-name{display:block;font-weight:700;line-height:1.15}
+.cat-sub{display:block;font-size:.7rem;color:var(--text-muted);font-weight:500}
+.scorecard td{min-width:3.2rem;font-weight:700}
+.scorecard td.cur,.scorecard th.cur{background:rgba(99,102,241,.12)}
+.scorecard td.zero{color:var(--text-muted);font-weight:500}
+.scorecard tfoot td,.scorecard tfoot th{border-bottom:0;font-size:1.15rem;font-weight:900;padding-top:.45rem;padding-bottom:.45rem}
+.star{color:var(--accent-warning);font-size:.75em;margin-left:.1em}
+.pick{
+  width:100%;min-height:var(--tap);min-width:3rem;
+  border:2px dashed rgba(243,244,246,.28);border-radius:8px;
+  background:transparent;font-weight:800;cursor:pointer;
+}
+.pick.zero{color:var(--text-muted);font-weight:600}
+.pick.servida{border-color:var(--accent-warning);border-style:solid;color:var(--accent-warning)}
+.pick[aria-pressed="true"]{border:2px solid var(--accent-primary);background:rgba(99,102,241,.35);color:#fff}
+.pick:disabled{cursor:default}
+
+/* ---- Action dock (sticky thumb zone) ---- */
+.dock{
+  grid-area:dock;position:sticky;bottom:0;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:var(--gap);
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-top:1px solid var(--line);
+}
+.dock.single{grid-template-columns:minmax(0,1fr)}
+.btn{
+  min-height:max(58px,var(--tap));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:.4em 1em;border:0;border-radius:var(--border-radius);
+  font-size:1.1rem;font-weight:800;line-height:1.15;
+  cursor:pointer;transition:transform .08s,background .15s,color .15s;
+}
+.btn small{font-size:.72rem;font-weight:600;opacity:.9}
+.btn-primary{background:var(--accent-primary);color:#fff}
+.btn-success{background:var(--accent-success);color:var(--on-success)}
+.btn-ghost{background:var(--bg-card);color:var(--text-main);border:1px solid var(--line)}
+.btn:disabled{background:var(--bg-card);color:var(--text-muted);cursor:not-allowed;border:1px solid var(--line)}
+.btn:not(:disabled):active{transform:scale(.97)}
+.btn:focus-visible{outline:3px solid var(--text-main);outline-offset:3px}
+
+/* ---- Lobby ---- */
+.lobby{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:var(--gap)}
+.lede{margin:.2rem 0 .4rem;font-size:1.05rem;color:var(--text-muted);max-width:52ch}
+.card{background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--border-radius);padding:var(--pad)}
+.card h2{margin:0 0 .6rem;font-size:1rem;font-weight:700}
+.best{margin:.6rem 0 0;color:var(--text-muted);font-size:.9rem}
+.resume{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);border-color:var(--accent-primary)}
+.resume p{margin:0;color:var(--text-muted);font-size:.88rem}
+.resume .btn{flex:0 0 auto;min-width:8rem}
+.roster{list-style:none;margin:0 0 .75rem;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.player-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.5rem;align-items:center}
+.player-row .avatar{grid-area:auto}
+.name-input{min-height:var(--tap);width:100%;padding:0 .8em;background:var(--bg-card);border:1px solid var(--line);border-radius:10px}
+.type-btn{min-height:var(--tap);min-width:5.2rem;padding:0 .8em;background:var(--bg-card);border:1px solid var(--line);border-radius:10px;font-weight:700;cursor:pointer}
+.type-btn[aria-pressed="true"]{border-color:var(--accent-warning);color:var(--accent-warning)}
+.choices{display:flex;flex-direction:column;gap:.5rem}
+.choice{display:flex;gap:.75rem;align-items:flex-start;padding:.75rem;border:1px solid var(--line);border-radius:10px;background:var(--bg-card);cursor:pointer}
+.choice input{width:1.3rem;height:1.3rem;margin:.15rem 0 0;accent-color:var(--accent-primary);flex:0 0 auto}
+.choice small{display:block;color:var(--text-muted)}
+
+/* ---- Dialogs ---- */
+dialog{
+  width:min(92vw,560px);max-height:86vh;padding:0;
+  background:var(--bg-surface);color:var(--text-main);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*1.5);
+}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(5,8,15,.72)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:var(--gap);padding:.5rem .5rem .5rem var(--pad);border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:1.15rem}
+.dlg-body{padding:var(--pad);overflow:auto}
+.dlg-body p{margin:0 0 .8rem}
+.dlg-body h3{margin:1rem 0 .4rem;font-size:1rem}
+.dlg-foot{display:flex;gap:var(--gap);padding:var(--pad);border-top:1px solid var(--line)}
+.dlg-foot .btn{flex:1}
+.steps{margin:0 0 .8rem;padding-left:1.3rem}
+.steps li{margin-bottom:.35rem}
+.muted{color:var(--text-muted)}
+.rules-table{width:100%;border-collapse:collapse;margin-bottom:1rem}
+.rules-table td{padding:.45rem .2rem;border-bottom:1px solid var(--line)}
+.rules-table td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+.set-row{
+  width:100%;min-height:3.5rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.4rem 0;background:none;border:0;border-bottom:1px solid var(--line);
+  text-align:left;cursor:pointer;
+}
+.set-row:disabled{opacity:.5;cursor:not-allowed}
+.set-row small{display:block;color:var(--text-muted);font-size:.8rem}
+.card .set-row:last-child{border-bottom:0}
+.switch{flex:0 0 auto;width:3.2rem;height:1.85rem;border-radius:1rem;background:var(--bg-card);border:1px solid var(--line);position:relative;transition:background .2s}
+.switch::after{content:"";position:absolute;top:.2rem;left:.2rem;width:1.35rem;height:1.35rem;border-radius:50%;background:var(--text-muted);transition:transform .2s,background .2s}
+.set-row[aria-checked="true"] .switch{background:var(--accent-primary);border-color:var(--accent-primary)}
+.set-row[aria-checked="true"] .switch::after{transform:translateX(1.3rem);background:#fff}
+.cast-help{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--bg-card);font-size:.9rem}
+.cast-help h3{margin:0 0 .4rem;font-size:.95rem}
+.cast-help ol{margin:0;padding-left:1.2rem}
+.winner-name{font-size:clamp(2rem,8vmin,3.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .3rem;color:var(--accent-success)}
+.standings{list-style:none;margin:1rem 0 0;padding:0}
+.standings li{display:flex;justify-content:space-between;gap:1rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.standings li:first-child{font-weight:800}
+
+/* =========================================================
+   3. RESPONSIVE: landscape tablets, desktop, TV, short phones
+   ========================================================= */
+@media (min-width:900px) and (min-aspect-ratio:5/4), (orientation:landscape) and (max-height:520px){
+  .shell{
+    grid-template-columns:minmax(0,1fr) clamp(200px,22vw,340px);
+    grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"header header" "main score" "dock score";
+  }
+  .scoreboard{
+    flex-direction:column;overflow-x:hidden;overflow-y:auto;
+    border-bottom:0;border-left:1px solid var(--line);
+    padding:var(--pad);
+  }
+  .chip{flex:0 0 auto;min-width:0}
+  .table{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+  .board-wrap{align-content:center}
+  .board{grid-template-columns:repeat(5,auto)}
+  @supports (width:1cqi){
+    .board{--die:clamp(32px,min(18vh,calc((100cqi - 16px) / 7.9)),170px)}
+  }
+  .dock{position:static}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .topbar{padding-top:2px;padding-bottom:2px}
+  .btn{min-height:var(--tap)}
+  .pick{min-height:36px}
+  .scorecard{font-size:.85rem}
+}
+@media (orientation:portrait) and (max-height:700px){
+  .cat-sub{display:none}
+  .chip{padding:.3rem .6rem}
+  .btn{min-height:var(--tap)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .die.rolling,.stamp span{animation:none}
+  .chip-bar span,.die{transition:none}
+}
+</style>
+<style id="pocket-premium-skin">
+/* Pocket Gamebox Premium skin. Does not alter rules or game code. */
+:root{--pg-gold:#86caff;--pg-deep:#080d1c;color-scheme:dark}
+html{background:#080d1c}body{background:radial-gradient(ellipse at 50% -12%,#56432f 0%,#111b30 48%,#080d1c 100%)!important;color:#f6f0e5}
+#app,.shell{--pg-outline:rgba(242,201,120,.28)}
+.topbar{background:linear-gradient(110deg,#10182a,#202238 62%,#161b2c)!important;border-bottom:1px solid #e8c37b65!important;box-shadow:0 12px 36px #0006!important}
+.topbar .title,.topbar .brand,.topbar h1{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;letter-spacing:-.035em!important;text-shadow:0 2px 15px #0009}
+.topbar .title::first-letter{color:var(--pg-gold)}
+button{transition:filter .18s ease,transform .18s ease,box-shadow .18s ease}button:hover:not(:disabled){filter:brightness(1.13)}button:active:not(:disabled){transform:scale(.975)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #f5cb78!important;outline-offset:2px}
+.icon-btn{border:1px solid #ddbb7955!important;border-radius:12px!important;background:linear-gradient(145deg,#353044,#151c2b)!important;box-shadow:inset 0 1px #ffffff1d,0 5px 12px #0004!important}
+.panel,.card,.modal-content,.dialog,.setup-card{box-shadow:0 14px 42px #0004;border-color:#dfbe7950}
+:where(input,select,textarea){accent-color:#f1ce86}
+@media(max-width:600px){.topbar .title,.topbar h1{font-size:clamp(17px,5vw,26px)!important}.topbar{min-height:55px}}
+@media(prefers-reduced-motion:reduce){button{transition:none!important}}
+</style><style id="gamebox-v9-generala">
+/* Stage 5: visual presentation only. The original five-dice gameplay and all score handling remain unchanged. */
+:root{--bg-primary:#11091f;--bg-surface:#211333;--bg-card:#35204e;--text-main:#fff8ec;--text-muted:#d0b9e6;--accent-primary:#e4b866;--accent-success:#6ce0ab;--accent-warning:#f8ce7d;--accent-danger:#ff8099;--line:#b887d666;--ivory-hi:#fff;--ivory:#fbf3e8;--ivory-lo:#bfaec7;--pip:#3b2250;--on-success:#172725;--border-radius:15px;color-scheme:dark}
+html,body{background:#0e0719!important;color:#fff7e7!important}
+.shell{background:radial-gradient(ellipse at 50% 0%,#4a215e 0%,#210f34 48%,#0e0719 100%)!important}
+.topbar{background:linear-gradient(95deg,#1e102d,#472456 48%,#1b0c2c)!important;border-bottom:2px solid #e8bd6d!important;box-shadow:0 7px 24px #0009,inset 0 1px #fff2!important}
+.title{font:900 clamp(1.08rem,3.6vw,2rem)/1.1 Georgia,serif!important;letter-spacing:.09em!important;text-transform:uppercase;color:#f8d98e!important;text-shadow:0 2px 5px #000,0 0 19px #ffdf9060!important}
+.turn-label{color:#ffe4a4!important;text-shadow:0 0 8px #e5bc7755}.status-msg{color:#dfc8f4!important}
+.gb-home{display:inline-flex;min-height:var(--tap);padding:0 12px;align-items:center;justify-content:center;gap:5px;background:linear-gradient(#6d4380,#2c153c);border:1px solid #ebc886;border-radius:11px;color:#ffe7b4;text-decoration:none;font-size:.76rem;font-weight:900;box-shadow:inset 0 1px #fff4,0 4px 11px #0008;white-space:nowrap}.gb-home:focus-visible{outline:3px solid white;outline-offset:3px}
+.topbar .icon-btn{background:linear-gradient(#6d4480,#2b183e)!important;border:1px solid #d7b76c99!important;color:#fff0d8!important}
+.scoreboard{background:linear-gradient(90deg,#1d0d2d,#4d2661,#1d0d2d)!important;border-bottom:2px solid #d4a959!important;scrollbar-color:#d4a959 transparent}
+.chip{background:linear-gradient(160deg,#683d7a,#2b173d)!important;border:2px solid #aa80ba80!important;box-shadow:inset 0 1px #fff3,0 5px 13px #0009!important}
+.chip.active{border-color:#f6cd74!important;box-shadow:0 0 0 1px #9c6f27,0 0 22px #f5c97466!important}.chip-name{color:#fff8ed!important}.chip-score{color:#ffdf9e!important}.chip-bar{background:#1c0d29!important}
+.viewport{background:radial-gradient(ellipse at 50% 35%,#7e428446,transparent 63%),radial-gradient(circle at 15% 15%,#d2a5e512 1px,transparent 2px),linear-gradient(155deg,#10071c,#341942 54%,#13091d)!important;background-size:auto,87px 91px,auto!important}
+.table{max-width:1480px!important;gap:clamp(8px,1.5vmin,19px)!important}
+.board-wrap{background:radial-gradient(ellipse 80% 83% at 50% 40%,#69397b,#35184a 68%,#200b32)!important;border:8px ridge #ca9856!important;border-radius:clamp(20px,3vw,40px)!important;box-shadow:inset 0 0 0 3px #f3d99b,inset 0 0 55px #0c061bcc,0 14px 35px #000a,0 0 30px #9b52c155!important;isolation:isolate}
+.board-wrap:before{content:"";position:absolute;inset:12px;border:2px solid #cb9ad26b;border-radius:clamp(12px,2vw,28px);box-shadow:inset 0 0 24px #df8efc1b;pointer-events:none}
+.board-wrap:after{content:"✦  THE ROYAL DICE TABLE  ✦";position:absolute;top:19px;left:50%;transform:translateX(-50%);font:800 clamp(.6rem,1.25vw,.96rem) Georgia,serif;color:#efd19b;letter-spacing:.2em;text-shadow:0 1px 7px #000;white-space:nowrap;pointer-events:none}
+.meter{position:relative;z-index:1;font-weight:800;letter-spacing:.04em;color:#f7dba4!important}.dots i{border-color:#dab97a!important}.dots i.used{background:#f4d190!important;border-color:#f4d190!important}
+.board{z-index:1;position:relative;filter:drop-shadow(0 9px 6px #12071a77)}
+.slot{border-radius:16px!important}.slot[data-state="free"]:not(:disabled):hover{background:#9b6eb933!important;border-color:#f0d19d!important}.slot[data-state="held"]{border:2px solid #f8d37c!important;background:linear-gradient(#e4b86655,#dfa74c13)!important;box-shadow:0 0 18px #e4b86666!important}
+.face{background:linear-gradient(128deg,#fff,#f1e8f4 72%,#c5b4cf)!important;box-shadow:inset 0 1px 1px #fff,inset 0 -4px 6px #5b3f6c70,0 3px 7px #160a2466!important}.pip.on{background:#462552!important}.held-tag{color:#ffdf93!important}
+.card-wrap{background:linear-gradient(145deg,#251335,#170c28)!important;border:3px solid #bb9258!important;border-radius:16px!important;box-shadow:inset 0 1px #f8d7b03b,0 9px 24px #0008!important;scrollbar-color:#bf955c #24132f}
+.scorecard{color:#fff4e7!important}.scorecard th,.scorecard td{border-bottom-color:#9966aa55!important}.scorecard thead th,.scorecard th.cat{background:#342044!important;color:#f5d391!important}.scorecard thead th{border-bottom-color:#e9ba71!important}.cat-sub{color:#d5b9e2!important}.scorecard td.cur,.scorecard th.cur{background:#a46bb337!important}.scorecard tfoot th,.scorecard tfoot td{color:#ffe09a!important;background:#3c214b!important}.pick{border-color:#b48cc1!important;background:#422b50!important;color:#fff2de!important}.pick.servida{border-color:#f8d17c!important;color:#ffe0a3!important}.pick[aria-pressed="true"]{background:#b2834b!important;border:2px solid #ffecba!important;color:#190f22!important}.pick:disabled{opacity:.65!important}
+.dock{background:linear-gradient(#422551,#1a0d2a)!important;border-top:3px solid #ebbe76!important;box-shadow:0 -8px 24px #000b!important}
+.btn{border-radius:14px!important;border:2px solid #f0c67a!important;box-shadow:inset 0 2px #fff5,0 4px 0 #150b20,0 8px 14px #0008!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.045em}.btn-primary{background:linear-gradient(#fff1b4,#eab957 60%,#af722e)!important;color:#25152e!important}.btn-success{background:linear-gradient(#beffe4,#5ed7a5 55%,#258c6a)!important;color:#182d29!important}.btn-ghost{background:linear-gradient(#764a89,#382047)!important;color:#fff0e2!important}.btn:disabled{background:#3e3445!important;color:#ad9ab7!important;border-color:#756178!important;box-shadow:none!important}
+.lobby{max-width:790px!important}.lobby:before{content:"♛  GENERALA  ♛";display:block;text-align:center;font:900 clamp(1.65rem,4.8vw,2.8rem) Georgia,serif;letter-spacing:.14em;color:#ffdb91;text-shadow:0 4px #371c46,0 0 20px #d8a35a88;padding:0 0 .25em}.lede{color:#e7d2f0!important;text-align:center;max-width:64ch;margin:0 auto .7rem;line-height:1.55}
+.card,dialog{background:linear-gradient(145deg,#472754,#251332)!important;border:2px solid #bb945b99!important;border-radius:18px!important;box-shadow:inset 0 1px #fff2,0 10px 26px #0009!important}.card h2,.dlg-head h2{font-family:Georgia,serif;color:#ffe1a2!important}.choice,.name-input,.type-btn,.set-row{background:#301c40!important;color:#fff6e6!important;border-color:#9773a5!important}.choice:has(input:checked){border-color:#ebc47e!important;background:#4c3158!important}dialog::backdrop{background:#0e0819e0}
+@media(max-width:699px){.gb-home{min-width:40px;padding:0 9px}.gb-home span{display:none}.board-wrap{border-width:5px!important}.board-wrap:after{font-size:.57rem;top:10px;letter-spacing:.09em}.board{--die:clamp(36px,11vw,70px)}.card-wrap{border-width:2px!important}.dock{padding:9px}.btn{min-height:50px!important}}
+@media(max-width:360px){.title{font-size:1rem!important}.scorecard{font-size:.8rem!important}.scorecard td{min-width:2.8rem!important}.board-wrap:after{letter-spacing:0!important}}
+@media(prefers-reduced-motion:reduce){.die,.chip,.slot,.stamp{animation:none!important;transition:none!important}}
+</style>
+<link rel="stylesheet" href="../assets/stage8-responsive.css">
+</head>
+<body>
+<div id="app" class="shell" data-view="lobby">
+
+  <!-- Top header bar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <a class="gb-home" href="../index.html" aria-label="Return to Pocket Gamebox lobby">⌂ <span>LOBBY</span></a>
+      <button id="btnHome" class="icon-btn" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 class="title">Generala</h1>
+    </div>
+    <div class="tb-center" aria-live="polite">
+      <div id="turnLabel" class="turn-label">New game</div>
+      <div id="statusMsg" class="status-msg"></div>
+    </div>
+    <div class="tb-right">
+      <button id="btnSound" class="icon-btn" type="button" aria-label="Sound" aria-pressed="true">
+        <svg class="ico-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <svg class="ico-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>
+      </button>
+      <button id="btnRules" class="icon-btn" type="button" aria-label="Rules and scoring">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6M12 17.2v.1"/></svg>
+      </button>
+      <button id="btnSettings" class="icon-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scoreboard & player dock -->
+  <div id="scoreboard" class="scoreboard" role="list" aria-label="Scores"></div>
+
+  <!-- Main viewport -->
+  <main class="viewport">
+
+    <!-- Lobby -->
+    <section id="lobby" class="lobby" aria-labelledby="lobbyTitle">
+      <h2 id="lobbyTitle" class="sr-only">Game setup</h2>
+      <p class="lede">Roll five dice up to three times a turn and fill all ten boxes on your card. Make a straight, full house or Generala on your very first roll and it's servida: worth extra.</p>
+
+      <div id="resumeCard" class="card resume" hidden>
+        <div>
+          <strong>Game in progress</strong>
+          <p id="resumeInfo"></p>
+        </div>
+        <button class="btn btn-primary" type="button" data-act="resume">Resume</button>
+      </div>
+
+      <div class="card">
+        <h2>Players (1 to 6)</h2>
+        <ul id="roster" class="roster"></ul>
+        <button id="btnAddPlayer" class="btn btn-ghost" type="button" style="width:100%">Add player</button>
+        <p id="bestScore" class="best"></p>
+      </div>
+
+      <div class="card">
+        <h2>Generala servida</h2>
+        <div class="choices" role="radiogroup" aria-label="Generala servida rule">
+          <label class="choice">
+            <input type="radio" name="servida" value="win">
+            <span><strong>Instant win</strong><small>Five of a kind on your first roll wins the game on the spot. Solo games score it as 100.</small></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="servida" value="points">
+            <span><strong>Worth 100 points</strong><small>Scored in the Generala box instead of the usual 50.</small></span>
+          </label>
+        </div>
+        <button id="rowAceHigh" class="set-row" type="button" role="switch" aria-checked="true" style="margin-top:.5rem">
+          <span>Allow 3-4-5-6-1 as a straight<small>The 1 counts after the 6, as in many South American games.</small></span>
+          <span class="switch" aria-hidden="true"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Game table -->
+    <section id="table" class="table" aria-label="Game table">
+      <div class="board-wrap">
+        <div class="meter"><span id="rollText">Roll 1 of 3</span><span id="rollDots" class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        <div id="board" class="board" role="group" aria-label="Dice"></div>
+        <div id="stamp" class="stamp" aria-hidden="true"></div>
+      </div>
+      <div class="card-wrap">
+        <table id="scorecard" class="scorecard" aria-label="Score card"></table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Action dock -->
+  <footer id="dock" class="dock">
+    <button id="btnA" class="btn btn-ghost" type="button"></button>
+    <button id="btnB" class="btn btn-primary" type="button"></button>
+  </footer>
+</div>
+
+<!-- Rules -->
+<dialog id="dlgRules" aria-labelledby="rulesTitle">
+  <div class="dlg-head">
+    <h2 id="rulesTitle">How to play</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <ol class="steps">
+      <li>Roll all five dice.</li>
+      <li>Tap any dice you want to keep, then roll the rest. You get up to three rolls a turn.</li>
+      <li>Pick one empty box on your card and press Score. If your dice don't fit any box you still need, score a 0 in one of them.</li>
+      <li>Every box is used once. After ten turns each, the highest total wins.</li>
+    </ol>
+    <table class="rules-table" aria-label="Scoring">
+      <tbody>
+        <tr><td>1s to 6s</td><td>Total of that number</td></tr>
+        <tr><td>Straight (Escalera): 1-2-3-4-5 or 2-3-4-5-6</td><td>20</td></tr>
+        <tr><td>Full house (Full): three of one, two of another</td><td>30</td></tr>
+        <tr><td>Four of a kind (Póker)</td><td>40</td></tr>
+        <tr><td>Generala: five of a kind</td><td>50</td></tr>
+      </tbody>
+    </table>
+    <h3>Servida: made on the first roll</h3>
+    <p>If you score a Straight or Full house straight from your first roll of the turn, without rerolling, you get 5 extra points (25 and 35). A Generala servida either wins the game instantly or is worth 100, depending on the option chosen when the game started.</p>
+    <p class="muted">Keyboard and TV remote: 1 to 5 hold dice, R rolls, S scores the chosen box, arrow keys move between buttons.</p>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="dlgSettings" aria-labelledby="settingsTitle">
+  <div class="dlg-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <button class="set-row" type="button" role="switch" data-setting="sound" aria-checked="true">
+      <span>Sound effects</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="voice" aria-checked="false">
+      <span>Announcer voice<small id="voiceNote">Calls out servidas, Generalas and scores.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="contrast" aria-checked="false">
+      <span>Bright light mode<small>Stronger text for outdoors and sunlight.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="tv" aria-checked="false">
+      <span>TV mode<small>Bigger dice and text, hides the mouse pointer.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button id="rowFullscreen" class="set-row" type="button" role="switch" data-setting="fullscreen" aria-checked="false">
+      <span>Full screen</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <div class="cast-help">
+      <h3>Show the game on a TV</h3>
+      <ol>
+        <li>Android: swipe down from the top, tap Screen cast or Smart View, and pick your TV.</li>
+        <li>iPhone or iPad: open Control Centre, tap Screen Mirroring, and pick your TV.</li>
+        <li>Computer with Chrome: open the ⋮ menu, choose Cast, then Cast tab.</li>
+        <li>Turn on TV mode above, and turn your phone sideways to see the dice and the full score card side by side.</li>
+      </ol>
+    </div>
+    <p class="muted" style="margin-top:1rem">Room code <strong id="roomCode"></strong> (local game)</p>
+  </div>
+</dialog>
+
+<!-- Game over -->
+<dialog id="dlgOver" aria-labelledby="overTitle">
+  <div class="dlg-body">
+    <p id="overTitle" class="winner-name"></p>
+    <p id="overSub" class="muted"></p>
+    <ol id="standings" class="standings"></ol>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" type="button" data-act="lobby">Change players</button>
+    <button class="btn btn-primary" type="button" data-act="rematch">Play again</button>
+  </div>
+</dialog>
+
+<script type="module">
+/* =====================================================================
+   GENERALA — single-file build
+   Modules (in order):
+     1. RULES     – tunable rule constants and the ten categories
+     2. Scoring   – pure scoring maths, including servida
+     3. RNG       – fair dice
+     4. Engine    – pure, deterministic state reducer
+     5. Bot       – AI that weighs holds by simulation
+     6. Network   – NetworkController + Local / Online adapters
+     7. Store     – localStorage persistence and solo best score
+     8. Sound     – Web Audio synthesis (no audio files)
+     9. Voice     – optional speech announcer
+    10. App       – rendering, input, TV support, bot driver, boot
+   ===================================================================== */
+
+// #region core  — pure logic, no DOM. Safe to unit-test in Node.
+
+/* ---------- 1. RULES ---------- */
+const RULES = Object.freeze({
+  diceCount: 5,
+  rollsPerTurn: 3,
+  minPlayers: 1,
+  maxPlayers: 6,
+  points: Object.freeze({ straight: 20, full: 30, poker: 40, generala: 50 }),
+  // Extra points for scoring these straight from the first roll (servida).
+  servidaBonus: Object.freeze({ straight: 5, full: 5, poker: 0 }),
+  // Generala servida when it isn't an instant win (solo games, or that option chosen).
+  generalaServidaPoints: 100,
+});
+
+const CATEGORIES = Object.freeze([
+  { id: 'ones', face: 1, label: '1s', sub: 'Ones' },
+  { id: 'twos', face: 2, label: '2s', sub: 'Twos' },
+  { id: 'threes', face: 3, label: '3s', sub: 'Threes' },
+  { id: 'fours', face: 4, label: '4s', sub: 'Fours' },
+  { id: 'fives', face: 5, label: '5s', sub: 'Fives' },
+  { id: 'sixes', face: 6, label: '6s', sub: 'Sixes' },
+  { id: 'straight', label: 'Straight', sub: 'Escalera' },
+  { id: 'full', label: 'Full house', sub: 'Full' },
+  { id: 'poker', label: 'Four of a kind', sub: 'Póker' },
+  { id: 'generala', label: 'Generala', sub: 'Five of a kind' },
+]);
+const CAT_IDS = CATEGORIES.map((c) => c.id);
+
+/* ---------- 2. SCORING (pure) ---------- */
+const Scoring = (() => {
+  const counts = (values) => {
+    const c = [0, 0, 0, 0, 0, 0, 0];
+    for (const v of values) c[v]++;
+    return c;
+  };
+  function isStraight(values, aceHigh) {
+    const key = [...new Set(values)].sort((a, b) => a - b).join('');
+    if (values.length !== 5 || key.length !== 5) return false;
+    return key === '12345' || key === '23456' || (aceHigh && key === '13456');
+  }
+  const isFull = (c) => {
+    const used = c.slice(1).filter((n) => n > 0).sort();
+    return used.length === 2 && used[0] === 2 && used[1] === 3;
+  };
+  const maxSame = (c) => Math.max(...c.slice(1));
+
+  /** Does this roll make the pattern for a category? */
+  function made(cat, values, opts = {}) {
+    const c = counts(values);
+    switch (cat) {
+      case 'straight': return isStraight(values, opts.aceHigh !== false);
+      case 'full': return isFull(c);
+      case 'poker': return maxSame(c) >= 4;
+      case 'generala': return maxSame(c) === 5;
+      default: return true;
+    }
+  }
+
+  /**
+   * Points for scoring `values` in `cat`.
+   * opts: { first (scoring on the turn's first roll), aceHigh }
+   * Returns { points, servida }.
+   */
+  function evaluate(cat, values, opts = {}) {
+    const def = CATEGORIES.find((x) => x.id === cat);
+    if (!def) return { points: 0, servida: false };
+    if (def.face) {
+      return { points: values.filter((v) => v === def.face).length * def.face, servida: false };
+    }
+    if (!made(cat, values, opts)) return { points: 0, servida: false };
+    if (cat === 'generala') {
+      return opts.first ? { points: RULES.generalaServidaPoints, servida: true } : { points: RULES.points.generala, servida: false };
+    }
+    const bonus = opts.first ? RULES.servidaBonus[cat] || 0 : 0;
+    return { points: RULES.points[cat] + bonus, servida: bonus > 0 };
+  }
+
+  /** Categories that would score as servida from this first roll. */
+  function servidas(values, opts = {}) {
+    return ['straight', 'full', 'poker', 'generala'].filter((cat) => {
+      if (!made(cat, values, opts)) return false;
+      return cat === 'generala' || (RULES.servidaBonus[cat] || 0) > 0;
+    });
+  }
+
+  return { counts, made, evaluate, servidas };
+})();
+
+/* ---------- 3. RNG (fair, unbiased dice) ---------- */
+const RNG = {
+  die() {
+    const c = globalThis.crypto;
+    if (c && c.getRandomValues) {
+      const buf = new Uint32Array(1);
+      const limit = 4294967292; // largest multiple of 6 below 2^32 → no modulo bias
+      do c.getRandomValues(buf); while (buf[0] >= limit);
+      return (buf[0] % 6) + 1;
+    }
+    return Math.floor(Math.random() * 6) + 1;
+  },
+  dice(n) { return Array.from({ length: n }, () => RNG.die()); },
+};
+
+/* ---------- 4. ENGINE (pure, deterministic reducer) ----------
+   reduce(state, action) → new state, or the SAME object if the action is illegal.
+   Dice values arrive inside the ROLL action; the host supplies them. */
+const Engine = (() => {
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const blankCard = () => Object.fromEntries(CAT_IDS.map((id) => [id, null]));
+  const freshDice = (prev) =>
+    Array.from({ length: RULES.diceCount }, (_, i) => ({ value: prev?.[i]?.value ?? i + 1, held: false, rolled: false }));
+  const emptyData = (options = {}) => ({
+    phase: 'LOBBY',          // LOBBY | READY | ROLLED | DONE
+    dice: freshDice(),
+    rolls: 0,
+    round: 1,
+    cards: {},               // { playerId: { category: points | null } }
+    servidas: {},            // { playerId: [category] }  (for the ★ marks)
+    options: {
+      servidaWin: options.servidaWin !== false,
+      aceHigh: options.aceHigh !== false,
+    },
+    winnerIds: [],
+    endReason: null,         // 'card' | 'servida'
+    seq: 0,
+  });
+
+  function createState(roomCode = '') {
+    return { gameId: 'generala', roomCode, status: 'LOBBY', turnIndex: 0, players: [], gameData: emptyData(), lastAction: null };
+  }
+
+  const currentPlayer = (s) => s.players[s.turnIndex] || null;
+  const totalOf = (card) => CAT_IDS.reduce((a, id) => a + (card[id] || 0), 0);
+  const filledOf = (card) => CAT_IDS.filter((id) => card[id] !== null).length;
+  const values = (s) => s.gameData.dice.map((d) => d.value);
+  const isSolo = (s) => s.players.length === 1;
+  const instantWinOn = (s) => s.gameData.options.servidaWin && !isSolo(s);
+
+  /** How many dice the next ROLL needs values for (0 = can't roll). */
+  function diceToRoll(s) {
+    if (s.status !== 'PLAYING') return 0;
+    const g = s.gameData;
+    if (g.phase === 'READY') return RULES.diceCount;
+    if (g.phase === 'ROLLED' && g.rolls < RULES.rollsPerTurn) return g.dice.filter((d) => !d.held).length;
+    return 0;
+  }
+
+  /** Points each open category would score right now for the current player. */
+  function preview(s) {
+    const g = s.gameData;
+    const cur = currentPlayer(s);
+    if (!cur || g.phase !== 'ROLLED') return {};
+    const card = g.cards[cur.id];
+    const out = {};
+    CAT_IDS.forEach((id) => {
+      if (card[id] === null) out[id] = Scoring.evaluate(id, values(s), { first: g.rolls === 1, aceHigh: g.options.aceHigh });
+    });
+    return out;
+  }
+
+  function stamp(s, info) {
+    s.gameData.seq += 1;
+    s.lastAction = { ...info, seq: s.gameData.seq };
+  }
+
+  function finishIfDone(s) {
+    const g = s.gameData;
+    const done = s.players.every((p) => filledOf(g.cards[p.id]) === CAT_IDS.length);
+    if (!done) return false;
+    const top = Math.max(...s.players.map((p) => p.score));
+    g.winnerIds = s.players.filter((p) => p.score === top).map((p) => p.id);
+    g.endReason = 'card';
+    g.phase = 'DONE';
+    s.status = 'GAME_OVER';
+    return true;
+  }
+
+  function nextTurn(s) {
+    const g = s.gameData;
+    s.turnIndex = (s.turnIndex + 1) % s.players.length;
+    if (s.turnIndex === 0) g.round += 1;
+    g.phase = 'READY';
+    g.rolls = 0;
+    g.dice = freshDice(g.dice);
+  }
+
+  function reduce(state, action) {
+    if (!action || typeof action.type !== 'string') return state;
+
+    if (action.type === 'START_GAME') {
+      const list = Array.isArray(action.players) ? action.players.slice(0, RULES.maxPlayers) : [];
+      if (list.length < RULES.minPlayers) return state;
+      const s = clone(state);
+      s.players = list.map((p, i) => ({
+        id: String(p.id || `p${i + 1}`),
+        name: String(p.name || '').trim().slice(0, 16) || `Player ${i + 1}`,
+        score: 0,
+        isLocal: p.isLocal !== false,
+        isBot: !!p.isBot,
+      }));
+      s.gameData = emptyData(action.options || {});
+      s.players.forEach((p) => {
+        s.gameData.cards[p.id] = blankCard();
+        s.gameData.servidas[p.id] = [];
+      });
+      s.gameData.phase = 'READY';
+      s.status = 'PLAYING';
+      s.turnIndex = 0;
+      stamp(s, { type: 'START_GAME' });
+      return s;
+    }
+
+    if (state.status !== 'PLAYING') return state;
+    const actor = currentPlayer(state);
+    if (!actor || action.actorId !== actor.id) return state; // not your turn
+
+    const s = clone(state);
+    const g = s.gameData;
+
+    switch (action.type) {
+      case 'ROLL': {
+        const n = diceToRoll(s);
+        if (!n) return state;
+        const vals = action.values;
+        if (!Array.isArray(vals) || vals.length !== n) return state;
+        if (!vals.every((v) => Number.isInteger(v) && v >= 1 && v <= 6)) return state;
+        if (g.phase === 'READY') g.dice.forEach((d) => { d.held = false; });
+        const rolled = [];
+        let k = 0;
+        g.dice.forEach((d, i) => {
+          d.rolled = !d.held;
+          if (!d.held) { d.value = vals[k++]; rolled.push(i); }
+        });
+        g.rolls += 1;
+        g.phase = 'ROLLED';
+        const first = g.rolls === 1;
+        const now = values(s);
+        const serv = first ? Scoring.servidas(now, { aceHigh: g.options.aceHigh }) : [];
+        const generala = Scoring.made('generala', now);
+        let instantWin = false;
+        if (first && generala && instantWinOn(s)) {
+          instantWin = true;
+          g.winnerIds = [actor.id];
+          g.endReason = 'servida';
+          g.phase = 'DONE';
+          s.status = 'GAME_OVER';
+        }
+        stamp(s, { type: 'ROLL', actorId: actor.id, rolled, values: now, first, servidas: serv, generala, instantWin });
+        return s;
+      }
+
+      case 'TOGGLE_HOLD': {
+        if (g.phase !== 'ROLLED' || g.rolls >= RULES.rollsPerTurn) return state;
+        const d = g.dice[action.index];
+        if (!d) return state;
+        d.held = !d.held;
+        stamp(s, { type: 'TOGGLE_HOLD', actorId: actor.id, index: action.index, held: d.held });
+        return s;
+      }
+
+      case 'SCORE': {
+        if (g.phase !== 'ROLLED') return state;
+        const card = g.cards[actor.id];
+        if (!CAT_IDS.includes(action.category) || card[action.category] !== null) return state;
+        const r = Scoring.evaluate(action.category, values(s), { first: g.rolls === 1, aceHigh: g.options.aceHigh });
+        card[action.category] = r.points;
+        if (r.servida) g.servidas[actor.id].push(action.category);
+        const p = s.players[s.turnIndex];
+        p.score = totalOf(card);
+        const info = { type: 'SCORE', actorId: actor.id, category: action.category, points: r.points, servida: r.servida };
+        if (!finishIfDone(s)) nextTurn(s);
+        stamp(s, { ...info, gameOver: s.status === 'GAME_OVER' });
+        return s;
+      }
+
+      default:
+        return state;
+    }
+  }
+
+  return { createState, reduce, diceToRoll, preview, currentPlayer, totalOf, filledOf, values, isSolo, instantWinOn };
+})();
+
+/* ---------- 5. BOT ---------- */
+const Bot = (() => {
+  // "Par" value of each box: scoring above par is good, below par is a sacrifice.
+  const PAR = { ones: 2, twos: 5, threes: 8, fours: 11, fives: 14, sixes: 17, straight: 13, full: 17, poker: 14, generala: 13 };
+
+  function bestNow(card, vals, first, aceHigh) {
+    let best = null;
+    CAT_IDS.forEach((id) => {
+      if (card[id] !== null) return;
+      const r = Scoring.evaluate(id, vals, { first, aceHigh });
+      const util = r.points - PAR[id];
+      if (!best || util > best.util) best = { category: id, util, points: r.points };
+    });
+    return best;
+  }
+
+  /**
+   * Plan for the current bot turn (phase ROLLED).
+   * Returns { type:'SCORE', category } or { type:'ROLL', hold:[bool×5] }.
+   */
+  function decide(state, rand = Math.random, samples = 140) {
+    const g = state.gameData;
+    const me = Engine.currentPlayer(state);
+    const card = g.cards[me.id];
+    const vals = Engine.values(state);
+    const aceHigh = g.options.aceHigh;
+    const now = bestNow(card, vals, g.rolls === 1, aceHigh);
+    if (g.rolls >= RULES.rollsPerTurn) return { type: 'SCORE', category: now.category };
+    if (now.points >= RULES.points.straight && ['straight', 'full', 'poker', 'generala'].includes(now.category)) {
+      return { type: 'SCORE', category: now.category }; // take a made hand
+    }
+    const rollsLeft = RULES.rollsPerTurn - g.rolls;
+    let bestPlan = null;
+    for (let mask = 0; mask < 31; mask++) {        // 31 = hold everything: not a roll
+      const hold = vals.map((_, i) => !!(mask & (1 << i)));
+      let sum = 0;
+      for (let t = 0; t < samples; t++) {
+        const next = vals.map((v, i) => (hold[i] ? v : Math.floor(rand() * 6) + 1));
+        sum += bestNow(card, next, false, aceHigh).util;
+      }
+      const ev = sum / samples + (rollsLeft - 1) * 1.5; // a second reroll is worth a bit more
+      if (!bestPlan || ev > bestPlan.ev) bestPlan = { hold, ev };
+    }
+    if (now.util >= bestPlan.ev) return { type: 'SCORE', category: now.category };
+    return { type: 'ROLL', hold: bestPlan.hold };
+  }
+
+  return { decide, bestNow };
+})();
+
+// #endregion core
+
+/* ---------- 6. NETWORK LAYER ----------
+   The UI only ever talks to NetworkController. Swap the adapter to change
+   how actions travel; the rules and UI stay the same. */
+
+/** Local adapter: pass-and-play and bots on one device. Acts as the host. */
+class LocalAdapter {
+  constructor(initialState) {
+    this.kind = 'local';
+    this.state = initialState;
+    this.onState = null;
+  }
+  send(action) {
+    let a = action;
+    if (a.type === 'ROLL' && !Array.isArray(a.values)) {
+      const n = Engine.diceToRoll(this.state);
+      if (!n) return false;
+      a = { ...a, values: RNG.dice(n) }; // host rolls the dice
+    }
+    const next = Engine.reduce(this.state, a);
+    if (next === this.state) return false;
+    this.state = next;
+    if (this.onState) this.onState(next);
+    return true;
+  }
+  replace(state) {
+    this.state = state;
+    if (this.onState) this.onState(state);
+  }
+}
+
+/** Online adapter — PROTOCOL STUB. It makes no network requests.
+    To enable online play later:
+      1. Run a server that holds the authoritative state and the same Engine.
+      2. Client → server: { t: 'action', room, action }   (ROLL sent without values)
+      3. Server rolls, calls Engine.reduce, broadcasts → clients: { t: 'state', state }
+      4. In connect(), open the WebSocket / Firebase listener and call receive().
+      5. Set controller.localPlayerId to this device's player id. */
+class OnlineAdapter {
+  constructor(options = {}) {
+    this.kind = 'online';
+    this.url = options.url || '';
+    this.state = Engine.createState();
+    this.onState = null;
+    this.connected = false;
+  }
+  async connect() {
+    throw new Error('Online play is not enabled in this offline build.');
+  }
+  send(action) {
+    if (!this.connected) return false;
+    // this.socket.send(JSON.stringify({ t: 'action', room: this.state.roomCode, action }));
+    return false;
+  }
+  receive(message) {
+    if (message && message.t === 'state' && message.state && message.state.gameId === 'generala') {
+      this.state = message.state;
+      if (this.onState) this.onState(this.state);
+    }
+  }
+}
+
+class NetworkController {
+  #adapter = null;
+  #subs = new Set();
+  localPlayerId = null; // online only
+
+  use(adapter) {
+    this.#adapter = adapter;
+    adapter.onState = (s) => this.#subs.forEach((fn) => fn(s));
+    return this;
+  }
+  get state() { return this.#adapter.state; }
+  get kind() { return this.#adapter.kind; }
+  subscribe(fn) { this.#subs.add(fn); return () => this.#subs.delete(fn); }
+  dispatch(action) {
+    const cur = Engine.currentPlayer(this.state);
+    const actorId = this.#adapter.kind === 'online' ? this.localPlayerId : cur ? cur.id : null;
+    return this.#adapter.send({ ...action, actorId });
+  }
+  start(players, options) { return this.dispatch({ type: 'START_GAME', players, options }); }
+  roll() { return this.dispatch({ type: 'ROLL' }); }
+  hold(index) { return this.dispatch({ type: 'TOGGLE_HOLD', index }); }
+  score(category) { return this.dispatch({ type: 'SCORE', category }); }
+  load(state) { if (this.#adapter.replace) this.#adapter.replace(state); }
+}
+
+/* ---------- 7. STORE (localStorage) ---------- */
+const Store = (() => {
+  const K = { game: 'generala.v1.game', settings: 'generala.v1.settings', setup: 'generala.v1.setup', best: 'generala.v1.best' };
+  const get = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+  const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked or full */ } };
+  return {
+    loadGame() {
+      const s = get(K.game);
+      const ok = s && s.gameId === 'generala' && Array.isArray(s.players) && s.gameData && s.gameData.cards &&
+        Array.isArray(s.gameData.dice) && s.gameData.dice.length === RULES.diceCount;
+      return ok ? s : null;
+    },
+    saveGame: (s) => set(K.game, s),
+    loadSettings: () => get(K.settings),
+    saveSettings: (v) => set(K.settings, v),
+    loadSetup: () => get(K.setup),
+    saveSetup: (v) => set(K.setup, v),
+    loadBest: () => Number(get(K.best)) || 0,
+    saveBest: (n) => set(K.best, n),
+  };
+})();
+
+/* ---------- 8. SOUND (Web Audio, generated live — no files) ---------- */
+const Sound = (() => {
+  let ctx = null;
+  let master = null;
+  let noiseBuf = null;
+  let enabled = true;
+
+  function ready() {
+    if (!enabled) return null;
+    if (!ctx) {
+      const AC = null; // Legacy synthesised effects removed: Creative Claw only
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.6;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(freq, at, dur, { type = 'sine', gain = 0.2, slideTo = 0 } = {}) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, at);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, at + dur);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(master);
+    o.start(at);
+    o.stop(at + dur + 0.03);
+  }
+  function noise(at, dur, gain, freq) {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(bp).connect(g).connect(master);
+    src.start(at, Math.random() * 0.3, dur + 0.03);
+  }
+
+  return {
+    get enabled() { return enabled; },
+    set enabled(v) { enabled = !!v; if (!enabled && ctx && ctx.state === 'running') ctx.suspend(); },
+    unlock() { ready(); },
+    rattle(count, ms) {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      const span = ms / 1000;
+      for (let i = 0; i < 8 + count * 3; i++) {
+        noise(t + Math.random() * span * 0.7, 0.025 + Math.random() * 0.04, 0.2 + Math.random() * 0.3, 1800 + Math.random() * 2400);
+      }
+      for (let i = 0; i < count; i++) noise(t + span * (0.55 + Math.random() * 0.35), 0.07, 0.45, 500 + Math.random() * 400);
+    },
+    hold() { if (ready()) tone(1250, ctx.currentTime, 0.06, { type: 'triangle', gain: 0.14 }); },
+    release() { if (ready()) tone(700, ctx.currentTime, 0.06, { type: 'triangle', gain: 0.12 }); },
+    pick() { if (ready()) tone(900, ctx.currentTime, 0.05, { type: 'triangle', gain: 0.1 }); },
+    score() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [880, 1174.66].forEach((f, i) => tone(f, t + i * 0.08, 0.3, { type: 'triangle', gain: 0.15 }));
+    },
+    scratch() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      noise(t, 0.25, 0.35, 900);
+      tone(200, t, 0.3, { type: 'sawtooth', gain: 0.08, slideTo: 120 });
+    },
+    servida() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, t + i * 0.06, 0.22, { type: 'square', gain: 0.07 }));
+    },
+    win() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [[523.25, 0], [659.25, 0.14], [783.99, 0.28], [1046.5, 0.42], [783.99, 0.62], [1046.5, 0.76]]
+        .forEach(([f, d]) => tone(f, t + d, 0.35, { type: 'triangle', gain: 0.18 }));
+    },
+  };
+})();
+
+/* ---------- 9. VOICE (optional announcer; uses on-device voices) ---------- */
+const Voice = {
+  enabled: false,
+  supported: 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function',
+  say(text) {
+    if (!this.enabled || !this.supported) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      if(!window.PocketVoice?.enabled()) void 0;
+    } catch { /* no voice available */ }
+  },
+};
+
+/* ---------- 10. APP ---------- */
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+const el = {
+  shell: $('app'), turn: $('turnLabel'), status: $('statusMsg'), scoreboard: $('scoreboard'),
+  board: $('board'), stamp: $('stamp'), rollText: $('rollText'), rollDots: $('rollDots'), card: $('scorecard'),
+  dock: $('dock'), btnA: $('btnA'), btnB: $('btnB'),
+  roster: $('roster'), resume: $('resumeCard'), resumeInfo: $('resumeInfo'), addPlayer: $('btnAddPlayer'),
+  bestScore: $('bestScore'), aceHigh: $('rowAceHigh'),
+  btnHome: $('btnHome'), btnSound: $('btnSound'), btnRules: $('btnRules'), btnSettings: $('btnSettings'),
+  dlgRules: $('dlgRules'), dlgSettings: $('dlgSettings'), dlgOver: $('dlgOver'),
+  overTitle: $('overTitle'), overSub: $('overSub'), standings: $('standings'), roomCode: $('roomCode'),
+  voiceNote: $('voiceNote'),
+};
+
+const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#38BDF8', '#F472B6'];
+const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+// Cube rotation [x, y] that brings each value's face to the front.
+const BASE = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
+const catLabel = (id) => (CATEGORIES.find((c) => c.id === id) || {}).label || id;
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROLL_MS = reduceMotion ? 220 : 1000;
+root.style.setProperty('--roll-ms', `${ROLL_MS}ms`);
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const initial = (name) => (String(name).trim()[0] || '?').toUpperCase();
+const vibrate = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch { /* unsupported */ } };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const makeRoomCode = () => {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
+};
+const nameOf = (s, id) => (s.players.find((p) => p.id === id) || {}).name || '';
+
+/* UI-only state (never sent over the network) */
+const ui = {
+  view: 'lobby',
+  busy: false,          // dice are mid-roll
+  selected: null,       // category chosen but not yet scored
+  seenSeq: 0,
+  stamp: null,
+  stampId: 0,
+  timers: [],
+  rot: Array.from({ length: RULES.diceCount }, () => ({ x: 0, y: 0, z: 0 })),
+  settings: { sound: true, voice: false, contrast: false, tv: false },
+  setup: {
+    servidaWin: true,
+    aceHigh: true,
+    roster: [
+      { name: 'Player 1', isBot: false },
+      { name: 'Bot 2', isBot: true },
+    ],
+  },
+  keys: { board: '', card: '' },
+  lastTurnKey: '',
+};
+
+/* ---- Build the five 3D dice once ---- */
+const slots = [];
+const cubes = [];
+const dies = [];
+(function buildBoard() {
+  const faces = [1, 2, 3, 4, 5, 6].map((v) =>
+    `<span class="face f${v}">${Array.from({ length: 9 }, (_, k) => `<i class="pip${PIPS[v].includes(k) ? ' on' : ''}"></i>`).join('')}</span>`
+  ).join('');
+  for (let i = 0; i < RULES.diceCount; i++) {
+    const slot = document.createElement('button');
+    slot.type = 'button';
+    slot.className = 'slot';
+    slot.dataset.index = String(i);
+    slot.dataset.state = 'idle';
+    slot.innerHTML = `<span class="die"><span class="cube">${faces}</span></span><span class="die-shadow"></span><span class="held-tag">Held</span>`;
+    el.board.appendChild(slot);
+    slots.push(slot);
+    dies.push(slot.querySelector('.die'));
+    cubes.push(slot.querySelector('.cube'));
+  }
+})();
+
+const cubeTransform = (r) => `rotateZ(${r.z}deg) rotateX(${r.x}deg) rotateY(${r.y}deg)`;
+const nextAngle = (prev, target, turns) => prev + turns * 360 + ((((target - prev) % 360) + 360) % 360);
+
+function snapDice(state) {
+  state.gameData.dice.forEach((d, i) => {
+    const [bx, by] = BASE[d.value];
+    ui.rot[i] = { x: bx, y: by, z: 0 };
+    cubes[i].style.transition = 'none';
+    cubes[i].style.transform = cubeTransform(ui.rot[i]);
+  });
+  void el.board.offsetWidth;
+  cubes.forEach((c) => { c.style.transition = ''; });
+}
+
+function clearTimers() { ui.timers.forEach(clearTimeout); ui.timers = []; }
+function later(fn, ms) { ui.timers.push(setTimeout(fn, ms)); }
+function showStamp(text, tone, ms) {
+  ui.stamp = { text, tone, until: Date.now() + ms, id: ++ui.stampId };
+  scheduleRender();
+  setTimeout(scheduleRender, ms + 30);
+}
+
+function animateRoll(la) {
+  la.rolled.forEach((di) => {
+    const [bx, by] = BASE[la.values[di]];
+    const r = ui.rot[di];
+    const spin = reduceMotion ? 0 : 1;
+    r.x = nextAngle(r.x, bx, spin + Math.floor(Math.random() * 2));
+    r.y = nextAngle(r.y, by, spin + Math.floor(Math.random() * 2));
+    r.z = nextAngle(r.z, reduceMotion ? 0 : Math.random() * 16 - 8, spin);
+    cubes[di].style.transform = cubeTransform(r);
+    dies[di].classList.remove('rolling');
+    void dies[di].offsetWidth;
+    dies[di].classList.add('rolling');
+  });
+  Sound.rattle(la.rolled.length, ROLL_MS);
+  ui.busy = true;
+  later(() => {
+    ui.busy = false;
+    const s = controller.state;
+    const who = nameOf(s, la.actorId);
+    if (la.instantWin) {
+      showStamp('Generala servida!', 'warning', 2600);
+      Sound.servida();
+      vibrate([80, 60, 160]);
+      void(`Generala servida! ${who} wins!`);
+      later(() => { Sound.win(); openGameOver(); }, 1900);
+    } else if (la.generala) {
+      showStamp(la.first ? 'Generala servida!' : 'Generala!', 'warning', 1800);
+      Sound.servida();
+      vibrate([80, 60, 160]);
+      void(la.first ? 'Generala servida!' : 'Generala!');
+    } else if (la.servidas.length) {
+      showStamp('Servida!', 'warning', 1500);
+      Sound.servida();
+      void(`Servida! ${la.servidas.map(catLabel).join(' or ')}`);
+    }
+    scheduleRender();
+    BotDriver.poke();
+  }, ROLL_MS + 60);
+}
+
+/* ---- React to each new action exactly once ---- */
+function pocketGenAudio(key) {
+  try { window.parent.postMessage({type:'pocket-audio',key:'gen-'+key}, '*'); } catch (_) {}
+}
+function handleAction(s) {
+  const la = s.lastAction;
+  if (!la || la.seq === ui.seenSeq) return;
+  ui.seenSeq = la.seq;
+  switch (la.type) {
+    case 'START_GAME':
+      pocketGenAudio('start');
+      clearTimers();
+      ui.busy = false;
+      snapDice(s);
+      break;
+    case 'ROLL':
+      pocketGenAudio('dice-fx');
+      pocketGenAudio('roll');
+      if(la.generala) pocketGenAudio('generala');
+      else if(la.servidas?.length) pocketGenAudio('serv');
+      ui.selected = null;
+      animateRoll(la);
+      break;
+    case 'TOGGLE_HOLD':
+      pocketGenAudio('hold-fx');
+      if (la.held) Sound.hold(); else Sound.release();
+      vibrate(8);
+      break;
+    case 'SCORE': {
+      ui.selected = null;
+      const who = nameOf(s, la.actorId);
+      if (la.points > 0) {
+        if (la.points >= 20) { pocketGenAudio('combo'); pocketGenAudio('combo-fx'); }
+        Sound.score();
+        showStamp(`+${la.points}`, la.servida ? 'warning' : 'success', 1200);
+        void(`${who} scores ${la.points} for ${catLabel(la.category)}${la.servida ? ', servida' : ''}`);
+      } else {
+        Sound.scratch();
+        showStamp('Scratched', 'muted', 1100);
+        void(`${who} scratches ${catLabel(la.category)}`);
+      }
+      if (la.gameOver) later(() => { pocketGenAudio('win'); pocketGenAudio('victory-fx'); openGameOver(); }, 1200);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+/* ---- Render (batched to one animation frame) ---- */
+let rafId = 0;
+function scheduleRender() { if (!rafId) rafId = requestAnimationFrame(render); }
+const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+
+function setBtn(btn, { label, small = '', act = '', variant = 'primary', enabled = true, hidden = false }) {
+  btn.hidden = hidden;
+  if (hidden) return;
+  const cls = `btn btn-${variant}`;
+  if (btn.className !== cls) btn.className = cls;
+  btn.dataset.act = act;
+  btn.disabled = !enabled;
+  const key = `${label}|${small}`;
+  if (btn.dataset.key !== key) {
+    btn.dataset.key = key;
+    btn.textContent = '';
+    const main = document.createElement('span');
+    main.textContent = label;
+    btn.appendChild(main);
+    if (small) {
+      const sm = document.createElement('small');
+      sm.textContent = small;
+      btn.appendChild(sm);
+    }
+  }
+}
+
+function canAct(s) {
+  const cur = Engine.currentPlayer(s);
+  return s.status === 'PLAYING' && !!cur && !cur.isBot && cur.isLocal && !ui.busy;
+}
+
+function headerFor(s, prev) {
+  const g = s.gameData;
+  if (s.status === 'GAME_OVER') {
+    if (ui.busy) return { turn: `${Engine.currentPlayer(s).name}'s turn`, msg: 'Rolling…', tone: '' };
+    const names = g.winnerIds.map((id) => nameOf(s, id));
+    if (g.endReason === 'servida') return { turn: `${names[0]} wins!`, msg: 'Generala servida: an instant win.', tone: 'warning' };
+    if (Engine.isSolo(s)) return { turn: `Final score: ${s.players[0].score}`, msg: 'All ten boxes filled.', tone: 'success' };
+    return { turn: names.length > 1 ? `Tie: ${names.join(' and ')}` : `${names[0]} wins!`, msg: 'All score cards are full.', tone: 'success' };
+  }
+  const cur = Engine.currentPlayer(s);
+  const turn = Engine.isSolo(s) ? `Turn ${g.round} of 10` : `${cur.name}'s turn`;
+  if (ui.busy) return { turn, msg: 'Rolling…', tone: '' };
+  if (cur.isBot) return { turn, msg: `${cur.name} is thinking…`, tone: '' };
+  if (g.phase === 'READY') {
+    const lead = Engine.isSolo(s) ? '' : `Round ${g.round} of 10. `;
+    return { turn, msg: `${lead}Roll to start your turn.`, tone: '' };
+  }
+  const servable = g.rolls === 1 && Object.entries(prev).some(([, r]) => r.servida);
+  if (servable) return { turn, msg: 'Servida! Score it now for the bonus.', tone: 'warning' };
+  if (g.rolls >= RULES.rollsPerTurn) return { turn, msg: 'Last roll used. Pick a box to score.', tone: '' };
+  return { turn, msg: 'Tap dice to hold them, roll again, or pick a box.', tone: '' };
+}
+
+function renderScoreboard(s) {
+  const g = s.gameData;
+  const html = s.players.map((p, i) => {
+    const filled = Engine.filledOf(g.cards[p.id]);
+    const active = s.status === 'PLAYING' && i === s.turnIndex;
+    const winner = g.winnerIds.includes(p.id);
+    return `<div class="chip${active ? ' active' : ''}${winner ? ' winner' : ''}" role="listitem" style="--c:${COLORS[i % COLORS.length]}"${active ? ' aria-current="true"' : ''}>`
+      + `<span class="avatar" aria-hidden="true">${esc(initial(p.name))}</span>`
+      + `<span class="chip-name">${esc(p.name)}${p.isBot ? '<span class="tag">Bot</span>' : ''}</span>`
+      + `<span class="chip-score">${p.score}</span>`
+      + `<span class="chip-bar" title="${filled} of 10 boxes filled"><span style="width:${filled * 10}%"></span></span></div>`;
+  }).join('');
+  if (ui.keys.board !== html) {
+    ui.keys.board = html;
+    el.scoreboard.innerHTML = html;
+  }
+  const turnKey = `${s.turnIndex}|${s.status}`;
+  if (turnKey !== ui.lastTurnKey) {
+    ui.lastTurnKey = turnKey;
+    const active = el.scoreboard.querySelector('.chip.active');
+    if (active) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+}
+
+function renderDice(s, act) {
+  const g = s.gameData;
+  const holdable = act && g.phase === 'ROLLED' && g.rolls < RULES.rollsPerTurn;
+  g.dice.forEach((d, i) => {
+    const slot = slots[i];
+    const st = g.phase === 'READY' || g.phase === 'LOBBY' ? 'idle' : d.held ? 'held' : 'free';
+    if (slot.dataset.state !== st) slot.dataset.state = st;
+    slot.disabled = !holdable;
+    slot.setAttribute('aria-pressed', d.held ? 'true' : 'false');
+    slot.setAttribute('aria-label', `Die ${i + 1}: ${d.value}${d.held ? ', held' : ''}`);
+  });
+  const used = g.phase === 'READY' ? 0 : g.rolls;
+  setText(el.rollText, g.phase === 'READY' ? 'Ready to roll' : `Roll ${used} of ${RULES.rollsPerTurn}`);
+  [...el.rollDots.children].forEach((dot, i) => dot.classList.toggle('used', i < used));
+}
+
+function renderCard(s, prev, act) {
+  const g = s.gameData;
+  const curId = s.status === 'PLAYING' ? Engine.currentPlayer(s).id : null;
+  const showPicks = s.status === 'PLAYING' && g.phase === 'ROLLED' && !ui.busy;
+  const head = `<thead><tr><th class="cat" scope="col">Box</th>${s.players.map((p, i) =>
+    `<th scope="col" class="${p.id === curId ? 'cur' : ''}" style="--c:${COLORS[i % COLORS.length]}">${esc(p.name)}</th>`).join('')}</tr></thead>`;
+  const body = CATEGORIES.map((c) => {
+    const cells = s.players.map((p) => {
+      const v = g.cards[p.id][c.id];
+      const isCur = p.id === curId;
+      if (v !== null) {
+        const star = g.servidas[p.id].includes(c.id) ? '<span class="star" aria-label="servida">★</span>' : '';
+        return `<td class="${isCur ? 'cur ' : ''}${v === 0 ? 'zero' : ''}">${v}${star}</td>`;
+      }
+      if (isCur && showPicks && prev[c.id]) {
+        const r = prev[c.id];
+        const cls = `pick${r.points === 0 ? ' zero' : ''}${r.servida ? ' servida' : ''}`;
+        const label = `${c.label}: ${r.points === 0 ? 'scratch for 0' : `${r.points} points`}${r.servida ? ', servida' : ''}`;
+        return `<td class="cur"><button class="${cls}" type="button" data-cat="${c.id}" aria-pressed="${ui.selected === c.id}" aria-label="${label}"${act ? '' : ' disabled'}>${r.points}${r.servida ? '★' : ''}</button></td>`;
+      }
+      return `<td class="${isCur ? 'cur' : ''}"></td>`;
+    }).join('');
+    return `<tr><th class="cat" scope="row"><span class="cat-name">${c.label}</span><span class="cat-sub">${c.sub}</span></th>${cells}</tr>`;
+  }).join('');
+  const foot = `<tfoot><tr><th class="cat" scope="row">Total</th>${s.players.map((p) =>
+    `<td class="${p.id === curId ? 'cur' : ''}">${p.score}</td>`).join('')}</tr></tfoot>`;
+  const html = head + `<tbody>${body}</tbody>` + foot;
+  if (ui.keys.card !== html) {
+    const focusedCat = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.cat : null;
+    ui.keys.card = html;
+    el.card.innerHTML = html;
+    if (focusedCat) {
+      const again = el.card.querySelector(`[data-cat="${focusedCat}"]`);
+      if (again) again.focus();
+    }
+  }
+}
+
+function renderStamp() {
+  const st = ui.stamp && Date.now() < ui.stamp.until ? ui.stamp : null;
+  const key = st ? `${st.id}` : '';
+  if (el.stamp.dataset.key === key) return;
+  el.stamp.dataset.key = key;
+  el.stamp.dataset.tone = st ? st.tone : '';
+  el.stamp.innerHTML = st ? `<span>${esc(st.text)}</span>` : '';
+}
+
+function renderDock(s, prev, act) {
+  let single = false;
+  if (ui.view === 'lobby') {
+    const n = ui.setup.roster.length;
+    setBtn(el.btnA, { hidden: true });
+    setBtn(el.btnB, { label: 'Start game', small: n === 1 ? 'Solo high-score game' : `${n} players`, act: 'start' });
+    single = true;
+  } else if (s.status === 'GAME_OVER') {
+    if (ui.busy) {
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, { label: 'Rolling…', enabled: false });
+      single = true;
+    } else {
+      setBtn(el.btnA, { label: 'New game', act: 'lobby', variant: 'ghost' });
+      setBtn(el.btnB, { label: 'Play again', small: 'Same players', act: 'rematch' });
+    }
+  } else {
+    const g = s.gameData;
+    const cur = Engine.currentPlayer(s);
+    if (cur.isBot) {
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, { label: `${cur.name} is playing`, enabled: false });
+      single = true;
+    } else if (g.phase === 'READY') {
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, { label: 'Roll dice', small: 'Roll 1 of 3', act: 'roll', enabled: act });
+      single = true;
+    } else {
+      const left = RULES.rollsPerTurn - g.rolls;
+      const n = Engine.diceToRoll(s);
+      let rollSmall = `${left} ${left === 1 ? 'roll' : 'rolls'} left`;
+      if (left === 0) rollSmall = 'No rolls left';
+      else if (n === 0) rollSmall = 'All dice are held';
+      setBtn(el.btnA, {
+        label: left === 0 ? 'Rolled out' : n === RULES.diceCount ? 'Roll all' : `Roll ${n}`,
+        small: rollSmall,
+        act: 'roll',
+        variant: 'ghost',
+        enabled: act && n > 0,
+      });
+      const pick = ui.selected && prev[ui.selected];
+      setBtn(el.btnB, {
+        label: pick ? (pick.points === 0 ? `Scratch ${catLabel(ui.selected)}` : `Score ${pick.points}`) : 'Pick a box',
+        small: pick ? `${catLabel(ui.selected)}${pick.servida ? ', servida' : ''}` : 'Tap a box on your card',
+        act: 'score',
+        variant: pick && pick.points === 0 ? 'ghost' : 'primary',
+        enabled: act && !!pick,
+      });
+    }
+  }
+  el.dock.classList.toggle('single', single);
+}
+
+function render() {
+  rafId = 0;
+  const s = controller.state;
+  if (el.shell.dataset.view !== ui.view) el.shell.dataset.view = ui.view;
+  if (ui.view === 'lobby') {
+    setText(el.turn, 'New game');
+    setText(el.status, 'Add 1 to 6 players, then press Start game.');
+    el.status.dataset.tone = '';
+    renderDock(s, {}, false);
+    Wake.want(false);
+    return;
+  }
+  const prev = Engine.preview(s);
+  if (ui.selected && !prev[ui.selected]) ui.selected = null;
+  const act = canAct(s);
+  const h = headerFor(s, prev);
+  setText(el.turn, h.turn);
+  setText(el.status, h.msg);
+  el.status.dataset.tone = h.tone;
+  renderScoreboard(s);
+  renderDice(s, act);
+  renderCard(s, prev, act);
+  renderStamp();
+  renderDock(s, prev, act);
+  Wake.want(s.status === 'PLAYING');
+}
+
+/* ---- Lobby ---- */
+const isDefaultName = (name) => /^(Player|Bot) \d+$/.test(name.trim()) || name.trim() === '';
+function saveSetup() { Store.saveSetup(ui.setup); }
+
+function renderLobby() {
+  const roster = ui.setup.roster;
+  el.roster.innerHTML = roster.map((p, i) => `
+    <li class="player-row">
+      <span class="avatar" style="--c:${COLORS[i % COLORS.length]}" aria-hidden="true">${esc(initial(p.name))}</span>
+      <input class="name-input" type="text" maxlength="16" autocomplete="off" enterkeyhint="done"
+        value="${esc(p.name)}" data-index="${i}" aria-label="Name for player ${i + 1}">
+      <button class="type-btn" type="button" data-roster="type" data-index="${i}" aria-pressed="${p.isBot}"
+        aria-label="Player ${i + 1} is ${p.isBot ? 'a bot' : 'a person'}. Tap to switch.">${p.isBot ? 'Bot' : 'Person'}</button>
+      <button class="icon-btn" type="button" data-roster="remove" data-index="${i}" aria-label="Remove player ${i + 1}"${roster.length <= RULES.minPlayers ? ' disabled' : ''}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </li>`).join('');
+  el.addPlayer.disabled = roster.length >= RULES.maxPlayers;
+  setText(el.addPlayer, roster.length >= RULES.maxPlayers ? 'Six players is the maximum' : 'Add player');
+  const best = Store.loadBest();
+  setText(el.bestScore, roster.length === 1
+    ? (best ? `One player is a solo high-score game. Your best so far: ${best}.` : 'One player is a solo high-score game.')
+    : (best ? `Solo best score: ${best}.` : ''));
+  document.querySelectorAll('input[name="servida"]').forEach((r) => { r.checked = (r.value === 'win') === ui.setup.servidaWin; });
+  el.aceHigh.setAttribute('aria-checked', String(ui.setup.aceHigh));
+
+  const s = controller.state;
+  const resumable = s.status === 'PLAYING' && s.players.length > 0;
+  el.resume.hidden = !resumable;
+  if (resumable) {
+    const cur = Engine.currentPlayer(s);
+    setText(el.resumeInfo, Engine.isSolo(s)
+      ? `Turn ${s.gameData.round} of 10. Score so far: ${s.players[0].score}.`
+      : `Round ${s.gameData.round} of 10. ${cur.name} to play.`);
+  }
+  scheduleRender();
+}
+
+el.roster.addEventListener('input', (e) => {
+  const input = e.target.closest('.name-input');
+  if (!input) return;
+  const i = Number(input.dataset.index);
+  ui.setup.roster[i].name = input.value.slice(0, 16);
+  const av = input.parentElement.querySelector('.avatar');
+  if (av) av.textContent = initial(input.value);
+  saveSetup();
+});
+el.roster.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-roster]');
+  if (!btn || btn.disabled) return;
+  const i = Number(btn.dataset.index);
+  const roster = ui.setup.roster;
+  if (btn.dataset.roster === 'type') {
+    const p = roster[i];
+    p.isBot = !p.isBot;
+    if (isDefaultName(p.name)) p.name = `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`;
+  } else if (btn.dataset.roster === 'remove' && roster.length > RULES.minPlayers) {
+    roster.splice(i, 1);
+  }
+  saveSetup();
+  renderLobby();
+});
+el.addPlayer.addEventListener('click', () => {
+  const roster = ui.setup.roster;
+  if (roster.length >= RULES.maxPlayers) return;
+  roster.push({ name: `Player ${roster.length + 1}`, isBot: false });
+  saveSetup();
+  renderLobby();
+  const inputs = el.roster.querySelectorAll('.name-input');
+  const last = inputs[inputs.length - 1];
+  if (last) last.select();
+});
+document.querySelectorAll('input[name="servida"]').forEach((r) => {
+  r.addEventListener('change', () => { if (r.checked) { ui.setup.servidaWin = r.value === 'win'; saveSetup(); } });
+});
+el.aceHigh.addEventListener('click', () => {
+  ui.setup.aceHigh = !ui.setup.aceHigh;
+  saveSetup();
+  el.aceHigh.setAttribute('aria-checked', String(ui.setup.aceHigh));
+});
+
+/* ---- Navigation & game commands ---- */
+function startGame(players) {
+  BotDriver.cancel();
+  clearTimers();
+  ui.busy = false;
+  ui.stamp = null;
+  ui.selected = null;
+  ui.seenSeq = 0;
+  ui.view = 'game';
+  controller.start(players, { servidaWin: ui.setup.servidaWin, aceHigh: ui.setup.aceHigh });
+  scheduleRender();
+}
+function goLobby() {
+  BotDriver.cancel();
+  clearTimers();
+  ui.busy = false;
+  if (el.dlgOver.open) el.dlgOver.close();
+  ui.view = 'lobby';
+  renderLobby();
+}
+function resumeGame() {
+  ui.view = 'game';
+  ui.busy = false;
+  snapDice(controller.state);
+  scheduleRender();
+  BotDriver.poke();
+}
+function openGameOver() {
+  const s = controller.state;
+  if (s.status !== 'GAME_OVER') return;
+  const g = s.gameData;
+  const ranked = [...s.players].sort((a, b) => b.score - a.score);
+  if (Engine.isSolo(s)) {
+    const score = s.players[0].score;
+    const best = Store.loadBest();
+    const isBest = score > best;
+    if (isBest) Store.saveBest(score);
+    setText(el.overTitle, `${score} points`);
+    setText(el.overSub, isBest ? (best ? `New best score! Your previous best was ${best}.` : 'Your first solo score. Now beat it.') : `Your best is ${best}.`);
+  } else {
+    const names = g.winnerIds.map((id) => nameOf(s, id));
+    setText(el.overTitle, names.length > 1 ? 'It\'s a tie!' : `${names[0]} wins!`);
+    setText(el.overSub, g.endReason === 'servida'
+      ? 'Generala servida on the first roll: an instant win.'
+      : names.length > 1 ? `${names.join(' and ')} share the top score.` : `With ${ranked[0].score} points.`);
+  }
+  el.standings.innerHTML = ranked.map((p) => `<li><span>${esc(p.name)}</span><span>${p.score}</span></li>`).join('');
+  if (!el.dlgOver.open) el.dlgOver.showModal();
+}
+
+function runAct(act) {
+  const s = controller.state;
+  switch (act) {
+    case 'start': {
+      const players = ui.setup.roster.map((p, i) => ({
+        id: `p${i + 1}`,
+        name: p.name.trim() || `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`,
+        isBot: p.isBot,
+        isLocal: true,
+      }));
+      startGame(players);
+      break;
+    }
+    case 'resume': resumeGame(); break;
+    case 'roll': if (canAct(s)) controller.roll(); break;
+    case 'score': if (canAct(s) && ui.selected) controller.score(ui.selected); break;
+    case 'rematch':
+      if (el.dlgOver.open) el.dlgOver.close();
+      startGame(s.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, isLocal: p.isLocal })));
+      break;
+    case 'lobby': goLobby(); break;
+    default: break;
+  }
+}
+
+function toggleHold(i) {
+  const s = controller.state;
+  if (!canAct(s) || s.gameData.phase !== 'ROLLED') return;
+  controller.hold(i);
+}
+function selectCategory(cat) {
+  const s = controller.state;
+  if (!canAct(s) || !Engine.preview(s)[cat]) return;
+  ui.selected = ui.selected === cat ? null : cat;
+  Sound.pick();
+  scheduleRender();
+}
+
+el.dock.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (btn && !btn.disabled && btn.dataset.act) runAct(btn.dataset.act);
+});
+el.resume.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.dlgOver.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.board.addEventListener('click', (e) => {
+  const slot = e.target.closest('.slot');
+  if (slot && !slot.disabled) toggleHold(Number(slot.dataset.index));
+});
+el.card.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-cat]');
+  if (btn && !btn.disabled) selectCategory(btn.dataset.cat);
+});
+el.btnHome.addEventListener('click', () => { if (ui.view === 'game') goLobby(); });
+el.btnRules.addEventListener('click', () => el.dlgRules.showModal());
+el.btnSettings.addEventListener('click', () => { renderSettings(); el.dlgSettings.showModal(); });
+el.btnSound.addEventListener('click', () => setSetting('sound', !ui.settings.sound));
+document.querySelectorAll('dialog').forEach((dlg) => {
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
+  });
+});
+
+/* ---- Settings ---- */
+function applySettings() {
+  const st = ui.settings;
+  Sound.enabled = st.sound;
+  Voice.enabled = st.voice && Voice.supported;
+  if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
+  if (st.tv) root.dataset.tv = 'on'; else { delete root.dataset.tv; delete root.dataset.idle; }
+  el.btnSound.setAttribute('aria-pressed', String(st.sound));
+  el.btnSound.setAttribute('aria-label', st.sound ? 'Sound on. Tap to mute.' : 'Sound off. Tap to turn on.');
+}
+function renderSettings() {
+  el.dlgSettings.querySelectorAll('[data-setting]').forEach((row) => {
+    const key = row.dataset.setting;
+    const on = key === 'fullscreen' ? !!document.fullscreenElement : !!ui.settings[key];
+    row.setAttribute('aria-checked', String(on));
+  });
+  if (!Voice.supported) {
+    el.dlgSettings.querySelector('[data-setting="voice"]').disabled = true;
+    setText(el.voiceNote, 'Not available on this device.');
+  }
+  $('rowFullscreen').hidden = !(document.documentElement.requestFullscreen && document.fullscreenEnabled);
+  setText(el.roomCode, controller.state.roomCode || '—');
+}
+function setSetting(key, value) {
+  ui.settings[key] = value;
+  Store.saveSettings(ui.settings);
+  applySettings();
+  renderSettings();
+  if (key === 'sound' && value) { Sound.unlock(); Sound.pick(); }
+  scheduleRender();
+}
+el.dlgSettings.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-setting]');
+  if (!row || row.disabled) return;
+  const key = row.dataset.setting;
+  if (key === 'fullscreen') {
+    const req = document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    Promise.resolve(req).catch(() => {}).finally(renderSettings);
+    return;
+  }
+  setSetting(key, !ui.settings[key]);
+});
+document.addEventListener('fullscreenchange', renderSettings);
+
+/* ---- TV support: keep screen awake, hide idle pointer ---- */
+const Wake = {
+  lock: null,
+  pending: false,
+  async want(on) {
+    if (!('wakeLock' in navigator) || this.pending) return;
+    try {
+      if (on && !this.lock && document.visibilityState === 'visible') {
+        this.pending = true;
+        this.lock = await navigator.wakeLock.request('screen');
+        this.lock.addEventListener('release', () => { this.lock = null; });
+      } else if (!on && this.lock) {
+        this.pending = true;
+        await this.lock.release();
+        this.lock = null;
+      }
+    } catch { /* denied or unsupported */ } finally {
+      this.pending = false;
+    }
+  },
+};
+let idleTimer = 0;
+document.addEventListener('pointermove', () => {
+  if (root.dataset.idle) delete root.dataset.idle;
+  clearTimeout(idleTimer);
+  if (ui.settings.tv) idleTimer = setTimeout(() => { root.dataset.idle = 'true'; }, 2500);
+}, { passive: true });
+
+/* ---- Keyboard & TV remote ---- */
+function focusables() {
+  const dlg = document.querySelector('dialog[open]');
+  const scope = dlg || document;
+  return [...scope.querySelectorAll('button, input')].filter((n) =>
+    !n.disabled && !n.hidden && n.offsetParent !== null && (dlg || !n.closest('dialog')));
+}
+document.addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const inField = e.target instanceof HTMLInputElement && e.target.type === 'text';
+  const arrows = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  if (!inField && e.key in arrows) {
+    const list = focusables();
+    if (!list.length) return;
+    const at = list.indexOf(document.activeElement);
+    const next = at === -1 ? list[0] : list[(at + arrows[e.key] + list.length) % list.length];
+    next.focus();
+    e.preventDefault();
+    return;
+  }
+  if (inField || document.querySelector('dialog[open]') || ui.view !== 'game') return;
+  const k = e.key.toLowerCase();
+  if (k >= '1' && k <= '5') { toggleHold(Number(k) - 1); e.preventDefault(); }
+  else if (k === 'r') runAct('roll');
+  else if (k === 's') runAct('score');
+});
+
+document.addEventListener('pointerdown', () => Sound.unlock(), { passive: true });
+document.addEventListener('keydown', () => Sound.unlock());
+
+/* ---- Bot driver: plays local bot turns with readable pacing ---- */
+const BotDriver = (() => {
+  let token = 0;
+  let running = false;
+
+  async function poke() {
+    if (running) return;
+    const s = controller.state;
+    if (ui.view !== 'game' || s.status !== 'PLAYING' || ui.busy) return;
+    const cur = Engine.currentPlayer(s);
+    if (!cur || !cur.isBot || !cur.isLocal) return;
+
+    running = true;
+    const my = ++token;
+    const alive = () => my === token && ui.view === 'game' && controller.state.status === 'PLAYING'
+      && Engine.currentPlayer(controller.state)?.id === cur.id && !ui.busy;
+    try {
+      await sleep(700);
+      if (!alive()) return;
+      const g = controller.state.gameData;
+      if (g.phase === 'READY') { controller.roll(); return; }
+      if (g.phase !== 'ROLLED') return;
+      const plan = Bot.decide(controller.state);
+      if (plan.type === 'SCORE') {
+        ui.selected = plan.category;   // show the choice on the card before scoring
+        scheduleRender();
+        await sleep(900);
+        if (alive()) controller.score(plan.category);
+        return;
+      }
+      for (let i = 0; i < RULES.diceCount; i++) {
+        if (!alive()) return;
+        if (controller.state.gameData.dice[i].held !== plan.hold[i]) {
+          controller.hold(i);
+          await sleep(300);
+        }
+      }
+      await sleep(400);
+      if (alive()) controller.roll();
+    } finally {
+      running = false;
+      if (my === token) setTimeout(poke, 30);
+    }
+  }
+  function cancel() { token++; running = false; }
+  return { poke, cancel };
+})();
+
+/* ---- Boot ---- */
+const controller = new NetworkController();
+
+(function boot() {
+  const savedSettings = Store.loadSettings();
+  if (savedSettings) Object.assign(ui.settings, savedSettings);
+  const savedSetup = Store.loadSetup();
+  if (savedSetup && Array.isArray(savedSetup.roster) && savedSetup.roster.length >= RULES.minPlayers) {
+    ui.setup.roster = savedSetup.roster.slice(0, RULES.maxPlayers).map((p) => ({ name: String(p.name || ''), isBot: !!p.isBot }));
+    ui.setup.servidaWin = savedSetup.servidaWin !== false;
+    ui.setup.aceHigh = savedSetup.aceHigh !== false;
+  }
+
+  const saved = Store.loadGame();
+  const startState = saved && saved.status === 'PLAYING' ? saved : Engine.createState(makeRoomCode());
+  controller.use(new LocalAdapter(startState));
+
+  controller.subscribe((state) => {
+    Store.saveGame(state);
+    handleAction(state);
+    scheduleRender();
+    BotDriver.poke();
+  });
+
+  applySettings();
+  ui.seenSeq = startState.gameData.seq;
+  snapDice(startState);
+
+  if (startState.status === 'PLAYING') resumeGame(); // instant pick-up after interruption
+  else renderLobby();
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      Store.saveGame(controller.state);
+      Wake.lock = null;
+    } else {
+      scheduleRender();
+    }
+  });
+})();
+</script>
+<script src="../assets/clean-audio.js"></script></body>
+</html>

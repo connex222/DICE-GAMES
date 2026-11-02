@@ -1,0 +1,1 @@
+Liar's Dice: seven new Creative Claw voices, four sound effects. Install 60 files with INSTALL-NEW-SOUNDS.bat. Earlier game packs retained. Real-browser audio QA pending.

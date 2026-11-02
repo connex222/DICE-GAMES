@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121826">
+<meta name="color-scheme" content="dark">
+<title>Shut the Box</title>
+<style>
+/* =========================================================
+   1. MASTER DESIGN TOKENS (shared across the game suite)
+   ========================================================= */
+:root{
+  --bg-primary:#121826;
+  --bg-surface:#1B2436;
+  --bg-card:#25334D;
+  --text-main:#F3F4F6;
+  --text-muted:#9CA3AF;
+  --accent-primary:#6366F1;
+  --accent-success:#10B981;
+  --accent-warning:#F59E0B;
+  --accent-danger:#EF4444;
+  --border-radius:12px;
+  --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+  /* Shell tokens derived from the master set */
+  --line:rgba(243,244,246,.12);
+  --pad:clamp(8px,2.2vmin,22px);
+  --gap:clamp(6px,1.6vmin,16px);
+  --tap:48px;
+  --roll-ms:900ms;
+  --on-success:#04261B;
+
+  /* Dice and tiles */
+  --ivory-hi:#FFFFFF;
+  --ivory:#EEEBE3;
+  --ivory-lo:#CBC5B7;
+  --pip:#121826;
+
+  color-scheme:dark;
+  box-sizing:border-box;
+  height:100%;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  scroll-padding-top:env(safe-area-inset-top,0px);
+  font-size:clamp(15px,calc(12px + .45vmin),20px);
+  background:var(--bg-primary);
+}
+:root[data-contrast="high"]{
+  --text-muted:#E5E7EB;
+  --line:rgba(243,244,246,.5);
+  --bg-card:#2E4066;
+}
+:root[data-tv="on"]{
+  --tap:64px;
+  font-size:clamp(18px,calc(8px + 1.6vmin),32px);
+}
+:root[data-idle="true"],:root[data-idle="true"] *{cursor:none !important}
+
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0;height:100%;
+  background:var(--bg-primary);color:var(--text-main);
+  font-family:var(--font-family);
+  font-variant-numeric:tabular-nums;
+  line-height:1.4;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+}
+button,input{font:inherit;color:inherit}
+button{touch-action:manipulation}
+[hidden]{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--accent-primary);outline-offset:2px}
+
+/* =========================================================
+   2. SHELL LAYOUT (identical across every game in the suite)
+   ========================================================= */
+.shell{
+  height:100%;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "score" "main" "dock";
+}
+.shell[data-view="lobby"]{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"header" "main" "dock";
+}
+.shell[data-view="lobby"] .scoreboard,
+.shell[data-view="lobby"] #table,
+.shell[data-view="game"] #lobby{display:none}
+
+/* ---- Top header bar ---- */
+.topbar{
+  grid-area:header;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"left center right";
+  align-items:center;gap:var(--gap);
+  padding:calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-right,0px)) calc(var(--pad)*.5) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-bottom:1px solid var(--line);
+}
+.tb-left{grid-area:left;display:flex;align-items:center;gap:6px}
+.tb-center{grid-area:center;text-align:center;min-width:0}
+.tb-right{grid-area:right;display:flex;gap:4px}
+.title{margin:0;font-size:clamp(1.05rem,4.4vw,1.3rem);font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.turn-label{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-msg{font-size:.88rem;color:var(--text-muted);min-height:1.3em}
+.status-msg[data-tone="success"]{color:var(--accent-success);font-weight:700}
+.status-msg[data-tone="warning"]{color:var(--accent-warning);font-weight:700}
+.status-msg[data-tone="danger"]{color:var(--accent-danger);font-weight:700}
+@media (max-width:599px){
+  .topbar{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"left right" "center center";row-gap:4px}
+  .tb-center{text-align:left;padding:0 4px 4px}
+}
+@media (max-width:359px){ .tb-left,.tb-right{gap:0} }
+
+.icon-btn{
+  min-width:var(--tap);min-height:var(--tap);
+  display:inline-grid;place-items:center;
+  background:transparent;border:1px solid transparent;border-radius:var(--border-radius);
+  cursor:pointer;
+}
+.icon-btn:hover{background:var(--bg-card)}
+.icon-btn:disabled{opacity:.4;cursor:not-allowed}
+.icon-btn svg{width:1.4em;height:1.4em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn[aria-pressed="false"] .ico-on,
+.icon-btn[aria-pressed="true"] .ico-off{display:none}
+
+/* ---- Scoreboard & player dock ---- */
+.scoreboard{
+  grid-area:score;
+  display:flex;gap:var(--gap);
+  overflow-x:auto;overflow-y:hidden;
+  padding:var(--gap) max(var(--pad),env(safe-area-inset-right,0px)) var(--gap) max(var(--pad),env(safe-area-inset-left,0px));
+  border-bottom:1px solid var(--line);
+  scrollbar-width:none;
+}
+.scoreboard::-webkit-scrollbar{display:none}
+.chip{
+  flex:1 0 auto;min-width:8rem;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-areas:"av name" "av score" "sub sub";
+  column-gap:.6rem;align-items:center;
+  padding:.45rem .75rem;
+  background:var(--bg-surface);
+  border:2px solid transparent;border-radius:var(--border-radius);
+  transition:border-color .2s,background .2s;
+}
+.chip.active{border-color:var(--accent-primary);background:var(--bg-card)}
+.chip.winner{border-color:var(--accent-success)}
+.avatar{
+  grid-area:av;width:2.2rem;height:2.2rem;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--c);color:#121826;font-weight:800;
+}
+.chip-name{grid-area:name;font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:.68rem;font-weight:700;color:var(--text-muted);border:1px solid var(--line);border-radius:6px;padding:0 .3em;margin-left:.25em}
+.chip-score{grid-area:score;font-size:1.2rem;font-weight:800;line-height:1.1}
+.chip-sub{grid-area:sub;font-size:.72rem;color:var(--text-muted);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip-sub.shut{color:var(--accent-success);font-weight:700}
+
+/* ---- Main viewport ---- */
+.viewport{
+  grid-area:main;min-height:0;
+  display:flex;flex-direction:column;
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  overflow:auto;
+}
+.table{flex:1;min-height:0;width:100%;max-width:1300px;margin:0 auto;display:flex}
+:root[data-tv="on"] .table{max-width:none}
+
+/* ---- The box ---- */
+.box{
+  position:relative;flex:1;
+  display:flex;flex-direction:column;justify-content:center;gap:clamp(.6rem,2.4vmin,1.6rem);
+  padding:var(--pad);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*2);
+  background:radial-gradient(ellipse 80% 70% at 50% 40%,var(--bg-card),var(--bg-surface) 75%);
+  overflow:hidden;
+  container-type:inline-size;
+}
+.roll-row{display:flex;align-items:center;justify-content:center;gap:clamp(.8rem,4cqi,2.5rem);flex-wrap:wrap}
+.dice{display:flex;gap:calc(var(--die)*.3);--die:clamp(44px,min(15cqi,12vh),120px)}
+.readout{display:grid;justify-items:center;min-width:6rem}
+.readout-label{font-size:.78rem;color:var(--text-muted)}
+.readout-total{font-size:clamp(2.4rem,11cqi,5.5rem);font-weight:900;line-height:1;letter-spacing:-.03em}
+.readout-total.idle{color:var(--text-muted)}
+.pick-line{
+  text-align:center;font-size:clamp(1rem,3.6cqi,1.6rem);font-weight:800;min-height:1.5em;
+  color:var(--text-muted);
+}
+.pick-line[data-tone="warning"]{color:var(--accent-warning)}
+.pick-line[data-tone="success"]{color:var(--accent-success)}
+.pick-line[data-tone="danger"]{color:var(--accent-danger)}
+.left-line{text-align:center;font-size:.85rem;color:var(--text-muted);margin:0}
+
+/* 3D dice (shared with the suite's other dice games) */
+.die{
+  --half:calc(var(--die) / 2);
+  position:relative;display:block;width:var(--die);height:var(--die);
+  perspective:calc(var(--die)*6);
+  transition:opacity .25s,filter .25s,transform .25s;
+}
+.die.off{opacity:.15;transform:scale(.75)}
+.die.idle{opacity:.5;filter:saturate(.5)}
+.cube{
+  position:relative;display:block;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform var(--roll-ms) cubic-bezier(.15,.75,.25,1);
+}
+.face{
+  position:absolute;inset:0;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  padding:15%;border-radius:14%;
+  background:radial-gradient(circle at 28% 22%,var(--ivory-hi),var(--ivory) 45%,var(--ivory-lo));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 calc(var(--die)*-.07) calc(var(--die)*.12) rgba(0,0,0,.16);
+  -webkit-backface-visibility:hidden;backface-visibility:hidden;
+}
+.f1{transform:translateZ(var(--half))}
+.f6{transform:rotateY(180deg) translateZ(var(--half))}
+.f3{transform:rotateY(90deg) translateZ(var(--half))}
+.f4{transform:rotateY(-90deg) translateZ(var(--half))}
+.f2{transform:rotateX(90deg) translateZ(var(--half))}
+.f5{transform:rotateX(-90deg) translateZ(var(--half))}
+.pip{
+  width:64%;aspect-ratio:1;justify-self:center;align-self:center;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3D4864,var(--pip) 70%);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.6);
+  visibility:hidden;
+}
+.pip.on{visibility:visible}
+.die.rolling{animation:hop var(--roll-ms) cubic-bezier(.3,.6,.4,1)}
+@keyframes hop{
+  0%{transform:translateY(0)}
+  22%{transform:translateY(-38%)}
+  48%{transform:translateY(0)}
+  64%{transform:translateY(-10%)}
+  78%,100%{transform:translateY(0)}
+}
+
+/* Tiles: flip down when shut */
+.tiles{
+  --cols:var(--half-n,5);
+  display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));
+  gap:clamp(5px,1.4cqi,14px);
+  width:100%;max-width:calc(var(--cols) * 7.5rem);margin:0 auto;
+}
+@container (min-width:640px){
+  .tiles{--cols:var(--n,9)}
+}
+.tile{
+  position:relative;
+  aspect-ratio:3/4.1;min-height:var(--tap);min-width:0;
+  padding:0;background:none;border:0;border-radius:10px;
+  perspective:700px;cursor:pointer;
+  container-type:inline-size;
+}
+.tile:disabled{cursor:default}
+.tile-inner{
+  position:absolute;inset:0;display:block;
+  transform-style:preserve-3d;transform-origin:50% 50%;
+  transition:transform .55s cubic-bezier(.3,1.25,.5,1);
+}
+.tile-face,.tile-back{
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  border-radius:10px;
+  -webkit-backface-visibility:hidden;backface-visibility:hidden;
+}
+.tile-face{
+  background:linear-gradient(180deg,var(--ivory-hi),var(--ivory) 55%,var(--ivory-lo));
+  color:#121826;
+  font-size:1.6rem;font-size:58cqi;font-weight:900;letter-spacing:-.04em;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.15),0 4px 0 #9C9586,0 6px 10px rgba(0,0,0,.35);
+  transition:box-shadow .15s,opacity .2s;
+}
+.tile-back{
+  transform:rotateX(180deg);
+  background:var(--bg-primary);
+  box-shadow:inset 0 3px 10px rgba(0,0,0,.7);
+  color:rgba(243,244,246,.22);
+  font-size:1rem;font-size:30cqi;font-weight:800;
+}
+.tile.shut .tile-inner{transform:rotateX(180deg)}
+.tile.sel .tile-inner{transform:translateY(-7%)}
+.tile.sel .tile-face{box-shadow:0 0 0 4px var(--accent-primary),0 4px 0 #9C9586,0 10px 16px rgba(0,0,0,.45);background:linear-gradient(180deg,#fff,#E3E5FF 60%,#C7CAF5)}
+.tile.dead:not(.shut) .tile-face{opacity:.4}
+.tile:not(:disabled):not(.shut):not(.sel):hover .tile-face{box-shadow:0 0 0 3px rgba(99,102,241,.6),0 4px 0 #9C9586,0 6px 10px rgba(0,0,0,.35)}
+
+/* Stamps: Box shut!, Stuck!, Shut the box! */
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.stamp span{
+  font-size:clamp(2rem,10vmin,6rem);font-weight:900;letter-spacing:-.03em;line-height:1;text-align:center;
+  padding:.12em .4em;border:.07em solid currentColor;border-radius:.22em;
+  background:rgba(18,24,38,.9);
+  transform:rotate(-6deg);
+  animation:stampIn .45s cubic-bezier(.2,1.5,.4,1) both;
+}
+.stamp small{display:block;font-size:.35em;font-weight:700;margin-top:.25em;letter-spacing:0}
+.stamp[data-tone="danger"]{color:var(--accent-danger)}
+.stamp[data-tone="warning"]{color:var(--accent-warning)}
+.stamp[data-tone="success"]{color:var(--accent-success)}
+@keyframes stampIn{from{transform:rotate(-6deg) scale(2.2);opacity:0}to{transform:rotate(-6deg) scale(1);opacity:1}}
+
+/* ---- Action dock (sticky thumb zone) ---- */
+.dock{
+  grid-area:dock;position:sticky;bottom:0;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:var(--gap);
+  padding:var(--pad) max(var(--pad),env(safe-area-inset-right,0px)) var(--pad) max(var(--pad),env(safe-area-inset-left,0px));
+  background:var(--bg-surface);border-top:1px solid var(--line);
+}
+.dock.single{grid-template-columns:minmax(0,1fr)}
+.btn{
+  min-height:max(58px,var(--tap));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:.4em 1em;border:0;border-radius:var(--border-radius);
+  font-size:1.1rem;font-weight:800;line-height:1.15;
+  cursor:pointer;transition:transform .08s,background .15s,color .15s;
+}
+.btn small{font-size:.72rem;font-weight:600;opacity:.9}
+.btn-primary{background:var(--accent-primary);color:#fff}
+.btn-success{background:var(--accent-success);color:var(--on-success)}
+.btn-ghost{background:var(--bg-card);color:var(--text-main);border:1px solid var(--line)}
+.btn:disabled{background:var(--bg-card);color:var(--text-muted);cursor:not-allowed;border:1px solid var(--line)}
+.btn:not(:disabled):active{transform:scale(.97)}
+.btn:focus-visible{outline:3px solid var(--text-main);outline-offset:3px}
+
+/* ---- Lobby ---- */
+.lobby{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:var(--gap)}
+.lede{margin:.2rem 0 .4rem;font-size:1.05rem;color:var(--text-muted);max-width:52ch}
+.card{background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--border-radius);padding:var(--pad)}
+.card h2{margin:0 0 .6rem;font-size:1rem;font-weight:700}
+.card h3{margin:.9rem 0 .45rem;font-size:.9rem;font-weight:700;color:var(--text-muted)}
+.best{margin:.6rem 0 0;color:var(--text-muted);font-size:.9rem}
+.resume{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);border-color:var(--accent-primary)}
+.resume p{margin:0;color:var(--text-muted);font-size:.88rem}
+.resume .btn{flex:0 0 auto;min-width:8rem}
+.roster{list-style:none;margin:0 0 .75rem;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.player-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.5rem;align-items:center}
+.player-row .avatar{grid-area:auto}
+.name-input{min-height:var(--tap);width:100%;padding:0 .8em;background:var(--bg-card);border:1px solid var(--line);border-radius:10px}
+.type-btn{min-height:var(--tap);min-width:5.2rem;padding:0 .8em;background:var(--bg-card);border:1px solid var(--line);border-radius:10px;font-weight:700;cursor:pointer}
+.type-btn[aria-pressed="true"]{border-color:var(--accent-warning);color:var(--accent-warning)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--bg-card);border-radius:12px}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:grid;place-items:center;min-height:var(--tap);border-radius:9px;font-weight:700;color:var(--text-muted);text-align:center;padding:0 .4em;line-height:1.15}
+.seg input:checked + span{background:var(--accent-primary);color:#fff}
+.seg input:focus-visible + span{outline:3px solid var(--text-main);outline-offset:-3px}
+
+/* ---- Dialogs ---- */
+dialog{
+  width:min(92vw,560px);max-height:86vh;padding:0;
+  background:var(--bg-surface);color:var(--text-main);
+  border:1px solid var(--line);border-radius:calc(var(--border-radius)*1.5);
+}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(5,8,15,.72)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:var(--gap);padding:.5rem .5rem .5rem var(--pad);border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:1.15rem}
+.dlg-body{padding:var(--pad);overflow:auto}
+.dlg-body p{margin:0 0 .8rem}
+.dlg-body h3{margin:1rem 0 .4rem;font-size:1rem}
+.dlg-foot{display:flex;gap:var(--gap);padding:var(--pad);border-top:1px solid var(--line)}
+.dlg-foot .btn{flex:1}
+.steps{margin:0 0 .8rem;padding-left:1.3rem}
+.steps li{margin-bottom:.35rem}
+.muted{color:var(--text-muted)}
+.set-row{
+  width:100%;min-height:3.5rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.4rem 0;background:none;border:0;border-bottom:1px solid var(--line);
+  text-align:left;cursor:pointer;
+}
+.set-row:disabled{opacity:.5;cursor:not-allowed}
+.set-row small{display:block;color:var(--text-muted);font-size:.8rem}
+.card .set-row:last-child{border-bottom:0}
+.switch{flex:0 0 auto;width:3.2rem;height:1.85rem;border-radius:1rem;background:var(--bg-card);border:1px solid var(--line);position:relative;transition:background .2s}
+.switch::after{content:"";position:absolute;top:.2rem;left:.2rem;width:1.35rem;height:1.35rem;border-radius:50%;background:var(--text-muted);transition:transform .2s,background .2s}
+.set-row[aria-checked="true"] .switch{background:var(--accent-primary);border-color:var(--accent-primary)}
+.set-row[aria-checked="true"] .switch::after{transform:translateX(1.3rem);background:#fff}
+.cast-help{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--bg-card);font-size:.9rem}
+.cast-help h3{margin:0 0 .4rem;font-size:.95rem}
+.cast-help ol{margin:0;padding-left:1.2rem}
+.winner-name{font-size:clamp(2rem,8vmin,3.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .3rem;color:var(--accent-success)}
+.standings{list-style:none;margin:1rem 0 0;padding:0}
+.standings li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.1rem 1rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.standings li:first-child{font-weight:800}
+.standings small{grid-column:1 / -1;color:var(--text-muted);font-weight:400}
+
+/* =========================================================
+   3. RESPONSIVE: landscape tablets, desktop, TV, short phones
+   ========================================================= */
+@media (min-width:900px) and (min-aspect-ratio:5/4), (orientation:landscape) and (max-height:520px){
+  .shell{
+    grid-template-columns:minmax(0,1fr) clamp(200px,22vw,340px);
+    grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"header header" "main score" "dock score";
+  }
+  .scoreboard{
+    flex-direction:column;overflow-x:hidden;overflow-y:auto;
+    border-bottom:0;border-left:1px solid var(--line);
+    padding:var(--pad);
+  }
+  .chip{flex:0 0 auto;min-width:0}
+  .dock{position:static}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .topbar{padding-top:2px;padding-bottom:2px}
+  .btn{min-height:var(--tap)}
+  .box{gap:.4rem;padding:.5rem}
+  .dice{--die:40px}
+  .readout-total{font-size:2.2rem}
+  .tiles{--cols:var(--n,9);max-width:none}
+  .tile{aspect-ratio:auto;height:clamp(48px,17vh,70px)}
+  .left-line{display:none}
+}
+@media (orientation:portrait) and (max-height:700px){
+  .chip{padding:.3rem .6rem}
+  .chip-sub{display:none}
+  .btn{min-height:var(--tap)}
+  .left-line{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .die.rolling,.stamp span{animation:none}
+  .tile-inner{transition-duration:.01s}
+}
+</style>
+<style id="pocket-premium-skin">
+/* Pocket Gamebox Premium skin. Does not alter rules or game code. */
+:root{--pg-gold:#b7adff;--pg-deep:#080d1c;color-scheme:dark}
+html{background:#080d1c}body{background:radial-gradient(ellipse at 50% -12%,#56432f 0%,#111b30 48%,#080d1c 100%)!important;color:#f6f0e5}
+#app,.shell{--pg-outline:rgba(242,201,120,.28)}
+.topbar{background:linear-gradient(110deg,#10182a,#202238 62%,#161b2c)!important;border-bottom:1px solid #e8c37b65!important;box-shadow:0 12px 36px #0006!important}
+.topbar .title,.topbar .brand,.topbar h1{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;letter-spacing:-.035em!important;text-shadow:0 2px 15px #0009}
+.topbar .title::first-letter{color:var(--pg-gold)}
+button{transition:filter .18s ease,transform .18s ease,box-shadow .18s ease}button:hover:not(:disabled){filter:brightness(1.13)}button:active:not(:disabled){transform:scale(.975)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #f5cb78!important;outline-offset:2px}
+.icon-btn{border:1px solid #ddbb7955!important;border-radius:12px!important;background:linear-gradient(145deg,#353044,#151c2b)!important;box-shadow:inset 0 1px #ffffff1d,0 5px 12px #0004!important}
+.panel,.card,.modal-content,.dialog,.setup-card{box-shadow:0 14px 42px #0004;border-color:#dfbe7950}
+:where(input,select,textarea){accent-color:#f1ce86}
+@media(max-width:600px){.topbar .title,.topbar h1{font-size:clamp(17px,5vw,26px)!important}.topbar{min-height:55px}}
+@media(prefers-reduced-motion:reduce){button{transition:none!important}}
+</style><style id="gamebox-v6-shut-the-box">
+/* Premium interactive cabinet skin: game mechanics, IDs and events unchanged. */
+:root{--bg-primary:#080d12;--bg-surface:#21170f;--bg-card:#34251a;--text-main:#fff2d6;--text-muted:#d2b995;--accent-primary:#d9a83f;--accent-success:#23c586;--accent-warning:#f4c15f;--accent-danger:#ff7272;--line:rgba(237,188,106,.42);--border-radius:13px;--ivory-hi:#fff7d9;--ivory:#f6d999;--ivory-lo:#ba8447;--pip:#21170e;--on-success:#051e12}
+html,body{background:#0c090b!important;color:#fff0cd}
+.shell{background:radial-gradient(ellipse at 50% 15%,#384a36 0%,#10231e 52%,#080d12 100%)}
+.topbar{background:linear-gradient(180deg,#3c2316,#1a1111)!important;border-bottom:3px solid #c28d3e!important;box-shadow:0 5px 18px #0009,inset 0 1px #ffe7a047!important}
+.title{font-family:Georgia,'Times New Roman',serif!important;color:#ffe2a2!important;text-shadow:0 2px #311504,0 0 17px #d3872b5e;font-size:clamp(1.05rem,3vw,1.9rem)!important;letter-spacing:.035em!important}
+.tb-left{min-width:0}.tb-left .title{overflow:hidden;text-overflow:ellipsis}
+.gb-home{display:inline-flex;min-height:var(--tap);align-items:center;gap:5px;padding:0 .7rem;color:#ffe0a0;background:linear-gradient(#5a3a22,#211a16);border:1px solid #d7a253;border-radius:11px;text-decoration:none;white-space:nowrap;font-size:.76rem;font-weight:900;box-shadow:inset 0 1px #fff3,0 3px 9px #0006}
+.gb-home:focus-visible{outline:3px solid #fff0ab;outline-offset:2px}
+.topbar .icon-btn{border-color:#bb8f58!important;background:linear-gradient(145deg,#4e3420,#21191a)!important;color:#ffe1a4}
+.turn-label{color:#ffe5ad}.status-msg{color:#dac9ab}
+.scoreboard{background:linear-gradient(155deg,#241a14,#100f13);border-color:#b18449!important}
+.chip{border-color:#9c733b;background:linear-gradient(#3d2a1e,#201c1b);box-shadow:inset 0 1px #fce49e2b,0 5px 10px #0005}
+.chip.active{border-color:#ffe19a;background:linear-gradient(#604329,#262019);box-shadow:0 0 15px #f0b34235}
+.chip.winner{border-color:#1feeb3}
+.avatar{color:#18130b;border:2px solid #eed494;box-shadow:0 2px 6px #0006}
+.chip-score{color:#ffe19a}
+.viewport{background:radial-gradient(ellipse at 50% 38%,#0b4b38,#082c28 66%,#11100f)}
+.box{border-radius:clamp(20px,3vw,38px);border:10px ridge #97602d;background:radial-gradient(ellipse at 50% 55%,#176c4f,#0a3e30 71%,#092a24 100%)!important;box-shadow:inset 0 0 0 4px #422719,inset 0 0 0 7px #b27f3b,inset 0 0 60px #000b,0 10px 25px #0009;position:relative;gap:clamp(.8rem,2.2vmin,1.6rem)}
+.box:before{content:"";position:absolute;inset:10px;border-radius:20px;background:repeating-linear-gradient(120deg,transparent 0 5px,#fff1 6px,transparent 7px 12px);opacity:.13;pointer-events:none}
+.box>*{position:relative;z-index:1}
+.box:after{content:"SHUT THE BOX";pointer-events:none;position:absolute;bottom:9px;right:18px;color:#edcd8a54;font:900 clamp(9px,1.5vw,17px) Georgia,serif;letter-spacing:.2em}
+.tiles{background:linear-gradient(180deg,#5f381c,#341b13);border:6px ridge #b9843c;border-radius:15px;box-shadow:inset 0 7px 12px #0008,0 13px 19px #0007;padding:clamp(8px,1.6vw,18px);gap:clamp(4px,1.1cqi,12px);max-width:min(100%,920px)}
+.tile-face{background:linear-gradient(100deg,#c68a45,#ffe3a0 22%,#e4af5c 77%,#966134)!important;color:#2d1808!important;font-family:Georgia,serif;font-weight:900;text-shadow:0 1px #ffe9b9;box-shadow:inset 0 0 0 2px #a9763d,inset 3px 0 5px #fff8,0 5px 0 #63401e,0 8px 8px #0008;border:1px solid #ffedb0}
+.tile-back{background:linear-gradient(#24150e,#422c19)!important;box-shadow:inset 0 0 12px #000a;border:1px solid #b68e53;color:#d2a56a7d}
+.tile.sel .tile-face{background:linear-gradient(#fff5c2,#ecc170)!important;box-shadow:0 0 0 4px #58ffd0,0 5px 0 #63401e,0 9px 22px #09e9bb9a!important}
+.tile.dead:not(.shut) .tile-face{opacity:.33}
+.tile:not(:disabled):not(.shut):not(.sel):hover .tile-face{box-shadow:0 0 0 3px #ffd780,0 5px 0 #63401e,0 8px 12px #0009}
+.readout{background:linear-gradient(#272019d9,#131a18d9);border:2px solid #c18f46;border-radius:15px;padding:6px 14px;box-shadow:0 6px 15px #0005}
+.readout-label{color:#e8c686;text-transform:uppercase;letter-spacing:.15em}.readout-total{color:#ffe59f;text-shadow:0 2px 12px #dca33968}
+.face{box-shadow:inset 0 0 0 2px #fff6d8,inset 0 -5px 9px #af8d5b,0 2px 9px #0008}
+.pick-line{color:#fff0ca;text-shadow:0 1px 3px #000}.left-line{color:#d2e4cb}
+.dock{background:linear-gradient(#312219,#180f10)!important;border-top:3px solid #c3934b!important;box-shadow:0 -7px 18px #0008}
+.btn{border-radius:15px;border:1px solid #d6a15c!important;box-shadow:inset 0 1px #fff4,0 4px 0 #130b0b,0 6px 13px #0007;text-shadow:0 1px 1px #0006}
+.btn-primary{background:linear-gradient(180deg,#fff0b3,#e9b749 42%,#a86e1f)!important;color:#281402!important;text-shadow:0 1px #ffedbd}
+.btn-success{background:linear-gradient(#9cf7bd,#18aa69 65%,#087148)!important;color:#031c12!important;text-shadow:0 1px #efffc7}
+.btn-ghost{background:linear-gradient(#4d3526,#221b1c)!important;color:#ffe6ad!important}
+.btn:disabled{background:#302b28!important;color:#928778!important;box-shadow:none!important}
+.lobby{max-width:780px}.lobby .lede{line-height:1.6;color:#f0d6a6}
+.card,dialog{background:linear-gradient(160deg,#382a1d,#211b19 65%,#17191b)!important;border:2px solid #ba8c4c!important;border-radius:18px!important;box-shadow:inset 0 1px #fff2,0 10px 24px #0007}
+.card h2,.dlg-head h2{font-family:Georgia,serif;color:#ffdf9e;font-size:1.2rem}
+.seg{background:#16120f;border:1px solid #81663e}.seg input:checked + span{background:linear-gradient(#ffecb1,#bc8731);color:#1a1008}
+.name-input,.type-btn{background:#181a17;border:1px solid #a47c47;color:#fff0d0}
+.stamp span{background:#1c140feb;box-shadow:0 10px 33px #000c}
+@media(max-width:599px){.topbar{grid-template-columns:minmax(0,1fr) auto;gap:4px}.gb-home{padding:0 7px;font-size:12px}.title{font-size:1.05rem!important}.box{padding:7px;border-width:6px}.tiles{padding:6px;border-width:4px}.tile{border-radius:5px}.tile-face,.tile-back{border-radius:5px}.dock{gap:8px;padding:9px}.btn{min-height:52px}}
+@media(max-width:370px){.gb-home .gb-word{display:none}.gb-home{min-width:40px}}
+@media(prefers-reduced-motion:reduce){.tile-inner,.btn{transition:none!important}}
+</style>
+<link rel="stylesheet" href="../assets/stage8-responsive.css">
+</head>
+<body>
+<div id="app" class="shell" data-view="lobby">
+
+  <!-- Top header bar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <a class="gb-home" href="../index.html" aria-label="Return to Pocket Gamebox lobby">⌂ <span class="gb-word">LOBBY</span></a>
+      <button id="btnHome" class="icon-btn" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 class="title">Shut the Box</h1>
+    </div>
+    <div class="tb-center" aria-live="polite">
+      <div id="turnLabel" class="turn-label">New game</div>
+      <div id="statusMsg" class="status-msg"></div>
+    </div>
+    <div class="tb-right">
+      <button id="btnSound" class="icon-btn" type="button" aria-label="Sound" aria-pressed="true">
+        <svg class="ico-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <svg class="ico-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>
+      </button>
+      <button id="btnRules" class="icon-btn" type="button" aria-label="Rules">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6M12 17.2v.1"/></svg>
+      </button>
+      <button id="btnSettings" class="icon-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scoreboard & player dock -->
+  <div id="scoreboard" class="scoreboard" role="list" aria-label="Scores, lowest is best"></div>
+
+  <!-- Main viewport -->
+  <main class="viewport">
+
+    <!-- Lobby -->
+    <section id="lobby" class="lobby" aria-labelledby="lobbyTitle">
+      <h2 id="lobbyTitle" class="sr-only">Game setup</h2>
+      <p class="lede">Roll two dice and flip down tiles that add up to the roll. Keep going until you can't. Whatever's left standing is your score, so lower is better. Flip them all and you've shut the box.</p>
+
+      <div id="resumeCard" class="card resume" hidden>
+        <div>
+          <strong>Game in progress</strong>
+          <p id="resumeInfo"></p>
+        </div>
+        <button class="btn btn-primary" type="button" data-act="resume">Resume</button>
+      </div>
+
+      <div class="card">
+        <h2>Players (1 to 6)</h2>
+        <ul id="roster" class="roster"></ul>
+        <button id="btnAddPlayer" class="btn btn-ghost" type="button" style="width:100%">Add player</button>
+        <p id="bestScore" class="best"></p>
+      </div>
+
+      <div class="card">
+        <h2>Game options</h2>
+        <h3 id="tilesLbl">Tiles</h3>
+        <div class="seg" role="radiogroup" aria-labelledby="tilesLbl">
+          <label><input type="radio" name="tiles" value="9"><span>1 to 9</span></label>
+          <label><input type="radio" name="tiles" value="12"><span>1 to 12</span></label>
+        </div>
+        <h3 id="roundsLbl">Rounds</h3>
+        <div class="seg" role="radiogroup" aria-labelledby="roundsLbl">
+          <label><input type="radio" name="rounds" value="1"><span>1</span></label>
+          <label><input type="radio" name="rounds" value="3"><span>3</span></label>
+          <label><input type="radio" name="rounds" value="5"><span>5</span></label>
+        </div>
+        <h3 id="botsLbl">Bots play</h3>
+        <div class="seg" role="radiogroup" aria-labelledby="botsLbl">
+          <label><input type="radio" name="botSkill" value="casual"><span>Casually</span></label>
+          <label><input type="radio" name="botSkill" value="expert"><span>Perfectly</span></label>
+        </div>
+        <div style="margin-top:.6rem">
+          <button class="set-row" type="button" role="switch" data-option="oneDie" aria-checked="true">
+            <span>One die when 7 and up are shut<small>Once every tile from 7 upward is down, you can choose to roll a single die.</small></span><span class="switch" aria-hidden="true"></span>
+          </button>
+          <button class="set-row" type="button" role="switch" data-option="shutWins" aria-checked="true">
+            <span>Shutting the box wins instantly<small>In games with two or more players. Turn off to finish every turn and compare scores.</small></span><span class="switch" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How you're playing</h2>
+        <p class="muted" style="margin:0">Pass and play on one phone, tablet or TV. Bots play their own turns. Online rooms need a game server, which isn't switched on in this offline build.</p>
+      </div>
+    </section>
+
+    <!-- Game table -->
+    <section id="table" class="table" aria-label="Game table">
+      <div class="box">
+        <div class="roll-row">
+          <div id="dice" class="dice" aria-hidden="true"></div>
+          <div class="readout">
+            <span class="readout-label">Roll</span>
+            <span id="total" class="readout-total idle" aria-live="polite">–</span>
+          </div>
+        </div>
+        <div id="tiles" class="tiles" role="group" aria-label="Tiles"></div>
+        <div id="pickLine" class="pick-line"></div>
+        <p id="leftLine" class="left-line"></p>
+        <div id="stamp" class="stamp" aria-hidden="true"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Action dock -->
+  <footer id="dock" class="dock">
+    <button id="btnA" class="btn btn-ghost" type="button"></button>
+    <button id="btnB" class="btn btn-primary" type="button"></button>
+  </footer>
+</div>
+
+<!-- Rules -->
+<dialog id="dlgRules" aria-labelledby="rulesTitle">
+  <div class="dlg-head">
+    <h2 id="rulesTitle">How to play</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <ol class="steps">
+      <li>Every turn starts with all the tiles standing.</li>
+      <li>Roll two dice and add them up.</li>
+      <li>Flip down any tiles that make exactly that total. A 9 could be the 9, or 5 + 4, or 1 + 2 + 6.</li>
+      <li>Roll again and repeat.</li>
+      <li>When no standing tiles can make your roll, your turn ends. Your score is the total of the tiles still standing.</li>
+    </ol>
+    <p>Lowest score wins. Flip every tile and you've shut the box, for a perfect score of 0.</p>
+    <h3>Options</h3>
+    <p><strong>One die:</strong> once all tiles from 7 upward are down, you may roll one die instead of two.</p>
+    <p><strong>Instant win:</strong> with two or more players, shutting the box ends the game on the spot.</p>
+    <p><strong>Rounds:</strong> with 3 or 5 rounds, scores add up and the lowest total wins.</p>
+    <p class="muted">Keyboard and TV remote: 1 to 9 pick tiles (0 for 10), R rolls two dice, O rolls one, S shuts, C clears, N continues, arrow keys move between buttons.</p>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="dlgSettings" aria-labelledby="settingsTitle">
+  <div class="dlg-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <button class="set-row" type="button" role="switch" data-setting="sound" aria-checked="true">
+      <span>Sound effects</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="voice" aria-checked="false">
+      <span>Announcer voice<small id="voiceNote">Calls out rolls, shut boxes and scores.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="autoShut" aria-checked="false">
+      <span>Quick shut<small>Tiles flip as soon as your picks add up to the roll, with no Shut button.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="contrast" aria-checked="false">
+      <span>Bright light mode<small>Stronger text for outdoors and sunlight.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button class="set-row" type="button" role="switch" data-setting="tv" aria-checked="false">
+      <span>TV mode<small>Bigger tiles and text, hides the mouse pointer.</small></span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <button id="rowFullscreen" class="set-row" type="button" role="switch" data-setting="fullscreen" aria-checked="false">
+      <span>Full screen</span><span class="switch" aria-hidden="true"></span>
+    </button>
+    <div class="cast-help">
+      <h3>Show the game on a TV</h3>
+      <ol>
+        <li>Android: swipe down from the top, tap Screen cast or Smart View, and pick your TV.</li>
+        <li>iPhone or iPad: open Control Centre, tap Screen Mirroring, and pick your TV.</li>
+        <li>Computer with Chrome: open the ⋮ menu, choose Cast, then Cast tab.</li>
+        <li>Turn on TV mode above, and turn your phone sideways so all the tiles sit in one row.</li>
+      </ol>
+    </div>
+    <p class="muted" style="margin-top:1rem">Room code <strong id="roomCode"></strong> (local game)</p>
+  </div>
+</dialog>
+
+<!-- Game over -->
+<dialog id="dlgOver" aria-labelledby="overTitle">
+  <div class="dlg-body">
+    <p id="overTitle" class="winner-name"></p>
+    <p id="overSub" class="muted"></p>
+    <ol id="standings" class="standings"></ol>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" type="button" data-act="lobby">Change players</button>
+    <button class="btn btn-primary" type="button" data-act="rematch">Play again</button>
+  </div>
+</dialog>
+
+<script type="module">
+/* =====================================================================
+   SHUT THE BOX — single-file build
+   Modules (in order):
+     1. RULES     – tunable rule constants
+     2. Combos    – tile combinations as bitmasks (pure)
+     3. Solver    – exact best-play expected score (powers the expert bot)
+     4. RNG       – fair dice
+     5. Engine    – pure, deterministic state reducer
+     6. Bot       – casual and expert decision makers
+     7. Network   – NetworkController + Local / Online adapters
+     8. Store     – localStorage persistence and solo best scores
+     9. Sound     – Web Audio synthesis (no audio files)
+    10. Voice     – optional speech announcer
+    11. App       – rendering, input, TV support, bot driver, boot
+   ===================================================================== */
+
+// #region core  — pure logic, no DOM. Safe to unit-test in Node.
+
+/* ---------- 1. RULES ---------- */
+const RULES = Object.freeze({
+  minPlayers: 1,
+  maxPlayers: 6,
+  tileSets: Object.freeze([9, 12]),
+  roundOptions: Object.freeze([1, 3, 5]),
+  oneDieBelow: 7,          // one die allowed once every tile ≥ 7 is shut
+});
+
+/* ---------- 2. COMBOS (pure). Tiles are bits: bit 0 = tile 1 … bit 11 = tile 12 ---------- */
+const Combos = (() => {
+  const BY_SUM = Array.from({ length: 13 }, () => []);
+  const SUM = new Int16Array(1 << 12);
+  for (let m = 1; m < 1 << 12; m++) {
+    let s = 0;
+    for (let i = 0; i < 12; i++) if (m & (1 << i)) s += i + 1;
+    SUM[m] = s;
+    if (s <= 12) BY_SUM[s].push(m);
+  }
+  const tilesOf = (m) => {
+    const t = [];
+    for (let i = 0; i < 12; i++) if (m & (1 << i)) t.push(i + 1);
+    return t;
+  };
+  const maskOf = (tiles) => tiles.reduce((m, t) => m | (1 << (t - 1)), 0);
+  const sumOf = (m) => SUM[m];
+  const fullMask = (n) => (1 << n) - 1;
+  /** Every set of standing tiles that adds up to `total`. */
+  const options = (open, total) => (total >= 1 && total <= 12 ? BY_SUM[total].filter((c) => (c & open) === c) : []);
+  /** One die is allowed when no tile from 7 upward is still standing. */
+  const oneDieOk = (open) => open < 1 << (RULES.oneDieBelow - 1);
+  return { tilesOf, maskOf, sumOf, fullMask, options, oneDieOk };
+})();
+
+/* ---------- 3. SOLVER — exact expected final score with best play ---------- */
+const Solver = (() => {
+  const OUT2 = [];
+  for (let r = 2; r <= 12; r++) OUT2.push([r, (6 - Math.abs(r - 7)) / 36]);
+  const OUT1 = [1, 2, 3, 4, 5, 6].map((r) => [r, 1 / 6]);
+  const memo = new Map();
+
+  /** Expected score from `open` before rolling, choosing dice and tiles optimally. */
+  function value(open, oneDie) {
+    if (open === 0) return 0;
+    const key = open * 2 + (oneDie ? 1 : 0);
+    const hit = memo.get(key);
+    if (hit !== undefined) return hit;
+    let best = rollValue(open, 2, oneDie);
+    if (oneDie && Combos.oneDieOk(open)) best = Math.min(best, rollValue(open, 1, oneDie));
+    memo.set(key, best);
+    return best;
+  }
+  function rollValue(open, dice, oneDie) {
+    const left = Combos.sumOf(open);
+    let ev = 0;
+    for (const [r, p] of dice === 2 ? OUT2 : OUT1) {
+      const opts = Combos.options(open, r);
+      if (!opts.length) { ev += p * left; continue; }
+      let best = Infinity;
+      for (const c of opts) best = Math.min(best, value(open & ~c, oneDie));
+      ev += p * best;
+    }
+    return ev;
+  }
+  function bestCombo(open, total, oneDie) {
+    let best = null;
+    for (const c of Combos.options(open, total)) {
+      const v = value(open & ~c, oneDie);
+      if (!best || v < best.v) best = { c, v };
+    }
+    return best ? best.c : 0;
+  }
+  function bestDice(open, oneDie) {
+    if (!oneDie || !Combos.oneDieOk(open)) return 2;
+    return rollValue(open, 1, oneDie) < rollValue(open, 2, oneDie) ? 1 : 2;
+  }
+  return { value, bestCombo, bestDice };
+})();
+
+/* ---------- 4. RNG (fair, unbiased dice) ---------- */
+const RNG = {
+  die() {
+    const c = globalThis.crypto;
+    if (c && c.getRandomValues) {
+      const buf = new Uint32Array(1);
+      const limit = 4294967292; // largest multiple of 6 below 2^32 → no modulo bias
+      do c.getRandomValues(buf); while (buf[0] >= limit);
+      return (buf[0] % 6) + 1;
+    }
+    return Math.floor(Math.random() * 6) + 1;
+  },
+  dice(n) { return Array.from({ length: n }, () => RNG.die()); },
+};
+
+/* ---------- 5. ENGINE (pure, deterministic reducer) ----------
+   reduce(state, action) → new state, or the SAME object if the action is illegal.
+   Dice values arrive inside the ROLL action; the host supplies them. */
+const Engine = (() => {
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const cleanOptions = (o = {}) => ({
+    tiles: RULES.tileSets.includes(Number(o.tiles)) ? Number(o.tiles) : 9,
+    rounds: RULES.roundOptions.includes(Number(o.rounds)) ? Number(o.rounds) : 1,
+    oneDie: o.oneDie !== false,
+    shutWins: o.shutWins !== false,
+  });
+  const emptyData = (options) => ({
+    phase: 'LOBBY',            // LOBBY | READY | CHOOSING | TURN_OVER | DONE
+    options,
+    open: Combos.fullMask(options.tiles), // bitmask of standing tiles
+    dice: [3, 4],
+    diceUsed: 2,
+    total: 0,
+    rolls: 0,
+    round: 1,
+    scores: {},                // { playerId: [score per round] }
+    shutCount: {},             // { playerId: boxes shut }
+    lastTurn: null,            // { playerId, score, shut, total, round }
+    winnerIds: [],
+    endReason: null,           // 'shut' | 'score'
+    seq: 0,
+  });
+
+  function createState(roomCode = '') {
+    return { gameId: 'shut_the_box', roomCode, status: 'LOBBY', turnIndex: 0, players: [], gameData: emptyData(cleanOptions()), lastAction: null };
+  }
+  const currentPlayer = (s) => s.players[s.turnIndex] || null;
+  const isSolo = (s) => s.players.length === 1;
+  const canOneDie = (s) => s.gameData.options.oneDie && Combos.oneDieOk(s.gameData.open);
+  const sumOf = (arr) => arr.reduce((a, b) => a + b, 0);
+
+  function stamp(s, info) {
+    s.gameData.seq += 1;
+    s.lastAction = { ...info, seq: s.gameData.seq };
+  }
+
+  function endTurn(s, shut) {
+    const g = s.gameData;
+    const p = s.players[s.turnIndex];
+    const score = Combos.sumOf(g.open);
+    g.scores[p.id].push(score);
+    if (shut) g.shutCount[p.id] += 1;
+    p.score = sumOf(g.scores[p.id]);
+    g.lastTurn = { playerId: p.id, score, shut, total: g.total, round: g.round };
+
+    if (shut && g.options.shutWins && !isSolo(s)) {
+      g.winnerIds = [p.id];
+      g.endReason = 'shut';
+      g.phase = 'DONE';
+      s.status = 'GAME_OVER';
+      return;
+    }
+    const lastTurnOfGame = s.turnIndex === s.players.length - 1 && g.round === g.options.rounds;
+    if (lastTurnOfGame) {
+      const low = Math.min(...s.players.map((x) => x.score));
+      g.winnerIds = s.players.filter((x) => x.score === low).map((x) => x.id);
+      g.endReason = 'score';
+      g.phase = 'DONE';
+      s.status = 'GAME_OVER';
+      return;
+    }
+    g.phase = 'TURN_OVER';
+  }
+
+  function reduce(state, action) {
+    if (!action || typeof action.type !== 'string') return state;
+
+    if (action.type === 'START_GAME') {
+      const list = Array.isArray(action.players) ? action.players.slice(0, RULES.maxPlayers) : [];
+      if (list.length < RULES.minPlayers) return state;
+      const s = clone(state);
+      s.players = list.map((p, i) => ({
+        id: String(p.id || `p${i + 1}`),
+        name: String(p.name || '').trim().slice(0, 16) || `Player ${i + 1}`,
+        score: 0,
+        isLocal: p.isLocal !== false,
+        isBot: !!p.isBot,
+      }));
+      s.gameData = emptyData(cleanOptions(action.options));
+      s.players.forEach((p) => { s.gameData.scores[p.id] = []; s.gameData.shutCount[p.id] = 0; });
+      s.gameData.phase = 'READY';
+      s.status = 'PLAYING';
+      s.turnIndex = 0;
+      stamp(s, { type: 'START_GAME' });
+      return s;
+    }
+
+    if (state.status !== 'PLAYING') return state;
+    const actor = currentPlayer(state);
+    if (!actor || action.actorId !== actor.id) return state; // not your turn
+
+    const s = clone(state);
+    const g = s.gameData;
+
+    switch (action.type) {
+      case 'ROLL': {
+        if (g.phase !== 'READY') return state;
+        const count = action.count === 1 ? 1 : 2;
+        if (count === 1 && !canOneDie(s)) return state;
+        const vals = action.values;
+        if (!Array.isArray(vals) || vals.length !== count) return state;
+        if (!vals.every((v) => Number.isInteger(v) && v >= 1 && v <= 6)) return state;
+        g.dice = count === 2 ? vals.slice() : [vals[0], g.dice[1]];
+        g.diceUsed = count;
+        g.total = sumOf(vals);
+        g.rolls += 1;
+        const stuck = Combos.options(g.open, g.total).length === 0;
+        if (stuck) endTurn(s, false);
+        else g.phase = 'CHOOSING';
+        stamp(s, { type: 'ROLL', actorId: actor.id, count, values: vals.slice(), total: g.total, stuck, gameOver: s.status === 'GAME_OVER' });
+        return s;
+      }
+
+      case 'SHUT': {
+        if (g.phase !== 'CHOOSING' || !Array.isArray(action.tiles) || !action.tiles.length) return state;
+        const tiles = action.tiles;
+        if (new Set(tiles).size !== tiles.length) return state;
+        if (!tiles.every((t) => Number.isInteger(t) && t >= 1 && t <= g.options.tiles)) return state;
+        const mask = Combos.maskOf(tiles);
+        if ((mask & g.open) !== mask || sumOf(tiles) !== g.total) return state;
+        g.open &= ~mask;
+        const shut = g.open === 0;
+        if (shut) endTurn(s, true);
+        else g.phase = 'READY';
+        stamp(s, { type: 'SHUT', actorId: actor.id, tiles: [...tiles].sort((a, b) => b - a), shut, gameOver: s.status === 'GAME_OVER' });
+        return s;
+      }
+
+      case 'NEXT_TURN': {
+        if (g.phase !== 'TURN_OVER') return state;
+        s.turnIndex = (s.turnIndex + 1) % s.players.length;
+        if (s.turnIndex === 0) g.round += 1;
+        g.open = Combos.fullMask(g.options.tiles);
+        g.phase = 'READY';
+        g.rolls = 0;
+        g.total = 0;
+        g.diceUsed = 2;
+        stamp(s, { type: 'NEXT_TURN', round: g.round });
+        return s;
+      }
+
+      default:
+        return state;
+    }
+  }
+
+  return { createState, reduce, currentPlayer, isSolo, canOneDie };
+})();
+
+/* ---------- 6. BOT ---------- */
+const Bot = {
+  /** How many dice to roll: 1 or 2. */
+  dice(state, skill) {
+    const g = state.gameData;
+    if (!Engine.canOneDie(state)) return 2;
+    if (skill === 'expert') return Solver.bestDice(g.open, g.options.oneDie);
+    return Combos.sumOf(g.open) <= 6 ? 1 : 2;
+  },
+  /** Which tiles to shut for the current roll. */
+  tiles(state, skill) {
+    const g = state.gameData;
+    const opts = Combos.options(g.open, g.total);
+    if (!opts.length) return [];
+    if (skill === 'expert') return Combos.tilesOf(Solver.bestCombo(g.open, g.total, g.options.oneDie));
+    // Casual: the usual table habit of knocking down the biggest tile it can, with fewest tiles.
+    let best = opts[0];
+    for (const c of opts) {
+      const a = Combos.tilesOf(c);
+      const b = Combos.tilesOf(best);
+      if (a.length < b.length || (a.length === b.length && Math.max(...a) > Math.max(...b))) best = c;
+    }
+    return Combos.tilesOf(best);
+  },
+};
+
+// #endregion core
+
+/* ---------- 7. NETWORK LAYER ----------
+   The UI only ever talks to NetworkController. Swap the adapter to change
+   how actions travel; the rules and the UI stay the same. */
+
+/** Local adapter: pass-and-play and bots on one device. Acts as the host. */
+class LocalAdapter {
+  constructor(initialState) {
+    this.kind = 'local';
+    this.state = initialState;
+    this.onState = null;
+  }
+  send(action) {
+    let a = action;
+    if (a.type === 'ROLL' && !Array.isArray(a.values)) {
+      a = { ...a, values: RNG.dice(a.count === 1 ? 1 : 2) }; // host rolls the dice
+    }
+    const next = Engine.reduce(this.state, a);
+    if (next === this.state) return false;
+    this.state = next;
+    if (this.onState) this.onState(next);
+    return true;
+  }
+  replace(state) {
+    this.state = state;
+    if (this.onState) this.onState(state);
+  }
+}
+
+/** Online adapter — PROTOCOL STUB. It makes no network requests.
+    To enable online rooms later:
+      1. Run a server that holds the authoritative state and the same Engine.
+      2. Client → server: { t: 'action', room, action }   (ROLL sent without values)
+      3. Server rolls, calls Engine.reduce, broadcasts → clients: { t: 'state', state }
+      4. In connect(), open the WebSocket / Firebase listener and call receive().
+      5. Set controller.localPlayerId to this device's player id. */
+class OnlineAdapter {
+  constructor(options = {}) {
+    this.kind = 'online';
+    this.url = options.url || '';
+    this.state = Engine.createState();
+    this.onState = null;
+    this.connected = false;
+  }
+  async connect() {
+    throw new Error('Online play is not enabled in this offline build.');
+  }
+  send(action) {
+    if (!this.connected) return false;
+    // this.socket.send(JSON.stringify({ t: 'action', room: this.state.roomCode, action }));
+    return false;
+  }
+  receive(message) {
+    if (message && message.t === 'state' && message.state && message.state.gameId === 'shut_the_box') {
+      this.state = message.state;
+      if (this.onState) this.onState(this.state);
+    }
+  }
+}
+
+class NetworkController {
+  #adapter = null;
+  #subs = new Set();
+  localPlayerId = null; // online only
+
+  use(adapter) {
+    this.#adapter = adapter;
+    adapter.onState = (s) => this.#subs.forEach((fn) => fn(s));
+    return this;
+  }
+  get state() { return this.#adapter.state; }
+  get kind() { return this.#adapter.kind; }
+  subscribe(fn) { this.#subs.add(fn); return () => this.#subs.delete(fn); }
+  dispatch(action) {
+    const cur = Engine.currentPlayer(this.state);
+    const actorId = this.#adapter.kind === 'online' ? this.localPlayerId : cur ? cur.id : null;
+    return this.#adapter.send({ ...action, actorId });
+  }
+  start(players, options) { return this.dispatch({ type: 'START_GAME', players, options }); }
+  roll(count) { return this.dispatch({ type: 'ROLL', count }); }
+  shut(tiles) { return this.dispatch({ type: 'SHUT', tiles }); }
+  next() { return this.dispatch({ type: 'NEXT_TURN' }); }
+  load(state) { if (this.#adapter.replace) this.#adapter.replace(state); }
+}
+
+/* ---------- 8. STORE (localStorage) ---------- */
+const Store = (() => {
+  const K = { game: 'shutthebox.v1.game', settings: 'shutthebox.v1.settings', setup: 'shutthebox.v1.setup', best: 'shutthebox.v1.best' };
+  const get = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+  const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked or full */ } };
+  return {
+    loadGame() {
+      const s = get(K.game);
+      const ok = s && s.gameId === 'shut_the_box' && Array.isArray(s.players) && s.gameData && s.gameData.options;
+      return ok ? s : null;
+    },
+    saveGame: (s) => set(K.game, s),
+    loadSettings: () => get(K.settings),
+    saveSettings: (v) => set(K.settings, v),
+    loadSetup: () => get(K.setup),
+    saveSetup: (v) => set(K.setup, v),
+    /** Solo bests are kept per tile set and round count: { "9x1": { low, shuts, games } } */
+    loadBests: () => get(K.best) || {},
+    saveBests: (v) => set(K.best, v),
+  };
+})();
+
+/* ---------- 9. SOUND (Web Audio, generated live — no files) ---------- */
+const Sound = (() => {
+  let ctx = null;
+  let master = null;
+  let noiseBuf = null;
+  let enabled = true;
+
+  function ready() {
+    if (!enabled) return null;
+    if (!ctx) {
+      const AC = null; // Legacy synthesised effects removed: Creative Claw only
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.6;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(freq, at, dur, { type = 'sine', gain = 0.2, slideTo = 0 } = {}) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, at);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, at + dur);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(master);
+    o.start(at);
+    o.stop(at + dur + 0.03);
+  }
+  function noise(at, dur, gain, freq, q = 1.4) {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(bp).connect(g).connect(master);
+    src.start(at, Math.random() * 0.3, dur + 0.03);
+  }
+
+  return {
+    get enabled() { return enabled; },
+    set enabled(v) { enabled = !!v; if (!enabled && ctx && ctx.state === 'running') ctx.suspend(); },
+    unlock() { ready(); },
+    rattle(count, ms) {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      const span = ms / 1000;
+      for (let i = 0; i < 6 + count * 4; i++) {
+        noise(t + Math.random() * span * 0.7, 0.025 + Math.random() * 0.04, 0.2 + Math.random() * 0.3, 1800 + Math.random() * 2400);
+      }
+      for (let i = 0; i < count; i++) noise(t + span * (0.55 + Math.random() * 0.35), 0.07, 0.45, 500 + Math.random() * 400);
+    },
+    pick() { if (ready()) tone(1100, ctx.currentTime, 0.05, { type: 'triangle', gain: 0.12 }); },
+    unpick() { if (ready()) tone(700, ctx.currentTime, 0.05, { type: 'triangle', gain: 0.1 }); },
+    flip(n) { // wooden clack per tile
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      for (let i = 0; i < n; i++) {
+        noise(t + i * 0.09, 0.09, 0.7, 380 + Math.random() * 120, 0.9);
+        tone(180, t + i * 0.09, 0.08, { type: 'triangle', gain: 0.12, slideTo: 110 });
+      }
+    },
+    stuck() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      tone(220, t, 0.5, { type: 'sawtooth', gain: 0.14, slideTo: 90 });
+    },
+    shutBox() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568].forEach((f, i) => tone(f, t + i * 0.07, 0.3, { type: 'square', gain: 0.07 }));
+    },
+    win() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      [[523.25, 0], [659.25, 0.14], [783.99, 0.28], [1046.5, 0.42], [783.99, 0.62], [1046.5, 0.76]]
+        .forEach(([f, d]) => tone(f, t + d, 0.35, { type: 'triangle', gain: 0.18 }));
+    },
+  };
+})();
+
+/* ---------- 10. VOICE (optional announcer; uses on-device voices) ---------- */
+const Voice = {
+  enabled: false,
+  supported: 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function',
+  say(text) {
+    if (!this.enabled || !this.supported) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      if(!window.PocketVoice?.enabled()) void 0;
+    } catch { /* no voice available */ }
+  },
+};
+
+/* ---------- 11. APP ---------- */
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+const el = {
+  shell: $('app'), turn: $('turnLabel'), status: $('statusMsg'), scoreboard: $('scoreboard'),
+  dice: $('dice'), total: $('total'), tiles: $('tiles'), pickLine: $('pickLine'), leftLine: $('leftLine'), stamp: $('stamp'),
+  dock: $('dock'), btnA: $('btnA'), btnB: $('btnB'),
+  roster: $('roster'), resume: $('resumeCard'), resumeInfo: $('resumeInfo'), addPlayer: $('btnAddPlayer'), bestScore: $('bestScore'),
+  btnHome: $('btnHome'), btnSound: $('btnSound'), btnRules: $('btnRules'), btnSettings: $('btnSettings'),
+  dlgRules: $('dlgRules'), dlgSettings: $('dlgSettings'), dlgOver: $('dlgOver'),
+  overTitle: $('overTitle'), overSub: $('overSub'), standings: $('standings'), roomCode: $('roomCode'),
+  voiceNote: $('voiceNote'),
+};
+
+const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#38BDF8', '#F472B6'];
+const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const BASE = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROLL_MS = reduceMotion ? 220 : 900;
+root.style.setProperty('--roll-ms', `${ROLL_MS}ms`);
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const initial = (name) => (String(name).trim()[0] || '?').toUpperCase();
+const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch { /* unsupported */ } };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const makeRoomCode = () => {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
+};
+const nameOf = (s, id) => (s.players.find((p) => p.id === id) || {}).name || '';
+const plus = (tiles) => [...tiles].sort((a, b) => b - a).join(' + ');
+
+/* UI-only state (never sent over the network) */
+const ui = {
+  view: 'lobby',
+  busy: false,       // dice are mid-roll
+  sel: [],           // tiles picked but not yet shut
+  seenSeq: 0,
+  stamp: null,
+  stampId: 0,
+  timers: [],
+  rot: [{ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 }],
+  settings: { sound: true, voice: false, autoShut: false, contrast: false, tv: false },
+  setup: {
+    tiles: 9,
+    rounds: 1,
+    botSkill: 'expert',
+    oneDie: true,
+    shutWins: true,
+    roster: [{ name: 'Player 1', isBot: false }],
+  },
+  keys: { board: '', tiles: '' },
+  lastTurnKey: '',
+};
+
+/* ---- Dice (two 3D cubes, built once) ---- */
+const cubes = [];
+const dies = [];
+(function buildDice() {
+  const faces = [1, 2, 3, 4, 5, 6].map((v) =>
+    `<span class="face f${v}">${Array.from({ length: 9 }, (_, k) => `<i class="pip${PIPS[v].includes(k) ? ' on' : ''}"></i>`).join('')}</span>`
+  ).join('');
+  for (let i = 0; i < 2; i++) {
+    const d = document.createElement('span');
+    d.className = 'die idle';
+    d.innerHTML = `<span class="cube">${faces}</span>`;
+    el.dice.appendChild(d);
+    dies.push(d);
+    cubes.push(d.querySelector('.cube'));
+  }
+})();
+const cubeTransform = (r) => `rotateZ(${r.z}deg) rotateX(${r.x}deg) rotateY(${r.y}deg)`;
+const nextAngle = (prev, target, turns) => prev + turns * 360 + ((((target - prev) % 360) + 360) % 360);
+
+function snapDice(state) {
+  state.gameData.dice.forEach((v, i) => {
+    const [bx, by] = BASE[v];
+    ui.rot[i] = { x: bx, y: by, z: 0 };
+    cubes[i].style.transition = 'none';
+    cubes[i].style.transform = cubeTransform(ui.rot[i]);
+  });
+  void el.dice.offsetWidth;
+  cubes.forEach((c) => { c.style.transition = ''; });
+}
+
+function clearTimers() { ui.timers.forEach(clearTimeout); ui.timers = []; }
+function later(fn, ms) { ui.timers.push(setTimeout(fn, ms)); }
+function showStamp(text, tone, ms, sub = '') {
+  ui.stamp = { text, sub, tone, until: Date.now() + ms, id: ++ui.stampId };
+  scheduleRender();
+  setTimeout(scheduleRender, ms + 30);
+}
+
+function afterTurnFeedback(s, shut) {
+  const lt = s.gameData.lastTurn;
+  if (!lt) return;
+  const who = nameOf(s, lt.playerId);
+  if (shut) {
+    showStamp('Box shut!', 'success', 2000, Engine.isSolo(s) ? 'Perfect score: 0' : `${who} scores 0`);
+    Sound.shutBox();
+    pocketShutAudio('victory');
+    pocketShutAudio('victory-fx');
+    vibrate([60, 40, 60, 40, 140]);
+    /* replaced by Creative Claw voice */
+  } else {
+    showStamp(`No ${lt.total}`, 'danger', 1900, `${Engine.isSolo(s) ? 'You score' : `${who} scores`} ${lt.score}`);
+    Sound.stuck();
+    pocketShutAudio('no-move');
+    vibrate(160);
+    /* replaced by Creative Claw voice */
+  }
+  if (s.status === 'GAME_OVER') later(() => { Sound.win(); openGameOver(); }, 2100);
+}
+
+function animateRoll(la) {
+  const idx = la.count === 2 ? [0, 1] : [0];
+  idx.forEach((di, k) => {
+    const [bx, by] = BASE[la.values[k]];
+    const r = ui.rot[di];
+    const spin = reduceMotion ? 0 : 1;
+    r.x = nextAngle(r.x, bx, spin + Math.floor(Math.random() * 2));
+    r.y = nextAngle(r.y, by, spin + Math.floor(Math.random() * 2));
+    r.z = nextAngle(r.z, reduceMotion ? 0 : Math.random() * 16 - 8, spin);
+    cubes[di].style.transform = cubeTransform(r);
+    dies[di].classList.remove('rolling');
+    void dies[di].offsetWidth;
+    dies[di].classList.add('rolling');
+  });
+  Sound.rattle(idx.length, ROLL_MS);
+  ui.busy = true;
+  later(() => {
+    ui.busy = false;
+    const s = controller.state;
+    if (la.stuck) afterTurnFeedback(s, false);
+    else /* replaced by Creative Claw voice */
+    scheduleRender();
+    BotDriver.poke();
+  }, ROLL_MS + 60);
+}
+
+/* ---- React to each new action exactly once ---- */
+function pocketShutAudio(key) {
+  try { window.parent.postMessage({type:'pocket-audio',key:'shut-'+key}, '*'); } catch (_) {}
+}
+function handleAction(s) {
+  const la = s.lastAction;
+  if (!la || la.seq === ui.seenSeq) return;
+  ui.seenSeq = la.seq;
+  switch (la.type) {
+    case 'START_GAME':
+      pocketShutAudio('start');
+      clearTimers();
+      ui.busy = false;
+      ui.sel = [];
+      snapDice(s);
+      break;
+    case 'ROLL':
+      pocketShutAudio('dice-fx');
+      if (s.players[s.currentPlayerIndex]?.isBot !== true) pocketShutAudio('roll');
+      ui.sel = [];
+      animateRoll(la);
+      break;
+    case 'SHUT':
+      pocketShutAudio('tile-fx');
+      ui.sel = [];
+      Sound.flip(la.tiles.length);
+      vibrate(25);
+      if (la.shut) later(() => afterTurnFeedback(controller.state, true), 450);
+      break;
+    case 'NEXT_TURN':
+      ui.sel = [];
+      break;
+    default:
+      break;
+  }
+}
+
+/* ---- Selection helpers ---- */
+function validOptions(s) {
+  const g = s.gameData;
+  return g.phase === 'CHOOSING' ? Combos.options(g.open, g.total) : [];
+}
+/** A tile can be picked if some valid combo contains it plus everything already picked. */
+function pickable(s, t) {
+  const want = Combos.maskOf([...ui.sel, t]);
+  return validOptions(s).some((c) => (c & want) === want);
+}
+const selSum = () => ui.sel.reduce((a, b) => a + b, 0);
+
+/* ---- Render (batched to one animation frame) ---- */
+let rafId = 0;
+function scheduleRender() { if (!rafId) rafId = requestAnimationFrame(render); }
+const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+
+function setBtn(btn, { label, small = '', act = '', variant = 'primary', enabled = true, hidden = false }) {
+  btn.hidden = hidden;
+  if (hidden) return;
+  const cls = `btn btn-${variant}`;
+  if (btn.className !== cls) btn.className = cls;
+  btn.dataset.act = act;
+  btn.disabled = !enabled;
+  const key = `${label}|${small}`;
+  if (btn.dataset.key !== key) {
+    btn.dataset.key = key;
+    btn.textContent = '';
+    const main = document.createElement('span');
+    main.textContent = label;
+    btn.appendChild(main);
+    if (small) {
+      const sm = document.createElement('small');
+      sm.textContent = small;
+      btn.appendChild(sm);
+    }
+  }
+}
+
+function canAct(s) {
+  const cur = Engine.currentPlayer(s);
+  return s.status === 'PLAYING' && !!cur && !cur.isBot && cur.isLocal && !ui.busy;
+}
+
+function headerFor(s) {
+  const g = s.gameData;
+  const solo = Engine.isSolo(s);
+  const roundTxt = g.options.rounds > 1 ? `Round ${g.round} of ${g.options.rounds}` : '';
+  if (s.status === 'GAME_OVER') {
+    if (ui.busy) return { turn: 'Rolling…', msg: '', tone: '' };
+    if (solo) return { turn: `Final score: ${s.players[0].score}`, msg: 'Lower is better.', tone: 'success' };
+    const names = g.winnerIds.map((id) => nameOf(s, id));
+    if (g.endReason === 'shut') return { turn: `${names[0]} wins!`, msg: 'Shut the box: an instant win.', tone: 'success' };
+    return { turn: names.length > 1 ? `Tie: ${names.join(' and ')}` : `${names[0]} wins!`, msg: 'Lowest score wins.', tone: 'success' };
+  }
+  const cur = Engine.currentPlayer(s);
+  const turn = solo ? (roundTxt || 'Solo game') : `${cur.name}'s turn${roundTxt ? `, ${roundTxt.toLowerCase()}` : ''}`;
+  if (ui.busy) return { turn, msg: 'Rolling…', tone: '' };
+  if (g.phase === 'TURN_OVER') {
+    const lt = g.lastTurn;
+    const who = nameOf(s, lt.playerId);
+    return lt.shut
+      ? { turn: `${who} shut the box!`, msg: 'A perfect score of 0.', tone: 'success' }
+      : { turn: `${who} scores ${lt.score}`, msg: `No tiles left to make ${lt.total}.`, tone: 'danger' };
+  }
+  if (cur.isBot) return { turn, msg: `${cur.name} is thinking…`, tone: '' };
+  if (g.phase === 'READY') {
+    if (Engine.canOneDie(s)) return { turn, msg: '7 and up are shut. Roll one die or two.', tone: 'warning' };
+    return { turn, msg: g.rolls === 0 ? 'Roll to start your turn.' : 'Roll again.', tone: '' };
+  }
+  return { turn, msg: `Flip tiles that add up to ${g.total}.`, tone: '' };
+}
+
+function renderScoreboard(s) {
+  const g = s.gameData;
+  const low = s.players.length > 1 ? Math.min(...s.players.map((p) => p.score)) : null;
+  const html = s.players.map((p, i) => {
+    const active = s.status === 'PLAYING' && i === s.turnIndex;
+    const winner = g.winnerIds.includes(p.id);
+    const sc = g.scores[p.id] || [];
+    const last = sc.length ? sc[sc.length - 1] : null;
+    let sub = sc.length ? `Last turn: ${last}` : 'Yet to play';
+    if (g.shutCount[p.id]) sub = `Shut ${g.shutCount[p.id]}×${sc.length ? `, last turn: ${last}` : ''}`;
+    if (active && s.status === 'PLAYING' && g.phase !== 'TURN_OVER') sub = `Playing: ${Combos.sumOf(g.open)} standing`;
+    const leads = low !== null && sc.length && p.score === low;
+    return `<div class="chip${active ? ' active' : ''}${winner ? ' winner' : ''}" role="listitem" style="--c:${COLORS[i % COLORS.length]}"${active ? ' aria-current="true"' : ''}>`
+      + `<span class="avatar" aria-hidden="true">${esc(initial(p.name))}</span>`
+      + `<span class="chip-name">${esc(p.name)}${p.isBot ? '<span class="tag">Bot</span>' : ''}${leads ? '<span class="tag">Lowest</span>' : ''}</span>`
+      + `<span class="chip-score">${sc.length ? p.score : '–'}</span>`
+      + `<span class="chip-sub${g.shutCount[p.id] ? ' shut' : ''}">${sub}</span></div>`;
+  }).join('');
+  if (ui.keys.board !== html) {
+    ui.keys.board = html;
+    el.scoreboard.innerHTML = html;
+  }
+  const turnKey = `${s.turnIndex}|${s.status}`;
+  if (turnKey !== ui.lastTurnKey) {
+    ui.lastTurnKey = turnKey;
+    const active = el.scoreboard.querySelector('.chip.active');
+    if (active) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+}
+
+function renderBox(s, act) {
+  const g = s.gameData;
+  const n = g.options.tiles;
+  // Dice
+  const fresh = g.phase === 'READY' && g.rolls === 0;
+  dies[0].classList.toggle('idle', fresh);
+  dies[1].classList.toggle('idle', fresh);
+  dies[1].classList.toggle('off', !fresh && g.diceUsed === 1);
+  // Roll total
+  const showTotal = !fresh && !ui.busy && g.phase !== 'TURN_OVER' && g.phase !== 'LOBBY';
+  setText(el.total, ui.busy ? '…' : g.phase === 'TURN_OVER' || g.phase === 'DONE' ? String(g.lastTurn ? g.lastTurn.total : g.total) : showTotal ? String(g.total) : '–');
+  el.total.classList.toggle('idle', !showTotal || g.phase === 'READY');
+
+  // Tiles (rebuilt only when something visible changes, so flips animate)
+  const choosing = g.phase === 'CHOOSING' && !ui.busy;
+  el.tiles.style.setProperty('--n', String(n));
+  el.tiles.style.setProperty('--half-n', String(Math.ceil(n / 2)));
+  if (el.tiles.children.length !== n) {
+    el.tiles.innerHTML = Array.from({ length: n }, (_, i) =>
+      `<button class="tile" type="button" data-t="${i + 1}"><span class="tile-inner"><span class="tile-face">${i + 1}</span><span class="tile-back">${i + 1}</span></span></button>`).join('');
+  }
+  [...el.tiles.children].forEach((btn) => {
+    const t = Number(btn.dataset.t);
+    const isOpen = (g.open & (1 << (t - 1))) !== 0;
+    const isSel = ui.sel.includes(t);
+    const live = choosing && isOpen && (isSel || pickable(s, t));
+    btn.classList.toggle('shut', !isOpen);
+    btn.classList.toggle('sel', isSel);
+    btn.classList.toggle('dead', choosing && isOpen && !live);
+    btn.disabled = !(act && live);
+    btn.setAttribute('aria-pressed', String(isSel));
+    btn.setAttribute('aria-label', `Tile ${t}, ${!isOpen ? 'shut' : isSel ? 'picked' : 'standing'}`);
+  });
+
+  // Pick line + standing total
+  let pick = '';
+  let tone = '';
+  if (choosing) {
+    const sum = selSum();
+    if (!ui.sel.length) pick = `Make ${g.total}`;
+    else if (sum === g.total) { pick = `${plus(ui.sel)} = ${g.total}`; tone = 'success'; }
+    else { pick = `${plus(ui.sel)} = ${sum}, need ${g.total - sum} more`; tone = 'warning'; }
+  } else if (g.phase === 'TURN_OVER' || s.status === 'GAME_OVER') {
+    const lt = g.lastTurn;
+    if (lt && !ui.busy) { pick = lt.shut ? 'Box shut!' : `Score: ${lt.score}`; tone = lt.shut ? 'success' : 'danger'; }
+  }
+  setText(el.pickLine, pick);
+  el.pickLine.dataset.tone = tone;
+  setText(el.leftLine, g.phase === 'LOBBY' ? '' : `Tiles standing add up to ${Combos.sumOf(g.open)}`);
+
+  // Stamp
+  const st = ui.stamp && Date.now() < ui.stamp.until ? ui.stamp : null;
+  const key = st ? `${st.id}` : '';
+  if (el.stamp.dataset.key !== key) {
+    el.stamp.dataset.key = key;
+    el.stamp.dataset.tone = st ? st.tone : '';
+    el.stamp.innerHTML = st ? `<span>${esc(st.text)}${st.sub ? `<small>${esc(st.sub)}</small>` : ''}</span>` : '';
+  }
+}
+
+function renderDock(s, act) {
+  let single = false;
+  if (ui.view === 'lobby') {
+    const n = ui.setup.roster.length;
+    setBtn(el.btnA, { hidden: true });
+    setBtn(el.btnB, { label: 'Start game', small: n === 1 ? 'Solo score attack' : `${n} players`, act: 'start' });
+    single = true;
+  } else if (s.status === 'GAME_OVER') {
+    if (ui.busy) {
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, { label: 'Rolling…', enabled: false });
+      single = true;
+    } else {
+      setBtn(el.btnA, { label: 'New game', act: 'lobby', variant: 'ghost' });
+      setBtn(el.btnB, { label: 'Play again', small: Engine.isSolo(s) ? 'Same options' : 'Same players', act: 'rematch' });
+    }
+  } else {
+    const g = s.gameData;
+    const cur = Engine.currentPlayer(s);
+    if (g.phase === 'TURN_OVER') {
+      const nextIdx = (s.turnIndex + 1) % s.players.length;
+      const next = s.players[nextIdx];
+      const finishedBot = cur.isBot;
+      const label = Engine.isSolo(s) ? `Start round ${g.round + 1}` : `Next: ${next.name}`;
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, {
+        label: finishedBot || ui.busy ? 'Next turn coming…' : label,
+        small: finishedBot || ui.busy ? '' : nextIdx === 0 && !Engine.isSolo(s) ? `Round ${g.round + 1}` : 'Tiles reset',
+        act: 'next',
+        enabled: !finishedBot && !ui.busy,
+      });
+      single = true;
+    } else if (cur.isBot) {
+      setBtn(el.btnA, { hidden: true });
+      setBtn(el.btnB, { label: `${cur.name} is playing`, enabled: false });
+      single = true;
+    } else if (g.phase === 'READY') {
+      if (Engine.canOneDie(s)) {
+        setBtn(el.btnA, { label: 'Roll 1 die', small: '1 to 6', act: 'roll1', variant: 'ghost', enabled: act });
+        setBtn(el.btnB, { label: 'Roll 2 dice', small: '2 to 12', act: 'roll2', enabled: act });
+      } else {
+        setBtn(el.btnA, { hidden: true });
+        setBtn(el.btnB, { label: 'Roll dice', small: g.rolls === 0 ? 'Start your turn' : `Roll ${g.rolls + 1}`, act: 'roll2', enabled: act });
+        single = true;
+      }
+    } else {
+      const sum = selSum();
+      const ready = ui.sel.length > 0 && sum === g.total;
+      setBtn(el.btnA, { label: 'Clear', small: 'Put tiles back', act: 'clear', variant: 'ghost', enabled: act && ui.sel.length > 0 });
+      setBtn(el.btnB, {
+        label: ready ? `Shut ${plus(ui.sel)}` : 'Pick tiles',
+        small: ready ? `Flip ${ui.sel.length} ${ui.sel.length === 1 ? 'tile' : 'tiles'}` : `${sum} of ${g.total}`,
+        act: 'shut',
+        variant: ready ? 'success' : 'primary',
+        enabled: act && ready,
+      });
+    }
+  }
+  el.dock.classList.toggle('single', single);
+}
+
+function render() {
+  rafId = 0;
+  const s = controller.state;
+  if (el.shell.dataset.view !== ui.view) el.shell.dataset.view = ui.view;
+  if (ui.view === 'lobby') {
+    setText(el.turn, 'New game');
+    setText(el.status, 'One player plays a solo score attack.');
+    el.status.dataset.tone = '';
+    renderDock(s, false);
+    Wake.want(false);
+    return;
+  }
+  const act = canAct(s);
+  const h = headerFor(s);
+  setText(el.turn, h.turn);
+  setText(el.status, h.msg);
+  el.status.dataset.tone = h.tone;
+  renderScoreboard(s);
+  renderBox(s, act);
+  renderDock(s, act);
+  Wake.want(s.status === 'PLAYING');
+}
+
+/* ---- Lobby ---- */
+const isDefaultName = (name) => /^(Player|Bot) \d+$/.test(name.trim()) || name.trim() === '';
+const bestKey = (o) => `${o.tiles}x${o.rounds}`;
+function saveSetup() { Store.saveSetup(ui.setup); }
+
+function renderLobby() {
+  const roster = ui.setup.roster;
+  el.roster.innerHTML = roster.map((p, i) => `
+    <li class="player-row">
+      <span class="avatar" style="--c:${COLORS[i % COLORS.length]}" aria-hidden="true">${esc(initial(p.name))}</span>
+      <input class="name-input" type="text" maxlength="16" autocomplete="off" enterkeyhint="done"
+        value="${esc(p.name)}" data-index="${i}" aria-label="Name for player ${i + 1}">
+      <button class="type-btn" type="button" data-roster="type" data-index="${i}" aria-pressed="${p.isBot}"
+        aria-label="Player ${i + 1} is ${p.isBot ? 'a bot' : 'a person'}. Tap to switch.">${p.isBot ? 'Bot' : 'Person'}</button>
+      <button class="icon-btn" type="button" data-roster="remove" data-index="${i}" aria-label="Remove player ${i + 1}"${roster.length <= RULES.minPlayers ? ' disabled' : ''}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </li>`).join('');
+  el.addPlayer.disabled = roster.length >= RULES.maxPlayers;
+  setText(el.addPlayer, roster.length >= RULES.maxPlayers ? 'Six players is the maximum' : 'Add player');
+  const b = Store.loadBests()[bestKey(ui.setup)];
+  const label = `${ui.setup.tiles} tiles, ${ui.setup.rounds} ${ui.setup.rounds === 1 ? 'round' : 'rounds'}`;
+  setText(el.bestScore, b
+    ? `Solo best (${label}): ${b.low}. Boxes shut: ${b.shuts}.`
+    : roster.length === 1 ? `No solo score yet for ${label}.` : '');
+  document.querySelectorAll('input[name="tiles"]').forEach((r) => { r.checked = Number(r.value) === ui.setup.tiles; });
+  document.querySelectorAll('input[name="rounds"]').forEach((r) => { r.checked = Number(r.value) === ui.setup.rounds; });
+  document.querySelectorAll('input[name="botSkill"]').forEach((r) => { r.checked = r.value === ui.setup.botSkill; });
+  document.querySelectorAll('[data-option]').forEach((row) => row.setAttribute('aria-checked', String(!!ui.setup[row.dataset.option])));
+
+  const s = controller.state;
+  const resumable = s.status === 'PLAYING' && s.players.length > 0;
+  el.resume.hidden = !resumable;
+  if (resumable) {
+    const cur = Engine.currentPlayer(s);
+    setText(el.resumeInfo, Engine.isSolo(s)
+      ? `Round ${s.gameData.round} of ${s.gameData.options.rounds}.`
+      : `Round ${s.gameData.round} of ${s.gameData.options.rounds}. ${cur.name} to play.`);
+  }
+  scheduleRender();
+}
+
+el.roster.addEventListener('input', (e) => {
+  const input = e.target.closest('.name-input');
+  if (!input) return;
+  const i = Number(input.dataset.index);
+  ui.setup.roster[i].name = input.value.slice(0, 16);
+  const av = input.parentElement.querySelector('.avatar');
+  if (av) av.textContent = initial(input.value);
+  saveSetup();
+});
+el.roster.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-roster]');
+  if (!btn || btn.disabled) return;
+  const i = Number(btn.dataset.index);
+  const roster = ui.setup.roster;
+  if (btn.dataset.roster === 'type') {
+    const p = roster[i];
+    p.isBot = !p.isBot;
+    if (isDefaultName(p.name)) p.name = `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`;
+  } else if (btn.dataset.roster === 'remove' && roster.length > RULES.minPlayers) {
+    roster.splice(i, 1);
+  }
+  saveSetup();
+  renderLobby();
+});
+el.addPlayer.addEventListener('click', () => {
+  const roster = ui.setup.roster;
+  if (roster.length >= RULES.maxPlayers) return;
+  roster.push({ name: `Bot ${roster.length + 1}`, isBot: true });
+  saveSetup();
+  renderLobby();
+});
+[['tiles', Number], ['rounds', Number], ['botSkill', String]].forEach(([name, cast]) => {
+  document.querySelectorAll(`input[name="${name}"]`).forEach((r) => {
+    r.addEventListener('change', () => { if (r.checked) { ui.setup[name] = cast(r.value); saveSetup(); renderLobby(); } });
+  });
+});
+document.querySelectorAll('[data-option]').forEach((row) => {
+  row.addEventListener('click', () => {
+    const k = row.dataset.option;
+    ui.setup[k] = !ui.setup[k];
+    saveSetup();
+    row.setAttribute('aria-checked', String(ui.setup[k]));
+  });
+});
+
+/* ---- Navigation & game commands ---- */
+function startGame(players) {
+  BotDriver.cancel();
+  clearTimers();
+  ui.busy = false;
+  ui.stamp = null;
+  ui.sel = [];
+  ui.seenSeq = 0;
+  ui.view = 'game';
+  const { tiles, rounds, oneDie, shutWins } = ui.setup;
+  controller.start(players, { tiles, rounds, oneDie, shutWins });
+  scheduleRender();
+}
+function goLobby() {
+  BotDriver.cancel();
+  clearTimers();
+  ui.busy = false;
+  if (el.dlgOver.open) el.dlgOver.close();
+  ui.view = 'lobby';
+  renderLobby();
+}
+function resumeGame() {
+  ui.view = 'game';
+  ui.busy = false;
+  ui.sel = [];
+  snapDice(controller.state);
+  scheduleRender();
+  BotDriver.poke();
+}
+function openGameOver() {
+  const s = controller.state;
+  if (s.status !== 'GAME_OVER') return;
+  const g = s.gameData;
+  const ranked = [...s.players].sort((a, b) => a.score - b.score);
+  if (Engine.isSolo(s)) {
+    const score = s.players[0].score;
+    const shuts = g.shutCount[s.players[0].id];
+    const bests = Store.loadBests();
+    const key = bestKey(g.options);
+    const prev = bests[key];
+    const isBest = !prev || score < prev.low;
+    bests[key] = { low: isBest ? score : prev.low, shuts: (prev ? prev.shuts : 0) + shuts, games: (prev ? prev.games : 0) + 1 };
+    Store.saveBests(bests);
+    setText(el.overTitle, score === 0 ? 'Perfect game!' : `Score: ${score}`);
+    setText(el.overSub, isBest
+      ? (prev ? `New best! Your previous best was ${prev.low}.` : 'Your first score on this setup. Now beat it.')
+      : `Your best is ${prev.low}. Lower is better.`);
+  } else {
+    const names = g.winnerIds.map((id) => nameOf(s, id));
+    setText(el.overTitle, names.length > 1 ? 'It\'s a tie!' : `${names[0]} wins!`);
+    setText(el.overSub, g.endReason === 'shut'
+      ? `${names[0]} shut the box for an instant win.`
+      : names.length > 1 ? `${names.join(' and ')} share the lowest score.` : `Lowest score: ${ranked[0].score}.`);
+  }
+  el.standings.innerHTML = ranked.map((p) => {
+    const rounds = (g.scores[p.id] || []).map((v, i) => `round ${i + 1}: ${v}`).join(', ');
+    return `<li><span>${esc(p.name)}</span><span>${p.score}</span>${g.options.rounds > 1 && rounds ? `<small>${rounds}</small>` : ''}</li>`;
+  }).join('');
+  if (!el.dlgOver.open) el.dlgOver.showModal();
+}
+
+function toggleTile(t) {
+  const s = controller.state;
+  if (!canAct(s) || s.gameData.phase !== 'CHOOSING') return;
+  if (ui.sel.includes(t)) {
+    ui.sel = ui.sel.filter((x) => x !== t);
+    Sound.unpick();
+  } else if (pickable(s, t)) {
+    ui.sel = [...ui.sel, t];
+    Sound.pick();
+  } else {
+    return;
+  }
+  vibrate(8);
+  scheduleRender();
+  if (ui.settings.autoShut && selSum() === s.gameData.total) {
+    const picks = [...ui.sel];
+    later(() => { if (canAct(controller.state)) controller.shut(picks); }, 220);
+  }
+}
+
+function runAct(act) {
+  const s = controller.state;
+  switch (act) {
+    case 'start': {
+      const players = ui.setup.roster.map((p, i) => ({
+        id: `p${i + 1}`,
+        name: p.name.trim() || `${p.isBot ? 'Bot' : 'Player'} ${i + 1}`,
+        isBot: p.isBot,
+        isLocal: true,
+      }));
+      startGame(players);
+      break;
+    }
+    case 'resume': resumeGame(); break;
+    case 'roll1': if (canAct(s) && Engine.canOneDie(s)) controller.roll(1); break;
+    case 'roll2': if (canAct(s)) controller.roll(2); break;
+    case 'clear': ui.sel = []; scheduleRender(); break;
+    case 'shut': if (canAct(s) && ui.sel.length && selSum() === s.gameData.total) controller.shut([...ui.sel]); break;
+    case 'next': if (!ui.busy && s.gameData.phase === 'TURN_OVER') controller.next(); break;
+    case 'rematch':
+      if (el.dlgOver.open) el.dlgOver.close();
+      startGame(s.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, isLocal: p.isLocal })));
+      break;
+    case 'lobby': goLobby(); break;
+    default: break;
+  }
+}
+
+el.dock.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (btn && !btn.disabled && btn.dataset.act) runAct(btn.dataset.act);
+});
+el.resume.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.dlgOver.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) runAct(btn.dataset.act);
+});
+el.tiles.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tile');
+  if (btn && !btn.disabled) toggleTile(Number(btn.dataset.t));
+});
+el.btnHome.addEventListener('click', () => { if (ui.view === 'game') goLobby(); });
+el.btnRules.addEventListener('click', () => el.dlgRules.showModal());
+el.btnSettings.addEventListener('click', () => { renderSettings(); el.dlgSettings.showModal(); });
+el.btnSound.addEventListener('click', () => setSetting('sound', !ui.settings.sound));
+document.querySelectorAll('dialog').forEach((dlg) => {
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
+  });
+});
+
+/* ---- Settings ---- */
+function applySettings() {
+  const st = ui.settings;
+  Sound.enabled = false; // Creative Claw effects only
+  Voice.enabled = st.voice && Voice.supported;
+  if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
+  if (st.tv) root.dataset.tv = 'on'; else { delete root.dataset.tv; delete root.dataset.idle; }
+  el.btnSound.setAttribute('aria-pressed', String(st.sound));
+  el.btnSound.setAttribute('aria-label', st.sound ? 'Sound on. Tap to mute.' : 'Sound off. Tap to turn on.');
+}
+function renderSettings() {
+  el.dlgSettings.querySelectorAll('[data-setting]').forEach((row) => {
+    const key = row.dataset.setting;
+    const on = key === 'fullscreen' ? !!document.fullscreenElement : !!ui.settings[key];
+    row.setAttribute('aria-checked', String(on));
+  });
+  if (!Voice.supported) {
+    el.dlgSettings.querySelector('[data-setting="voice"]').disabled = true;
+    setText(el.voiceNote, 'Not available on this device.');
+  }
+  $('rowFullscreen').hidden = !(document.documentElement.requestFullscreen && document.fullscreenEnabled);
+  setText(el.roomCode, controller.state.roomCode || '—');
+}
+function setSetting(key, value) {
+  ui.settings[key] = value;
+  Store.saveSettings(ui.settings);
+  applySettings();
+  renderSettings();
+  if (key === 'sound' && value) { Sound.unlock(); Sound.pick(); }
+  scheduleRender();
+}
+el.dlgSettings.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-setting]');
+  if (!row || row.disabled) return;
+  const key = row.dataset.setting;
+  if (key === 'fullscreen') {
+    const req = document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    Promise.resolve(req).catch(() => {}).finally(renderSettings);
+    return;
+  }
+  setSetting(key, !ui.settings[key]);
+});
+document.addEventListener('fullscreenchange', renderSettings);
+
+/* ---- TV support: keep screen awake, hide idle pointer ---- */
+const Wake = {
+  lock: null,
+  pending: false,
+  async want(on) {
+    if (!('wakeLock' in navigator) || this.pending) return;
+    try {
+      if (on && !this.lock && document.visibilityState === 'visible') {
+        this.pending = true;
+        this.lock = await navigator.wakeLock.request('screen');
+        this.lock.addEventListener('release', () => { this.lock = null; });
+      } else if (!on && this.lock) {
+        this.pending = true;
+        await this.lock.release();
+        this.lock = null;
+      }
+    } catch { /* denied or unsupported */ } finally {
+      this.pending = false;
+    }
+  },
+};
+let idleTimer = 0;
+document.addEventListener('pointermove', () => {
+  if (root.dataset.idle) delete root.dataset.idle;
+  clearTimeout(idleTimer);
+  if (ui.settings.tv) idleTimer = setTimeout(() => { root.dataset.idle = 'true'; }, 2500);
+}, { passive: true });
+
+/* ---- Keyboard & TV remote ---- */
+function focusables() {
+  const dlg = document.querySelector('dialog[open]');
+  const scope = dlg || document;
+  return [...scope.querySelectorAll('button, input')].filter((n) =>
+    !n.disabled && !n.hidden && n.offsetParent !== null && (dlg || !n.closest('dialog')));
+}
+document.addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const inField = e.target instanceof HTMLInputElement && e.target.type === 'text';
+  const arrows = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  if (!inField && e.key in arrows) {
+    const list = focusables();
+    if (!list.length) return;
+    const at = list.indexOf(document.activeElement);
+    const next = at === -1 ? list[0] : list[(at + arrows[e.key] + list.length) % list.length];
+    next.focus();
+    e.preventDefault();
+    return;
+  }
+  if (inField || document.querySelector('dialog[open]') || ui.view !== 'game') return;
+  const k = e.key.toLowerCase();
+  if (k >= '1' && k <= '9') { toggleTile(Number(k)); e.preventDefault(); }
+  else if (k === '0') { toggleTile(10); e.preventDefault(); }
+  else if (k === 'r') runAct(el.btnB.dataset.act === 'roll2' ? 'roll2' : '');
+  else if (k === 'o') runAct('roll1');
+  else if (k === 's') runAct('shut');
+  else if (k === 'c') runAct('clear');
+  else if (k === 'n') runAct('next');
+});
+
+document.addEventListener('pointerdown', () => Sound.unlock(), { passive: true });
+document.addEventListener('keydown', () => Sound.unlock());
+
+/* ---- Bot driver: plays local bot turns with readable pacing ---- */
+const BotDriver = (() => {
+  let token = 0;
+  let running = false;
+
+  async function poke() {
+    if (running) return;
+    const s = controller.state;
+    if (ui.view !== 'game' || s.status !== 'PLAYING' || ui.busy) return;
+    const cur = Engine.currentPlayer(s);
+    if (!cur || !cur.isBot || !cur.isLocal) return;
+
+    running = true;
+    const my = ++token;
+    const seq = s.gameData.seq;
+    const alive = () => my === token && ui.view === 'game' && controller.state.status === 'PLAYING'
+      && Engine.currentPlayer(controller.state)?.id === cur.id && !ui.busy;
+    const skill = ui.setup.botSkill;
+    try {
+      const g = s.gameData;
+      if (g.phase === 'TURN_OVER') {
+        await sleep(2300);
+        if (alive() && controller.state.gameData.seq === seq) controller.next();
+        return;
+      }
+      await sleep(650);
+      if (!alive()) return;
+      if (g.phase === 'READY') {
+        controller.roll(Bot.dice(controller.state, skill));
+        return;
+      }
+      if (g.phase === 'CHOOSING') {
+        const plan = Bot.tiles(controller.state, skill);
+        ui.sel = [];
+        for (const t of plan) {
+          if (!alive()) return;
+          ui.sel = [...ui.sel, t];
+          Sound.pick();
+          scheduleRender();
+          await sleep(320);
+        }
+        await sleep(350);
+        if (alive()) controller.shut(plan);
+      }
+    } finally {
+      running = false;
+      if (my === token) setTimeout(poke, 30);
+    }
+  }
+  function cancel() { token++; running = false; }
+  return { poke, cancel };
+})();
+
+/* ---- Boot ---- */
+const controller = new NetworkController();
+
+(function boot() {
+  const savedSettings = Store.loadSettings();
+  if (savedSettings) Object.assign(ui.settings, savedSettings);
+  const savedSetup = Store.loadSetup();
+  if (savedSetup && Array.isArray(savedSetup.roster) && savedSetup.roster.length >= RULES.minPlayers) {
+    ui.setup = {
+      tiles: RULES.tileSets.includes(savedSetup.tiles) ? savedSetup.tiles : 9,
+      rounds: RULES.roundOptions.includes(savedSetup.rounds) ? savedSetup.rounds : 1,
+      botSkill: savedSetup.botSkill === 'casual' ? 'casual' : 'expert',
+      oneDie: savedSetup.oneDie !== false,
+      shutWins: savedSetup.shutWins !== false,
+      roster: savedSetup.roster.slice(0, RULES.maxPlayers).map((p) => ({ name: String(p.name || ''), isBot: !!p.isBot })),
+    };
+  }
+
+  const saved = Store.loadGame();
+  const startState = saved && saved.status === 'PLAYING' ? saved : Engine.createState(makeRoomCode());
+  controller.use(new LocalAdapter(startState));
+
+  controller.subscribe((state) => {
+    Store.saveGame(state);
+    handleAction(state);
+    scheduleRender();
+    BotDriver.poke();
+  });
+
+  applySettings();
+  ui.seenSeq = startState.gameData.seq;
+  snapDice(startState);
+
+  if (startState.status === 'PLAYING') resumeGame(); // instant pick-up after interruption
+  else renderLobby();
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      Store.saveGame(controller.state);
+      Wake.lock = null;
+    } else {
+      scheduleRender();
+    }
+  });
+})();
+</script>
+<script src="../assets/clean-audio.js"></script></body>
+</html>

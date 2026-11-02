@@ -1,0 +1,10 @@
+POCKET GAMEBOX v23 - ORIGINAL CREATIVE CLAW AUDIO
+
+1. Extract the ZIP fully into a fresh folder.
+2. Double-click INSTALL-NEW-SOUNDS.bat while connected to the internet.
+3. Verify it says 9 / 9 recordings installed.
+4. Open index.html in Chrome or Edge, choose a game and press Voice.
+
+Unlike previous releases, audio playback uses assets/audio/*.mp3 locally and never substitutes robotic voices. The 9 original recordings are downloaded using your existing Creative Claw URLs; NO new generation or Creative Claw credits are required.
+
+IMPORTANT: Because this environment cannot connect to Creative Claw audio CDN, the ZIP does not yet contain the MP3 binary files. You must run the installer on Windows. If downloads fail, open the links in the script and save MP3 files to assets/audio under the names listed there.
