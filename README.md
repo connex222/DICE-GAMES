@@ -1,13 +1,34 @@
-POCKET GAMEBOX ALPHA — 2 November 2026
+# Pocket Gamebox
 
-1. Extract the whole ZIP to a new folder.
-2. Double-click INSTALL-NEW-SOUNDS.bat while connected to the internet.
-3. Confirm 94 / 94 files downloaded successfully.
-4. Double-click START-POCKET-GAMEBOX.bat (or open index.html).
+Seven dice games in one place, castable to a TV:
 
-All seven games are included: Gilded Five, Shut the Box, Liar's Dice, Bust or Bank, Generala, Ten of a Kind and Brain Raid.
-The original Creative Claw audio files are NOT embedded in this ZIP; the installer retrieves them. Once installed they are stored locally.
+| Game | What it is |
+|---|---|
+| Gilded Five | Casino-style five-dice scoring game |
+| Shut the Box | Classic pub dice game |
+| Liar's Dice | Bluffing game |
+| Bust or Bank | Push-your-luck 10,000 game |
+| Generala | Latin American five-dice classic |
+| Ten of a Kind | Race to roll ten the same |
+| Brain Raid | Zombie push-your-luck game |
 
-ALPHA QA: HTML inline JavaScript syntax validated for all nine pages. ZIP completeness validated. Live game flow, actual audio event timing and mobile browser tests are NOT yet certified.
+**Play it:** https://connex222.github.io/DICE-GAMES/
 
-If you already have v31 with 94/94 sounds installed, copy its assets\audio folder into this Alpha folder to avoid re-downloading; the installer remains available as a backup.
+## How to use it
+
+1. Open the link above in Chrome or Edge. To show it on a TV, cast the browser tab.
+2. Pick a game from the lobby.
+
+To play from your own PC instead, download the repository and double-click `START-POCKET-GAMEBOX.bat`.
+
+## Sound
+
+All 94 sound files are included in `assets/audio`. If any go missing from a local copy, double-click `INSTALL-NEW-SOUNDS.bat` to download them again.
+
+## Status
+
+Alpha (2 November 2026). Live game flow, audio timing and mobile browsers are still being tested. Release notes are in `docs/ALPHA-NOTES.md`; older notes are in `docs/history/`.
+
+## For developers and AI assistants
+
+See `CLAUDE.md` for the build rules.
