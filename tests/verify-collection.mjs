@@ -11,6 +11,7 @@ for(const slug of games){
  assert.equal((index.match(new RegExp('href="play\\.html\\?game='+slug+'"','g'))||[]).length,2,slug+' desktop + phone tile');
  assert.ok(play.includes("'"+slug+"'")||play.includes('"'+slug+'"'),slug+' wrapper mapping');
  assert.ok(g.includes('../assets/pocket-premium.css'),slug+' uses shared premium layer');
+ if(slug!=='brain-raid')assert.ok(g.includes('href="../index.html" target="_top"'),slug+' exits iframe to actual lobby');
  assert.ok(g.includes('clean-audio.js'),slug+' recorded-asset bridge');
  assert.ok(g.includes('localStorage'),slug+' saves progress');
  assert.ok(g.includes('btnRules')||g.includes('id="rules"'),slug+' rules entry');
@@ -20,6 +21,7 @@ for(const slug of games){
  console.log('PASS',slug,'route, source syntax, save, help and premium layer');
 }
 assert.ok(!index.includes('index(6).html'),'legacy index is not a game');
+assert.ok(index.includes('PocketGameboxProgress?.reset()'),'reset clears actual game state, not only lobby prefs');
 assert.equal((play.match(/'games\/[^']+\.html'/g)||[]).length,7,'seven wrapper entries');
 for(const file of ['pocket-quality.js','pocket-lobby.js','clean-audio.js']){
  new vm.Script(read('assets/'+file),{filename:file});

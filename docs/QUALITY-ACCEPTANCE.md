@@ -42,3 +42,8 @@ A seven-of-seven completed-game matrix, matching audio and mobile evidence, peer
 
 ## Automated reducer-session evidence
 The Node test tests/engine-sessions.mjs exercises real production rules and complete reducer-state sessions, with one Gilded Five scorecard simulation. This does NOT certify completed browser playthroughs, sound playback, or phone usability. Those acceptance cells remain PENDING.
+
+## Collection-level defect corrected
+The old lobby Reset control only targeted pg-prefixed keys, while game saves use independent names. Reset now deletes the seven actual saved-game keys and five local record/best keys, retaining sound preferences. Existing game-level Lobby links open the actual collection rather than loading the lobby inside the game iframe; Brain Raid uses the fixed wrapper Games button.
+
+The current Music preference in the original lobby has no confirmed soundtrack implementation. This remains an audio feature gap; it is not counted as a passing music test.
