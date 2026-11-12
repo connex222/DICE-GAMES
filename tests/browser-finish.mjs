@@ -25,7 +25,7 @@ const configs={
  'ten-of-a-kind':{key:'tenofakind.v1.setup',value:{mode:'turns',limit:45,speed:'medium',roster:[ONE]}},
  'brain-raid':{key:'brainraid.v2.setup',value:{mode:'classic',botStyle:'careful',roster:[ONE]}}
 };
-const report={created:new Date().toISOString(),purpose:'Full real-browser button-to-results game sessions, replay and corrupt saved-state recovery',cases:[],failures:[]};
+const report={created:new Date().toISOString(),purpose:'Full real-browser button-to-results game sessions and replay',cases:[],failures:[]};
 mkdirSync('qa-evidence/finished',{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true,args:['--autoplay-policy=no-user-gesture-required']});
 async function begin(slug){
@@ -145,7 +145,9 @@ await session('bust-or-bank',async({page,frame})=>{
 await session('generala',async({page,frame})=>{
  let actions=0;
  for(let i=0;i<12&&!done(await state(page,'generala'));i++){
-   await act(frame,'roll');actions++;
+   const before=await state(page,'generala');
+   assert.equal(before.gameData.phase,'READY','Every new Generala turn starts ready to roll');
+   await frame.locator('#btnB[data-act="roll"]').click({timeout:12500});actions++;
    const cell=frame.locator('#scorecard [data-cat]:not([disabled])').first();
    await cell.waitFor({timeout:9000});
    await cell.click();actions++;
