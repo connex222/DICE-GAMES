@@ -79,6 +79,36 @@ try{
    : await iframe.locator('#app').getAttribute('data-view')==='game';
   check(started,'Actual game starts '+slug);
   await page.screenshot({path:'qa-evidence/screens/'+slug+'-playing-390.png'});
+  // Execute the first actual player action, not just a setup screen and a
+  // synthetic audio event. The rule engines determine the authoritative result.
+  const saveKeys={
+   'gilded-five':'gildedFive.game.v2','shut-the-box':'shutthebox.v1.game',
+   'liars-dice':'liarsdice.v1.game','bust-or-bank':'bustorbank.v1.game',
+   'generala':'generala.v1.game','ten-of-a-kind':'tenofakind.v1.game',
+   'brain-raid':'brainraid.v2.game'};
+  const snapshot=()=>page.evaluate(k=>localStorage.getItem(k),saveKeys[slug]);
+  const stateBefore=await snapshot();
+  const assetsBefore=assetHits.length;
+  if(slug==='gilded-five'){
+   await page.waitForTimeout(1200);
+   await iframe.locator('#btnRoll').click({timeout:7000});
+  }else if(slug==='ten-of-a-kind'){
+   await page.waitForTimeout(3500);
+   await iframe.locator('[data-roll="p1"]').first().click({timeout:6000});
+  }else{
+   await iframe.locator('#btnB').click({timeout:7000});
+  }
+  await page.waitForTimeout(1250);
+  const stateAfter=await snapshot();
+  check(stateBefore!==stateAfter,'First real gameplay action changes saved state '+slug);
+  const expectedAudio={
+   'gilded-five':'dice.mp3','shut-the-box':'shut-dice-fx.mp3',
+   'bust-or-bank':'bust-dice-fx.mp3','generala':'gen-dice-fx.mp3',
+   'ten-of-a-kind':'ten-dice-fx.mp3','brain-raid':'zombie-dice-fx.mp3'};
+  if(expectedAudio[slug]){
+   check(assetHits.slice(assetsBefore).some(x=>x.url===expectedAudio[slug]&&x.status===200),
+     'Recorded action dice effect served '+slug,{assets:assetHits.slice(assetsBefore)});
+  }
   // Standalone help is reachable again from gameplay.
   await page.locator('#guide-toggle').click();
   check(await page.locator('#guide-panel.open').count()===1,'Guide reachable in active game '+slug);
@@ -103,6 +133,12 @@ try{
   report.tests.push({slug,stage:'refresh',storageKeys:progress.map(x=>x[0]),assets:assetHits.slice(0,12),errors,failedRequests});
   check(errors.length===0,'No browser JS exceptions '+slug,{errors});
   check(failedRequests.length===0,'No missing asset responses '+slug,{failedRequests});
+  await page.locator('#home').click();
+  check(await page.locator('#confirm.open').count()===1,'Back-to-games confirmation '+slug);
+  await page.locator('#quit').click();
+  await page.waitForURL('**/index.html');
+  const saved=page.locator('.mobile-card[href="play.html?game='+slug+'"]');
+  check(await saved.getAttribute('data-progress')==='SAVED','Return to collection shows saved game '+slug);
   await context.close();
  }
 } catch(e){report.failures.push({desc:'Browser suite aborted',message:String(e),stack:e.stack});console.error(e);}
