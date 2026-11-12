@@ -63,7 +63,7 @@ async function begin(slug){
  return {context,page,frame,errors,net};
 }
 const state=async(page,slug)=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'null'),SAVE[slug]);
-const act=async(frame,action)=>frame.locator('#btnB[data-act="'+action+'"], #btnA[data-act="'+action+'"]').first().click({timeout:12500});
+const act=async(frame,action)=>frame.locator('#btnB[data-act="'+action+'"]:visible, #btnA[data-act="'+action+'"]:visible').first().click({timeout:12500});
 const done=s=>s?.status==='GAME_OVER'||s?.phase==='over';
 const settle=async(page,slug,{timeout=12000}={})=>page.waitForFunction(k=>{
  const s=JSON.parse(localStorage.getItem(k)||'null');
@@ -83,6 +83,10 @@ async function session(slug,fn){
    await results.waitFor({state:'visible',timeout:16000});
    const headline=await results.innerText();
    assert.ok(headline.length>14,slug+' real result screen populated');
+   if(slug==='brain-raid'){
+     const subtitle=await t.frame.locator('#overSub').innerText();
+     assert.ok(subtitle.includes(final.players[0].score+' brains'),'Brain Raid record copy must use actual final score, not target');
+   }
    await t.page.screenshot({path:'qa-evidence/finished/'+slug+'-result.png'});
    const screenshot='qa-evidence/finished/'+slug+'-result.png';
    // Replay must start another session, clearing the previous result UI.

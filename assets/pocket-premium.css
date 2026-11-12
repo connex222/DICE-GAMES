@@ -38,3 +38,6 @@ dialog::backdrop { background:rgba(0,9,13,.83); backdrop-filter:blur(5px); }
 html[data-pocket-embedded="true"] .gb-home,
 html[data-pocket-embedded="true"] #btnSound{display:none!important}
 html[data-pocket-embedded="true"] .topbar{border-top:0}
+
+/* Generala's ornamental table inscription collides with the live roll indicator on phones. */
+@media(max-width:500px){html[data-pocket-game="generala"] .board-wrap::after{display:none!important}}
