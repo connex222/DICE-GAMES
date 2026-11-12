@@ -58,6 +58,7 @@ async function begin(slug){
  await frame.locator('body').waitFor({timeout:15000});
  const random=await frame.locator('body').evaluate(()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]});
  assert.equal(random,slug==='liars-dice'?1:0,'Deterministic test dice active');
+ if(slug==='gilded-five')await frame.locator('#counts button[aria-label="1 player"]').click();
  await frame.locator(slug==='gilded-five'?'#btnStart':'#btnB[data-act="start"]').click();
  return {context,page,frame,errors,net};
 }
@@ -141,7 +142,7 @@ await session('generala',async({page,frame})=>{
  let actions=0;
  for(let i=0;i<12&&!done(await state(page,'generala'));i++){
    await act(frame,'roll');actions++;
-   const cell=frame.locator('#card [data-cat]:not([disabled])').first();
+   const cell=frame.locator('#scorecard [data-cat]:not([disabled])').first();
    await cell.waitFor({timeout:9000});
    await cell.click();actions++;
    await act(frame,'score');actions++;
