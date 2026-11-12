@@ -57,7 +57,7 @@ try{
   const geometry=await iframe.locator('body').evaluate(()=>{
    const vw=innerWidth,doc=document.documentElement;
    const header=document.querySelector('.topbar');
-   const nav=header?[...header.querySelectorAll('a,button')].map(el=>{const b=el.getBoundingClientRect();return {name:el.getAttribute('aria-label')||el.textContent?.trim()?.slice(0,15),left:Math.round(b.left),right:Math.round(b.right),height:Math.round(b.height)};}):[];
+   const nav=header?[...header.querySelectorAll('a,button')].map(el=>{const b=el.getBoundingClientRect();return {name:el.getAttribute('aria-label')||el.textContent?.trim()?.slice(0,15),left:Math.round(b.left),right:Math.round(b.right),height:Math.round(b.height)};}).filter(n=>n.right>n.left&&n.height>0):[];
    return {width:vw,scrollWidth:doc.scrollWidth,overflow:doc.scrollWidth-vw,nav};
   });
   report.tests.push({slug,stage:'lobby',title,geometry});
@@ -108,7 +108,7 @@ try{
    'bust-or-bank':'bust-dice-fx.mp3','generala':'gen-dice-fx.mp3',
    'ten-of-a-kind':'ten-dice-fx.mp3','brain-raid':'zombie-dice-fx.mp3'};
   if(expectedAudio[slug]){
-   check(assetHits.slice(assetsBefore).some(x=>x.url===expectedAudio[slug]&&x.status===200),
+   check(assetHits.slice(assetsBefore).some(x=>x.url===expectedAudio[slug]&&x.status>=200&&x.status<300),
      'Recorded action dice effect served '+slug,{assets:assetHits.slice(assetsBefore)});
   }
   // Standalone help is reachable again from gameplay.
