@@ -39,3 +39,6 @@ Recorded MP3 only; no synthetic fallback voice. Effects and spoken voice are sep
 
 ## Release gate
 A seven-of-seven completed-game matrix, matching audio and mobile evidence, peer QA, and explicit owner approval are REQUIRED before merging or deployment. Static source checks are not proof of these criteria.
+
+## Automated reducer-session evidence
+The Node test tests/engine-sessions.mjs exercises real production rules and complete reducer-state sessions, with one Gilded Five scorecard simulation. This does NOT certify completed browser playthroughs, sound playback, or phone usability. Those acceptance cells remain PENDING.
