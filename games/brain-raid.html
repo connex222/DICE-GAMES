@@ -565,7 +565,7 @@ dialog{background:#10261f;color:#f0f6e6;border:2px solid #92c663;border-radius:1
 @media(min-width:800px){.lobby{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start}.lobby .hero,.lobby .resume{grid-column:1/-1}.lobby .card:last-child{grid-column:1/-1}}
 @media(max-width:600px){.hero{min-height:145px;padding:12px}.hero:before{position:static;display:block;order:3;font-size:.62rem;letter-spacing:.08em}.hero-z{width:90px;height:100px}.lede{font-size:.87rem}.tray{border-width:4px;padding:8px}.table{grid-template-rows:auto minmax(220px,1fr) auto}.dock{padding:10px}.btn{font-size:1rem}.topbar .title{font-size:1.3rem!important}}
 @media(prefers-reduced-motion:reduce){.zdie,.btn{transition:none}}
-</style><link rel="stylesheet" href="../assets/stage8-responsive.css">
+</style><link rel="stylesheet" href="../assets/stage8-responsive.css"><link rel="stylesheet" href="../assets/pocket-premium.css">
 </head>
 <body>
 <div id="app" class="shell" data-view="lobby">
@@ -2207,6 +2207,8 @@ renderRulesDice();
 /* ---- Settings ---- */
 function applySettings() {
   const st = ui.settings;
+  st.sound = localStorage.getItem('pg-effects-off') !== 'yes';
+  st.voice = localStorage.getItem('pg-quiet-voice') === 'on';
   Sound.enabled = st.sound;
   Voice.enabled = st.voice;
   if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
@@ -2226,6 +2228,8 @@ function renderSettings() {
 }
 function setSetting(key, value) {
   ui.settings[key] = value;
+  if (key === 'sound') { localStorage.setItem('pg-effects-off', value ? 'no' : 'yes'); window.parent.postMessage({type:'pocket-audio-pref',effects:value},'*'); }
+  if (key === 'voice') { localStorage.setItem('pg-quiet-voice', value ? 'on' : 'off'); window.parent.postMessage({type:'pocket-audio-pref',voice:value},'*'); }
   Store.saveSettings(ui.settings);
   applySettings();
   renderSettings();

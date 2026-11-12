@@ -494,7 +494,7 @@ html,body{background:#0c090b!important;color:#fff0cd}
 @media(max-width:370px){.gb-home .gb-word{display:none}.gb-home{min-width:40px}}
 @media(prefers-reduced-motion:reduce){.tile-inner,.btn{transition:none!important}}
 </style>
-<link rel="stylesheet" href="../assets/stage8-responsive.css">
+<link rel="stylesheet" href="../assets/stage8-responsive.css"><link rel="stylesheet" href="../assets/pocket-premium.css">
 </head>
 <body>
 <div id="app" class="shell" data-view="lobby">
@@ -1293,9 +1293,13 @@ function showStamp(text, tone, ms, sub = '') {
   setTimeout(scheduleRender, ms + 30);
 }
 
+let lastFeedbackEvent = null;
 function afterTurnFeedback(s, shut) {
   const lt = s.gameData.lastTurn;
   if (!lt) return;
+  const event = [s.lastAction?.seq,lt.playerId,lt.total,lt.score,shut].join(':');
+  if (event === lastFeedbackEvent) return; // Only one stop/turn cue per action.
+  lastFeedbackEvent = event;
   const who = nameOf(s, lt.playerId);
   if (shut) {
     showStamp('Box shut!', 'success', 2000, Engine.isSolo(s) ? 'Perfect score: 0' : `${who} scores 0`);
@@ -1849,6 +1853,8 @@ document.querySelectorAll('dialog').forEach((dlg) => {
 /* ---- Settings ---- */
 function applySettings() {
   const st = ui.settings;
+  st.sound = localStorage.getItem('pg-effects-off') !== 'yes';
+  st.voice = localStorage.getItem('pg-quiet-voice') === 'on';
   Sound.enabled = false; // Creative Claw effects only
   Voice.enabled = st.voice && Voice.supported;
   if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
@@ -1871,6 +1877,8 @@ function renderSettings() {
 }
 function setSetting(key, value) {
   ui.settings[key] = value;
+  if (key === 'sound') { localStorage.setItem('pg-effects-off', value ? 'no' : 'yes'); window.parent.postMessage({type:'pocket-audio-pref',effects:value},'*'); }
+  if (key === 'voice') { localStorage.setItem('pg-quiet-voice', value ? 'on' : 'off'); window.parent.postMessage({type:'pocket-audio-pref',voice:value},'*'); }
   Store.saveSettings(ui.settings);
   applySettings();
   renderSettings();
