@@ -1,7 +1,7 @@
 # Pocket Gamebox — quality branch QA / acceptance gate
 Date: 12 November 2026
 Branch: improvement/pocket-gamebox-quality
-Status: IN DEVELOPMENT — no merge, no deploy.
+Status: Owner authorised merge and deployment of the alpha quality release on 12 November 2026. Automated checks are green. Physical-device sound and full optional-mode coverage remain unverified.
 
 ## Confirmed architecture
 The ONLY seven game pages are:
@@ -35,7 +35,7 @@ index.html is the seven-tile lobby. play.html is a wrapper with the navigation a
 
 **Viewport scope:** The collection was checked at 320/375/390/430 CSS pixels without horizontal overflow. Individual game flows were executed at a 390-pixel touch-emulated viewport. Actual iOS Safari/Android Chrome, landscape layouts, keyboard and screen-reader audits, speaker playback, and exhaustive mode/outcome testing remain unverified.
 
-**Release decision: HOLD.** The automated representative paths are now proven, but the original manual acceptance gate (physical audio, multi-device, mode-specific outcomes and owner sign-off) has not been satisfied.
+**Release decision:** Owner explicitly authorised merging and deploying on 12 November 2026 despite the remaining manual QA gaps. Treat this as an **alpha release with known risks**, not physical-device sign-off. Never describe untested sound, multiple devices, or optional modes as certified.
 
 ## Test procedure for every title
 Open via both desktop and mobile collection card. Start a game; confirm short quick guide, game-specific full rules, accessible buttons and no horizontally clipped controls. Test every documented mode. Play an actual complete session with at least one human and, where offered, a bot; screenshot the final state. Start a second game and refresh mid-turn; verify the stored state, scoreboard and next legal move are intact. Tap roll/action buttons rapidly and ensure there is never a double score or a result differing from the landed faces. Check ties and invalid moves. With sound ON, listen to the roll at the start of animation, an event/reveal cue after the decisive result and no overlapping voice. Toggle effects OFF and voice OFF separately, then back ON; test after tab background/return. Repeat at 320, 375, 390 and 430 CSS pixels in portrait and landscape; check screen reader labels, 44px targets and reduced motion.
@@ -47,7 +47,7 @@ node tests/verify-collection.mjs
 Recorded MP3 only; no synthetic fallback voice. Effects and spoken voice are separately gated, with independent roll and event effect channels. Announcer lines are restricted to meaningful moments with per-event cooldown; shut-no-move has a 30-second repeated-line guard. Mobile autoplay still requires a genuine activation gesture on some browsers; do not claim verified until measured on iOS Safari and Android Chrome.
 
 ## Release gate
-A seven-of-seven *representative browser* completion matrix has now passed. Full mode/outcome coverage, audible physical phone tests, peer QA, and explicit owner approval remain REQUIRED before merging or deployment. Source and browser checks do not certify physical-device sound or UX.
+Seven representative complete browser games have passed and the owner authorised this alpha deployment. Full mode/outcome coverage, audible physical-phone testing and independent acceptance remain REQUIRED before claiming production-level certification. Source and browser tests do not certify physical-device sound or UX.
 
 ## Automated reducer-session evidence
 The Node test tests/engine-sessions.mjs exercises real production rules and complete reducer-state sessions, with one Gilded Five scorecard simulation. This reducer suite alone does not certify browser UX, sound playback or phone usability. Full representative browser UI sessions were separately verified in the workflow listed above. Physical phone listening and remaining mode coverage are still PENDING.
