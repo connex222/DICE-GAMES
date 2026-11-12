@@ -28,6 +28,7 @@ try{
  for(const slug of games){
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   const page=await context.newPage();
+  page.setDefaultTimeout(6500);
   const errors=[],failedRequests=[],assetHits=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('response',r=>{
@@ -50,7 +51,7 @@ try{
    await rules.click({timeout:8000});
    const shown=slug==='gilded-five'?await iframe.locator('#rules:not([hidden])').count():await iframe.locator('dialog#dlgRules[open]').count();
    check(shown>0,'Actual in-game rules open '+slug);
-   if(slug==='gilded-five')await iframe.locator('[data-act="close"]').first().click().catch(()=>{});
+   if(slug==='gilded-five')await iframe.locator('#rules [data-close="rules"]').click({timeout:5000});
    else await iframe.locator('body').press('Escape').catch(()=>{});
   }
   const geometry=await iframe.locator('body').evaluate(()=>{
