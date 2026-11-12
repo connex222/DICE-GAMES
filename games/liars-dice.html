@@ -520,7 +520,7 @@ html,body{background:#16090d!important;color:#ffecd7!important}
 @media(max-width:375px){.seat{min-width:4.7rem}.topbar{gap:3px}.title{font-size:.95rem!important}}
 @media(prefers-reduced-motion:reduce){.seat,.fdie,.cup-wrap{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="../assets/stage8-responsive.css">
+<link rel="stylesheet" href="../assets/stage8-responsive.css"><link rel="stylesheet" href="../assets/pocket-premium.css">
 </head>
 <body>
 <div id="app" class="shell" data-view="lobby">
@@ -528,7 +528,7 @@ html,body{background:#16090d!important;color:#ffecd7!important}
   <!-- Top header bar -->
   <header class="topbar">
     <div class="tb-left">
-      <a class="gb-home" href="../index.html" aria-label="Return to Pocket Gamebox lobby">⌂ <span>LOBBY</span></a>
+      <a class="gb-home" href="../index.html" target="_top" aria-label="Return to Pocket Gamebox lobby">⌂ <span>LOBBY</span></a>
       <button id="btnHome" class="icon-btn" type="button" aria-label="Menu">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
@@ -1975,6 +1975,8 @@ document.querySelectorAll('dialog').forEach((dlg) => {
 /* ---- Settings ---- */
 function applySettings() {
   const st = ui.settings;
+  st.sound = localStorage.getItem('pg-effects-off') !== 'yes';
+  st.voice = localStorage.getItem('pg-quiet-voice') === 'on';
   Sound.enabled = st.sound;
   Voice.enabled = st.voice && Voice.supported;
   if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
@@ -1997,6 +1999,8 @@ function renderSettings() {
 }
 function setSetting(key, value) {
   ui.settings[key] = value;
+  if (key === 'sound') { localStorage.setItem('pg-effects-off', value ? 'no' : 'yes'); window.parent.postMessage({type:'pocket-audio-pref',effects:value},'*'); }
+  if (key === 'voice') { localStorage.setItem('pg-quiet-voice', value ? 'on' : 'off'); window.parent.postMessage({type:'pocket-audio-pref',voice:value},'*'); }
   Store.saveSettings(ui.settings);
   applySettings();
   renderSettings();

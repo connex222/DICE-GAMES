@@ -1,0 +1,22 @@
+/* Game wrapper: visible premium controls and legible, self-contained per-game rules. */
+.bar{background:linear-gradient(100deg,#081d1c,#173e35 58%,#082120)!important;border-bottom:1px solid #dfb97078!important;box-shadow:0 4px 20px #0009}
+.label{font-size:clamp(13px,2.6vw,18px)!important;color:#ffe6a6!important}
+.home,.expand{min-height:44px!important;min-width:44px!important;border-radius:12px!important;border:1px solid #d9bb7580!important;background:#18362e!important;color:#ffe5ad!important}
+.expand[aria-pressed="false"]{color:#c4c4c2!important;border-color:#74878080!important}
+.expand:focus-visible,.home:focus-visible,.float:focus-visible{outline:3px solid #ffe9a1;outline-offset:2px}
+.bar{gap:5px!important;padding-inline:max(6px,env(safe-area-inset-left))!important}
+.home{padding-inline:9px!important}
+#guide-panel .dialog{max-width:460px;text-align:left;padding:24px;background:linear-gradient(145deg,#153c32,#081e20)!important;border:1px solid #e6c27b!important}
+#guide-panel h2{font:800 24px/1.14 Georgia,serif;color:#ffe5a5;margin:0 0 14px}
+#guide-panel p{font-size:15px;line-height:1.65;color:#f2e5ce;white-space:pre-line;margin:0 0 16px}
+#guide-panel .actions{margin-top:16px}
+#guide-panel .actions button{background:linear-gradient(#ffe7b4,#d7a552);color:#20160c}
+#guide-panel.open{display:flex}
+#audio-status{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:390px){.bar .label{font-size:12px!important}.home{font-size:11px!important;padding-inline:7px!important}.expand{padding-inline:6px!important;font-size:15px!important}}
+@media(max-height:500px) and (orientation:landscape){.bar{min-height:46px!important;flex-basis:46px!important}.home,.expand{min-height:40px!important}}
+@media(prefers-reduced-motion:reduce){#guide-panel{backdrop-filter:none}}
+
+#effects,#listen{font:900 12px/1 system-ui,sans-serif!important;letter-spacing:.035em;flex:0 0 44px;padding:0!important}
+#effects[aria-pressed="true"],#listen[aria-pressed="true"]{background:#28563f!important;color:#fbedb9!important;border-color:#f2d087!important}
+#effects[aria-pressed="false"],#listen[aria-pressed="false"]{background:#222e2e!important;color:#bbc5c3!important;border-color:#6e858077!important}

@@ -1,0 +1,26 @@
+name: Pocket Gamebox quality contracts
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'play.html'
+      - 'games/**'
+      - 'assets/pocket-*.js'
+      - 'assets/pocket-*.css'
+      - 'assets/clean-audio.js'
+      - 'tests/**'
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check seven game routes, JS source and audio assets
+        run: |
+          node tests/verify-collection.mjs
+          node tests/engine-sessions.mjs

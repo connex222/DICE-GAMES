@@ -27,7 +27,13 @@ All 94 sound files are included in `assets/audio`. If any go missing from a loca
 
 ## Status
 
-Alpha (2 November 2026). Live game flow, audio timing and mobile browsers are still being tested. Release notes are in `docs/ALPHA-NOTES.md`; older notes are in `docs/history/`.
+**Alpha quality release — 12 November 2026.** All seven games passed representative complete-browser playthroughs (start, game actions, visible final results, replay), production rules tests, 390px touch-emulated interaction, and collection save/refresh checks. This does **not** certify physical iOS/Android speaker playback, multi-device use, or every optional mode. These remain known acceptance risks.
+
+- [Quality test and limitations](docs/QUALITY-ACCEPTANCE.md)
+- [November release record](docs/RELEASE-2026-11-12.md)
+- [Original alpha notes](docs/ALPHA-NOTES.md) and [historical notes](docs/history/)
+
+**Deployment:** GitHub Pages publishes the contents of `main` at the Play link above. There is no Render service for this static collection. Do not create one as part of routine releases.
 
 ## For developers and AI assistants
 

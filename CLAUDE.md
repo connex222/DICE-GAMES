@@ -7,7 +7,7 @@ Instructions for AI assistants working in this repository.
 Pocket Gamebox is a collection of seven dice games in a casino-style lobby, played in one browser and castable to a TV: Gilded Five, Shut the Box, Liar's Dice, Bust or Bank, Generala, Ten of a Kind and Brain Raid.
 
 - Live: https://connex222.github.io/DICE-GAMES/ (GitHub Pages, updates automatically from `main`)
-- Status: Alpha (2 November 2026). See `docs/ALPHA-NOTES.md`.
+- Status: Alpha quality release (12 November 2026). See `docs/RELEASE-2026-11-12.md` and `docs/QUALITY-ACCEPTANCE.md`; the 2 November notes are historical.
 
 ## Architecture
 

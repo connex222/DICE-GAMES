@@ -1,0 +1,38 @@
+name: Pocket Gamebox browser and phone-layout QA
+on:
+  pull_request:
+    paths:
+      - 'tests/browser-quality.mjs'
+      - '.github/workflows/pocket-browser-qa.yml'
+      - 'play.html'
+      - 'index.html'
+      - 'games/**'
+      - 'assets/pocket-*'
+  workflow_dispatch:
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install browser automation without downloading duplicate browsers
+        run: npm install --no-save --no-audit --no-fund playwright
+      - name: Start local-only server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/pocket-http.log 2>&1 &
+          sleep 2
+      - name: Run Chromium browser and viewport QA
+        run: node tests/browser-quality.mjs
+      - name: Preserve screenshots, audio requests, viewport and error evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocket-browser-evidence
+          path: qa-evidence/
+          if-no-files-found: warn
+          retention-days: 7

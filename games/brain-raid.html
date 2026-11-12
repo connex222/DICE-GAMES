@@ -565,7 +565,7 @@ dialog{background:#10261f;color:#f0f6e6;border:2px solid #92c663;border-radius:1
 @media(min-width:800px){.lobby{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start}.lobby .hero,.lobby .resume{grid-column:1/-1}.lobby .card:last-child{grid-column:1/-1}}
 @media(max-width:600px){.hero{min-height:145px;padding:12px}.hero:before{position:static;display:block;order:3;font-size:.62rem;letter-spacing:.08em}.hero-z{width:90px;height:100px}.lede{font-size:.87rem}.tray{border-width:4px;padding:8px}.table{grid-template-rows:auto minmax(220px,1fr) auto}.dock{padding:10px}.btn{font-size:1rem}.topbar .title{font-size:1.3rem!important}}
 @media(prefers-reduced-motion:reduce){.zdie,.btn{transition:none}}
-</style><link rel="stylesheet" href="../assets/stage8-responsive.css">
+</style><link rel="stylesheet" href="../assets/stage8-responsive.css"><link rel="stylesheet" href="../assets/pocket-premium.css">
 </head>
 <body>
 <div id="app" class="shell" data-view="lobby">
@@ -1725,12 +1725,16 @@ function handleAction(s) {
       Mascot.set('idle', 'Braaains…', 1500);
       break;
     case 'ROLL':
-      if(la.bust)zombieAnnounce(la.bomb?'bomb':'bust');
-      else if(la.lucky)zombieAnnounce('lucky');
-      else if(la.genius)zombieAnnounce('genius');
-      else if(la.newHits)zombieAnnounce('shotgun');
-      else if(la.gained)zombieAnnounce('brains');
+      zombieAnnounce('roll'); // A real dice rattle on EVERY roll, even an empty result.
       animateRoll(la);
+      // Delay the consequence cue until the authoritative faces have visibly landed.
+      later(() => {
+        if(la.bust) zombieAnnounce(la.bomb?'bomb':'bust');
+        else if(la.lucky) zombieAnnounce('lucky');
+        else if(la.genius) zombieAnnounce('genius');
+        else if(la.newHits) zombieAnnounce('shotgun');
+        else if(la.gained) zombieAnnounce('brains');
+      }, ROLL_MS + la.hand.length * (la.hand.length>3?80:120) + 190);
       break;
     case 'STOP':
       zombieAnnounce(la.gameOver?'winner':la.triggered?'last-round':'bank');
@@ -2029,7 +2033,7 @@ function renderLobby() {
   setText(el.addPlayer, roster.length >= RULES.maxPlayers ? 'Four players is the maximum' : 'Add player');
   const best = Store.loadBest()[ui.setup.mode];
   setText(el.best, roster.length === 1
-    ? (best ? `Solo record (${cfg.name}): ${cfg.target} brains in ${plural(best, 'turn', 'turns')}.` : `Solo: reach ${cfg.target} brains in as few turns as you can.`)
+    ? (best ? `Solo record (${cfg.name}): ${plural(best, 'turn', 'turns')} to reach ${cfg.target}+ brains.` : `Solo: reach ${cfg.target} brains in as few turns as you can.`)
     : '');
   setText(el.modeNote, ui.setup.mode === 'horde'
     ? `Roll ${cfg.handSize} dice at a time from a cup of ${DICE.horde.length}. Watch for genius brains, double barrels and the rare bombs. ${cfg.shotsToBust} hits to blast, first to ${cfg.target}.`
@@ -2131,8 +2135,9 @@ function openGameOver() {
     if (isBest) { bests[g.mode] = turns; Store.saveBest(bests); }
     setText(el.overTitle, `${plural(turns, 'turn', 'turns')}`);
     setText(el.overSub, isBest
-      ? (prev ? `New record! ${cfg.target} brains, beating your old best of ${prev}.` : `Your first ${cfg.name} record: ${cfg.target} brains in ${turns}. Now beat it.`)
-      : `Your ${cfg.name} record is ${plural(prev, 'turn', 'turns')}.`);
+      ? (prev ? `New ${cfg.name} record: ${w.score} brains in ${plural(turns, 'turn', 'turns')}, beating your previous ${plural(prev, 'turn', 'turns')}.`
+        : `Your first ${cfg.name} record: ${w.score} brains in ${plural(turns, 'turn', 'turns')}. Target: ${cfg.target}. Now beat it.`)
+      : `You scored ${w.score} brains in ${plural(turns, 'turn', 'turns')}. Your ${cfg.name} record is ${plural(prev, 'turn', 'turns')}.`);
   } else {
     setText(el.overTitle, `${w.name} wins!`);
     setText(el.overSub, g.endReason === 'tiebreak' ? `Won the tiebreak with ${w.score} brains.` : `With ${w.score} brains after the final round.`);
@@ -2207,6 +2212,8 @@ renderRulesDice();
 /* ---- Settings ---- */
 function applySettings() {
   const st = ui.settings;
+  st.sound = localStorage.getItem('pg-effects-off') !== 'yes';
+  st.voice = localStorage.getItem('pg-quiet-voice') === 'on';
   Sound.enabled = st.sound;
   Voice.enabled = st.voice;
   if (st.contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast;
@@ -2226,6 +2233,8 @@ function renderSettings() {
 }
 function setSetting(key, value) {
   ui.settings[key] = value;
+  if (key === 'sound') { localStorage.setItem('pg-effects-off', value ? 'no' : 'yes'); window.parent.postMessage({type:'pocket-audio-pref',effects:value},'*'); }
+  if (key === 'voice') { localStorage.setItem('pg-quiet-voice', value ? 'on' : 'off'); window.parent.postMessage({type:'pocket-audio-pref',voice:value},'*'); }
   Store.saveSettings(ui.settings);
   applySettings();
   renderSettings();
