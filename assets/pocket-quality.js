@@ -45,10 +45,10 @@ function audio(key){const a=new Audio(BASE+key+'.mp3');a.preload='auto';return a
 function stop(a){if(a){try{a.pause();a.currentTime=0;}catch(_){}}}
 function stopAll(){stop(voice);voice=null;stop(channels.roll);stop(channels.event);clearTimeout(queuedVoice);queuedVoice=0;}
 function paint(){
- voiceButton.textContent=voiceOn?'🔊':'🔇';voiceButton.title=voiceOn?'Voice on — tap to mute':'Voice off — tap to enable';
+ voiceButton.textContent='VO';voiceButton.title=voiceOn?'Voice on — tap to mute':'Voice off — tap to enable';
  voiceButton.setAttribute('aria-label',voiceOn?'Mute recorded narration':'Enable recorded narration');
  voiceButton.setAttribute('aria-pressed',String(voiceOn));
- effectsButton.textContent=effectsOn?'✦':'✕';effectsButton.title=effectsOn?'Effects on — tap to mute':'Effects off — tap to enable';
+ effectsButton.textContent='FX';effectsButton.title=effectsOn?'Effects on — tap to mute':'Effects off — tap to enable';
  effectsButton.setAttribute('aria-label',effectsOn?'Mute sound effects':'Enable sound effects');
  effectsButton.setAttribute('aria-pressed',String(effectsOn));
 }

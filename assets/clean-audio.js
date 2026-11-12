@@ -11,3 +11,5 @@
 (()=>{'use strict';const game=location.pathname.split('/').pop().replace('.html','');const fx={dice:'dice',zombie:'zombie'};const send=k=>{try{window.parent.postMessage({type:'pocket-audio',key:k},'*')}catch(_){}};window.PocketVoice={enabled:()=>localStorage.getItem('pg-quiet-voice')==='on',announce:()=>{send(game);return true},say:()=>true,match:()=>null,stop:()=>{},hasRecordedEvent:()=>false};window.PocketMixer={enabled:()=>localStorage.getItem('pg-quiet-voice')==='on',volume:()=>0.8,play:()=>null};window.PocketCreativeFX={play:key=>{send(fx[key]||key);return true}};})();
 // Per-game accent; no changes to assets or game rules.
 document.documentElement.dataset.pocketGame = location.pathname.split('/').pop().replace('.html','');
+
+document.documentElement.dataset.pocketEmbedded=(window.parent!==window)?'true':'false';

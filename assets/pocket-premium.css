@@ -32,3 +32,9 @@ dialog::backdrop { background:rgba(0,9,13,.83); backdrop-filter:blur(5px); }
   :where(.dialog,.modal,dialog) { width:min(96vw,640px); }
 }
 @media(prefers-reduced-motion:reduce) { :where(.btn,.icon-btn,.gb-home) { transition:none!important; } }
+
+/* When opened through play.html, its Games and FX controls already exist above
+ * the iframe. Keep the game's own rules/menu, but remove redundant chrome. */
+html[data-pocket-embedded="true"] .gb-home,
+html[data-pocket-embedded="true"] #btnSound{display:none!important}
+html[data-pocket-embedded="true"] .topbar{border-top:0}
