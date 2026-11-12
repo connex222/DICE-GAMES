@@ -131,6 +131,20 @@ try{
    report.warnings.push({slug,issue:'No observed successful dice.mp3 request',assetHits});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.frameLocator('#game').locator('body').waitFor({state:'attached'});
+  // A refresh must restore the real game state and offer an actionable resume.
+  const loaded=JSON.parse(await snapshot()||'null');
+  const canResume=loaded&&(slug==='gilded-five'?loaded.phase==='play':loaded.status==='PLAYING');
+  check(!!canResume,'Valid active game survives refresh '+slug);
+  if(slug==='gilded-five'){
+   check(await page.frameLocator('#game').locator('#btnResume').isVisible(),'Gilded Five offers Resume saved game');
+   await page.frameLocator('#game').locator('#btnResume').click();
+   check(await page.frameLocator('#game').locator('#setup[hidden]').count()===1,'Gilded Five resumes saved table');
+  }else{
+   const resumedView=await page.frameLocator('#game').locator('#app').getAttribute('data-view');
+   check(resumedView==='game','Game resumes on refresh '+slug,{resumedView});
+   if(slug==='ten-of-a-kind'&&loaded.gameData.mode==='race'&&loaded.gameData.phase==='PLAYING')
+     check(loaded.gameData.pausedAt!==null,'Ten of a Kind resumes timed race paused');
+  }
   const progress=await page.evaluate(()=>Object.entries(localStorage).filter(([key])=>key.endsWith('.game')||key.includes('game.v2')));
   report.tests.push({slug,stage:'refresh',storageKeys:progress.map(x=>x[0]),assets:assetHits.slice(0,12),errors,failedRequests});
   check(errors.length===0,'No browser JS exceptions '+slug,{errors});
