@@ -47,3 +47,6 @@ The Node test tests/engine-sessions.mjs exercises real production rules and comp
 The old lobby Reset control only targeted pg-prefixed keys, while game saves use independent names. Reset now deletes the seven actual saved-game keys and five local record/best keys, retaining sound preferences. Existing game-level Lobby links open the actual collection rather than loading the lobby inside the game iframe; Brain Raid uses the fixed wrapper Games button.
 
 The current Music preference in the original lobby has no confirmed soundtrack implementation. This remains an audio feature gap; it is not counted as a passing music test.
+
+## Real browser action smoke checks
+The separate Chromium workflow now verifies one actual first player action per game, requested dice-effect MP3 responses where applicable, and the saved-game tile after returning to the seven-game collection. These checks are distinct from the deterministic full reducer sessions and do not yet replace complete browser finish-to-results tests or listening tests on physical phones.

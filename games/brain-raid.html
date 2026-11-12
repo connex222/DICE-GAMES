@@ -1725,12 +1725,16 @@ function handleAction(s) {
       Mascot.set('idle', 'Braaains…', 1500);
       break;
     case 'ROLL':
-      if(la.bust)zombieAnnounce(la.bomb?'bomb':'bust');
-      else if(la.lucky)zombieAnnounce('lucky');
-      else if(la.genius)zombieAnnounce('genius');
-      else if(la.newHits)zombieAnnounce('shotgun');
-      else if(la.gained)zombieAnnounce('brains');
+      zombieAnnounce('roll'); // A real dice rattle on EVERY roll, even an empty result.
       animateRoll(la);
+      // Delay the consequence cue until the authoritative faces have visibly landed.
+      later(() => {
+        if(la.bust) zombieAnnounce(la.bomb?'bomb':'bust');
+        else if(la.lucky) zombieAnnounce('lucky');
+        else if(la.genius) zombieAnnounce('genius');
+        else if(la.newHits) zombieAnnounce('shotgun');
+        else if(la.gained) zombieAnnounce('brains');
+      }, ROLL_MS + la.hand.length * (la.hand.length>3?80:120) + 190);
       break;
     case 'STOP':
       zombieAnnounce(la.gameOver?'winner':la.triggered?'last-round':'bank');

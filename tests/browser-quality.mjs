@@ -94,11 +94,13 @@ try{
    await iframe.locator('#btnRoll').click({timeout:7000});
   }else if(slug==='ten-of-a-kind'){
    await page.waitForTimeout(3500);
-   await iframe.locator('[data-roll="p1"]').first().click({timeout:6000});
+   // A single-human race uses the primary dock button, not per-player zone buttons.
+   await iframe.locator('#btnB').click({timeout:6500});
   }else{
    await iframe.locator('#btnB').click({timeout:7000});
   }
   await page.waitForTimeout(1250);
+  await page.waitForFunction(({key,old})=>localStorage.getItem(key)!==old,{key:saveKeys[slug],old:stateBefore},{timeout:6500}).catch(()=>{});
   const stateAfter=await snapshot();
   check(stateBefore!==stateAfter,'First real gameplay action changes saved state '+slug);
   const expectedAudio={
