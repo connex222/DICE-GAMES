@@ -31,6 +31,8 @@ assert.ok(mixer.includes('channels={roll:null,event:null}'),'independent dice/ef
 assert.ok(mixer.includes("key==='shut-no-move'"),'Shut the Box repetition guard');
 assert.ok(css.includes('prefers-reduced-motion'),'reduced motion covered');
 assert.ok(play.includes('id="bgm"')&&play.includes('assets/game-music.js'),'game wrapper loads dedicated music toggle');
+assert.ok(play.includes('aria-label="Back to Pocket Gamebox Lobby"'),'every game wrapper exposes clear Back to Lobby navigation');
+assert.ok(play.includes('id="quit" class="quit">Back to Lobby</button>'),'the return confirmation clearly names the lobby');
 assert.ok(shell.includes('max-width:520px')&&shell.includes('flex-wrap:wrap'),'compact phones reserve an in-flow audio toolbar');
 new vm.Script(score,{filename:'game-music.js'});
 for(const slug of games){
