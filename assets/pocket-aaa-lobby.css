@@ -14,7 +14,7 @@ body{background:radial-gradient(ellipse at 50% -10%,#315644 0%,#071916 58%,#040a
 }
 .desktop::before{
   content:"";position:absolute;inset:-24px;z-index:-2;pointer-events:none;
-  background:url('lobby-cinematic.webp') center/cover no-repeat;
+  background:url('aaa-lobby.webp') center/cover no-repeat;
   opacity:.22;filter:blur(12px) saturate(.7) brightness(.68);
 }
 .desktop::after{
@@ -102,7 +102,7 @@ body{background:radial-gradient(ellipse at 50% -10%,#315644 0%,#071916 58%,#040a
  .mobile{background:transparent}
  .mobile-header{border-bottom:1px solid #c89b55!important;background:
    linear-gradient(0deg,#071a19e8,#071c19c8),
-   url('lobby-cinematic.webp') center 40%/cover no-repeat!important}
+   url('aaa-lobby.webp') center 40%/cover no-repeat!important}
  .mobile h1{font-family:Georgia,'Times New Roman',serif;color:#ffdf9c}
  .mobile-version{letter-spacing:.13em!important}
  .mobile-premium-grid{gap:12px}
