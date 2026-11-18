@@ -12,7 +12,11 @@ small,.muted{color:#becec3}.top-right{display:flex;gap:10px;align-items:center;f
 .hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
 .row,.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.actions>*{flex:1 1 150px}.big{font-size:clamp(1.4rem,3vw,2.3rem);font-weight:800}.code{text-align:center;font:900 clamp(2.7rem,6vw,5rem)/1.2 system-ui,sans-serif;letter-spacing:.15em;color:#ffe19b}
 #qr{width:min(270px,75vw);height:auto;background:#fff;padding:8px;border-radius:16px;display:block;margin:12px auto}#joinlink{word-break:break-word;color:#d7e8cf;font-size:.8rem}
-#status{min-height:30px;font-weight:700;color:#ffcf86;padding:5px 2px}.kicker{font-size:.78rem;letter-spacing:.18em;color:#ffd288;font-weight:800}.joinblock{text-align:center}
+#status{min-height:30px;font-weight:700;color:#ffcf86;padding:5px 2px}
+#reconnectOverlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#061412eD;backdrop-filter:blur(5px)}
+#reconnectOverlay .panel{width:min(100%,480px);text-align:center;border:2px solid #f5d591;box-shadow:0 15px 60px #000b}
+#reconnectOverlay h2{font-size:clamp(1.35rem,4vw,2rem)}
+#reconnectOverlay p{line-height:1.5}.kicker{font-size:.78rem;letter-spacing:.18em;color:#ffd288;font-weight:800}.joinblock{text-align:center}
 #games{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}
 .gamechoice{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px;overflow:hidden;background:#183d34;color:#fff1c3;border:2px solid #6a876b;box-shadow:none;min-height:170px}
 .gamechoice img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:#10291f}
@@ -37,6 +41,12 @@ footer{padding-top:24px;font-size:.82rem;color:#a5bbb2;text-align:center}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 </style></head><body><main><header><div><div class="kicker">PREMIUM DICE COLLECTION</div><h1>POCKET GAMEBOX</h1><small>Seven games • Shared television • Two to eight phones</small></div><div class="top-right"><button type="button" id="fullscreen" class="secondary">⛶ Fullscreen</button><button type="button" id="backRoom" class="secondary hidden">← Multiplayer Lobby</button><button type="button" id="music" aria-pressed="false">♫ Music off</button><button type="button" id="fx" class="secondary" aria-pressed="true">✦ FX on</button><a href="https://connex222.github.io/DICE-GAMES/">← Standalone Lobby</a></div></header>
 <p role="status" aria-live="polite" id="status"></p>
+<div id="reconnectOverlay" class="hidden" role="status" aria-live="polite" aria-atomic="true">
+ <div class="panel"><h2 id="reconnectTitle">Server restarting, reconnecting…</h2>
+  <p id="reconnectDetail">Trying to restore your saved game session.</p>
+  <button id="newRoom" class="hidden" type="button">Return to multiplayer lobby</button>
+ </div>
+</div>
 <section id="welcome" class="panel"><h2>Play together, properly</h2><p>Host on your TV or PC. Everyone scans the QR code and plays on their own phone — no passing devices around.</p><div class="actions"><button id="hostBtn">Host TV multiplayer</button><button id="joinBtn" class="secondary">Join from my phone</button></div><p class="muted">For solo play, bots or pass-and-play, use the original standalone collection.</p></section>
 <section id="joinForm" class="panel hidden"><h2>Join a game</h2><label for="roomInput">Room code</label><input id="roomInput" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"><p><label for="nameInput">Your name</label><input id="nameInput" maxlength="22" autocomplete="nickname" placeholder="Enter player name"></p><div class="actions"><button id="joinNow">Join game</button><button class="secondary" id="joinCancel">Back</button></div></section>
 <section id="hostLobby" class="hidden">
@@ -63,6 +73,7 @@ const categories=[['ones','Aces'],['twos','Twos'],['threes','Threes'],['fours','
  ['threeK','3 of a Kind'],['fourK','4 of a Kind'],['full','Full House'],['smS','Small Straight'],['lgS','Large Straight'],['yahtzee','Gilded Five'],['chance','Chance']];
 const genCats=[...categories.slice(0,6),['straight','Straight'],['full','Full'],['poker','Four of a Kind'],['generala','Generala']];
 let socket,session,room='',role='',me='',game='shut-the-box',data=null,choice=[],state=null;
+let connectRequest=null,retryTimer=null,retryDelay=1000,reconnecting=false,restarting=false,roomLost=false;
 const params=new URLSearchParams(location.search);
 let musicEnabled=localStorage.getItem('pocket-gamebox.lobby-music-enabled')!=='false';
 let song=new Audio();song.volume=.10;song.loop=true;song.preload='none';
@@ -76,25 +87,73 @@ const nameOf=id=>data?.players?.find(p=>p.id===id)?.name||'Player';
 const send=(type,extra={})=>{if(socket?.readyState!==1)return say('Server connection is not available. Refresh to reconnect.');socket.send(JSON.stringify({type,code:room,...extra}));};
 const action=(type,extra={})=>send('action',{action:{type,...extra}});
 const isTurn=()=>state?.status==='PLAYING'&&data?.currentPlayerId===me;
+function reconnectNotice(title,detail,lost=false){
+ $('reconnectTitle').textContent=title;
+ $('reconnectDetail').textContent=detail;
+ $('newRoom').classList.toggle('hidden',!lost);
+ $('reconnectOverlay').classList.remove('hidden');
+}
+function connected(){
+ reconnecting=false;restarting=false;roomLost=false;retryDelay=1000;
+ clearTimeout(retryTimer);retryTimer=null;
+ $('reconnectOverlay').classList.add('hidden');
+ say('Connected to multiplayer server.');
+}
 function connect(message){
+ connectRequest=message;
+ clearTimeout(retryTimer);retryTimer=null;
  const url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
- socket=new WebSocket(url);
- socket.onopen=()=>{socket.send(JSON.stringify(message));say('Connected to multiplayer server.');};
- socket.onerror=()=>say('The game server cannot be reached. Check the connection.');
- socket.onclose=()=>say('Connection interrupted. Refresh to reconnect to the same game.');
- socket.onmessage=e=>{try{receive(JSON.parse(e.data))}catch(err){say('Game message could not be displayed.');}};
+ const ws=new WebSocket(url);
+ socket=ws;
+ ws.onopen=()=>{
+  if(socket!==ws)return;
+  // After the first acknowledgement, always resume the same seat with its saved token.
+  const hello=session?.token&&session.room===room
+   ? {type:role==='host'?'resumeHost':'resumePlayer',code:room,token:session.token}
+   : connectRequest;
+  ws.send(JSON.stringify(hello));
+ };
+ ws.onerror=()=>{if(socket===ws)say('The game server cannot be reached. Retrying…');};
+ ws.onclose=e=>{
+  if(socket!==ws||roomLost)return;
+  reconnecting=true;
+  if(e.code===1012)restarting=true;
+  const delay=retryDelay;
+  reconnectNotice(restarting?'Server restarting, reconnecting…':'Connection interrupted, reconnecting…',
+   'Retrying in '+delay/1000+' second'+(delay===1000?'':'s')+'. Your room and seat are saved while the server remains online.');
+  retryTimer=setTimeout(()=>connect(connectRequest),delay);
+  retryDelay=Math.min(10_000,delay*2);
+ };
+ ws.onmessage=e=>{
+  if(socket!==ws)return;
+  try{receive(JSON.parse(e.data))}catch{say('Game message could not be displayed.');}
+ };
 }
 function receive(m){
- if(m.type==='error'){say(m.message);return;}
+ if(m.type==='serverRestarting'){
+  restarting=true;reconnecting=true;
+  reconnectNotice('Server restarting, reconnecting…','The service is restarting. Your game will reconnect if the room survives.');
+  return;
+ }
+ if(m.type==='error'){
+  if(session?.token&&/Room not found|saved player session is no longer available|Host session not recognised/i.test(m.message)){
+   roomLost=true;
+   localStorage.removeItem('pocket-gamebox.seven-mp');
+   reconnectNotice('This multiplayer room has ended',
+    'The server restarted and its in-memory rooms were cleared. Return to the lobby to host or join a new match.',true);
+   return;
+  }
+  say(m.message);return;
+ }
  if(m.type==='expired'){localStorage.removeItem('pocket-gamebox.seven-mp');say('Room expired — return to the lobby to start again.');return;}
  if(m.type==='hosted'){
-   role='host';room=m.code;save({role,room,token:m.token});
+   connected();role='host';room=m.code;save({role,room,token:m.token});
    $('roomCode').textContent=room;$('qr').src='/qr?code='+encodeURIComponent(room);
    $('joinlink').textContent=location.origin+'/multiplayer-seven.html?join='+room;
    history.replaceState(null,'','?host='+room);document.body.classList.remove('phone');changeTrack();
  }
  if(m.type==='joined'){
-  role='player';room=m.code;me=m.id;save({role,room,token:m.token});
+  connected();role='player';room=m.code;me=m.id;save({role,room,token:m.token});
   history.replaceState(null,'','?join='+room);document.body.classList.add('phone');
  }
  if(m.type==='state'){
@@ -288,6 +347,7 @@ $('games').addEventListener('click',e=>{const b=e.target.closest('[data-game]');
 $('hostBtn').onclick=()=>{role='host';document.body.classList.remove('phone');show('hostLobby');connect({type:'host'});};
 $('joinBtn').onclick=()=>show('joinForm');
 $('joinCancel').onclick=()=>show('welcome');
+$('newRoom').onclick=()=>{localStorage.removeItem('pocket-gamebox.seven-mp');location.assign('/multiplayer-seven.html');};
 $('joinNow').onclick=()=>{
  room=$('roomInput').value.trim().toUpperCase();
  const name=$('nameInput').value.trim();
@@ -305,7 +365,7 @@ $('fx').onclick=()=>{fxEnabled=!fxEnabled;localStorage.setItem('pocket-gamebox.f
 document.addEventListener('visibilitychange',()=>{if(document.hidden)song.pause();else if(role==='host'&&musicEnabled)changeTrack();});
 const prev=saved();
 if(prev?.room&&prev?.token&&(!params.has('join')||params.get('join')===prev.room)&&(!params.has('host')||params.get('host')===prev.room)){
- room=prev.room;role=prev.role;
+ room=prev.room;role=prev.role;session=prev;
  document.body.classList.toggle('phone',role==='player');show(role==='host'?'hostLobby':'controller');
  connect({type:role==='host'?'resumeHost':'resumePlayer',code:room,token:prev.token});
 }else if(params.has('join')){$('roomInput').value=params.get('join')?.toUpperCase()||'';show('joinForm');}
