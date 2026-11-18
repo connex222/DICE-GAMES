@@ -59,6 +59,9 @@ test('All seven hosted rooms join by QR and show synchronised private phone view
    const denial=wait(joins[1].ws,d=>d.type==='error');
    send(joins[1].ws,'action',code,{action:{type:'ROLL',values:[6,6,6,6,6]}});
    assert.match((await denial).message,/Wait until it is your turn|not allowed|Wait for your turn/i,game+' action authority');
+   const back=wait(h,d=>d.type==='state'&&d.phase==='LOBBY');
+   send(h,'returnLobby',code);
+   assert.equal((await back).players.length,2,'Return to lobby retains both phones');
   }
 
   // Full eight-handset acceptance at the transport level, plus a ninth rejection.
