@@ -14,11 +14,11 @@
 
 The companion file `brain-raid-v3-approved-art-pack.zip` contains 25 optimised WebP images: the seven approved reference images plus separate live-use mascot expressions, dice icons, mode art, winner art and atmospheric backgrounds.
 
-The archive cannot be committed through the text-only GitHub file edit interface in this session. **The raster images are not yet present in this repository.** Do not claim that the fully illustrated visual redesign is deployed until this directory is uploaded:
+**The 25 WebP images are now committed to `main`** under `assets/brain-raid-v3/` in commit `281f79bdbb3c8c5bb1592c43d24f926c48fc83d6`. The seven reference illustrations are kept alongside derived runtime sprites; reference mockups with example scores are not used as live UI.
 
-`assets/brain-raid-v3/`
+The loader in `assets/brain-raid-v3-art.js` checks each file. Artwork activates after successful loading, while the premium CSS and vector visuals remain available if an image fails.
 
-The loader in `assets/brain-raid-v3-art.js` checks each file. Once present, artwork activates automatically; when absent, the premium CSS and vector visuals still work.
+**Publication status:** GitHub source integration is verified. Live GitHub Pages or Render deployment and real-device gameplay testing are not yet independently verified.
 
 ## Important artwork semantics
 
@@ -33,5 +33,5 @@ The loader in `assets/brain-raid-v3-art.js` checks each file. Once present, artw
 - Run `npm test` or the repository's verified collection test command, plus full gameplay from first turn to winner in Classic and Horde.
 - Test 320, 375, 390, 430px portrait phone widths; phone landscape; tablets; desktop; 1920×1080 TV.
 - Validate resumed saved games, no clipped controls, zero duplicated fullscreen buttons, no confirmation when returning to lobby, working audio toggles, and reduced-motion.
-- Verify all WebP images return HTTP 200 after upload and are visually aligned.
+- Verify all 25 committed WebP files load without HTTP errors on the published game and are visually aligned.
 - Verify the deployed GitHub Pages or Render instance instead of assuming a commit equals a successful deployment.
