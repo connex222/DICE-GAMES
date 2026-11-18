@@ -33,6 +33,13 @@ assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('re
 assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
 assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
 assert.ok(aaaGameCss.includes('Gameplay polish pass'),'shared action/score polish loaded');
+assert.ok(aaaGameCss.includes('Turn-by-turn tactile clarity'),'dice selection uses grounded state treatments');
+for(const [game,state] of [['bust-or-bank','data-valid="false"'],['generala','data-state="held"'],['shut-the-box','.tile.sel'],['ten-of-a-kind','.dbtn.locked']]){
+ assert.ok(aaaGameCss.includes('data-pocket-game="'+game+'"]') && aaaGameCss.includes(state),'visible held/selected states for '+game);
+}
+assert.ok(read('games/bust-or-bank.html').includes('selection not yet valid'),'invalid held dice have explanatory screen-reader label');
+assert.ok(read('games/bust-or-bank.html').includes("'tap to ' + (d.state === 'held' ? 'release' : 'keep')"),'available dice actions are announced');
+
 const shutGame=read('games/shut-the-box.html'),bustGame=read('games/bust-or-bank.html'),brainGame=read('games/brain-raid.html');
 assert.ok(shutGame.includes('const ROLL_MS = reduceMotion ? 150 : 720;'),'Shut the Box uses responsive 720ms physical roll');
 assert.ok(bustGame.includes('const ROLL_MS = reduceMotion ? 150 : 780;'),'Bust or Bank uses responsive 780ms physical roll');
