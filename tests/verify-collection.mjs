@@ -33,6 +33,15 @@ assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('re
 assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
 assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
 assert.ok(aaaGameCss.includes('Gameplay polish pass'),'shared action/score polish loaded');
+const shutGame=read('games/shut-the-box.html'),bustGame=read('games/bust-or-bank.html'),brainGame=read('games/brain-raid.html');
+assert.ok(shutGame.includes('const ROLL_MS = reduceMotion ? 150 : 720;'),'Shut the Box uses responsive 720ms physical roll');
+assert.ok(bustGame.includes('const ROLL_MS = reduceMotion ? 150 : 780;'),'Bust or Bank uses responsive 780ms physical roll');
+assert.ok(shutGame.includes('if (window.parent === window) Sound.rattle(idx.length, ROLL_MS);'),'Shut the Box does not duplicate recorded rattle in iframe');
+assert.ok(bustGame.includes('if (window.parent === window) Sound.rattle(action.rolled.length, ROLL_MS);'),'Bust or Bank does not duplicate recorded rattle in iframe');
+assert.ok(brainGame.includes('if (window.parent === window) Sound.shake();'),'Brain Raid uses recorded rattle when embedded');
+assert.ok(!brainGame.includes("case 'START_GAME':\n      zombieAnnounce('roll');"),'Brain Raid does not sound a false dice roll on game start');
+assert.ok(brainGame.includes('}, 105);'),'Brain Raid face flicker is slower and easier to follow');
+
 assert.ok(aaaGameCss.includes('Signature result feedback'),'actual victory and danger states receive premium styling');
 assert.ok(aaaGameCss.includes('.stamp[data-tone="success"] span'),'winning result uses the game-engine outcome tone');
 assert.ok(aaaGameCss.includes('.stamp[data-tone="danger"] span'),'losing result uses the game-engine outcome tone');
