@@ -187,3 +187,54 @@ html[data-pocket-game] :is(.btn-primary,.btn-success,.roll-btn):not(:disabled){
    transition:none!important;
  }
 }
+
+/* Signature result feedback for the existing game outcome states.
+ * Uses each engine's current stamp/tone and winner markup; no invented results,
+ * extra dialogs, animation delays, or clicks are introduced. */
+html[data-pocket-game] .stamp[data-tone="success"] span{
+ color:#fff2c2!important;
+ text-shadow:0 2px 4px #000d,0 0 20px #f4cf78a3;
+}
+html[data-pocket-game] .stamp[data-tone="danger"] span{
+ color:#fff3eb!important;
+ text-shadow:0 2px 6px #000d,0 0 15px #f17e7770;
+}
+html[data-pocket-game] .stamp[data-tone="warning"] span{
+ color:#ffedba!important;
+ text-shadow:0 2px 6px #000d,0 0 18px #ebc15c90;
+}
+html[data-pocket-game] .winner-name{
+ color:#fff0c5;
+ text-shadow:0 2px 7px #000c,0 0 23px #e9c66f59;
+ overflow-wrap:anywhere;
+}
+@media(prefers-reduced-motion:no-preference){
+ html[data-pocket-game] .stamp[data-tone="success"] span{
+  animation:pocket-result-arrive .48s cubic-bezier(.22,1,.36,1) both;
+ }
+ html[data-pocket-game] .stamp[data-tone="danger"] span{
+  animation:pocket-result-shock .38s ease-out both;
+ }
+ html[data-pocket-game] .winner-name{
+  animation:pocket-winner-reveal .65s cubic-bezier(.2,.9,.3,1) both;
+ }
+}
+@keyframes pocket-result-arrive{
+ from{opacity:.3;transform:scale(.86)}
+ 65%{opacity:1;transform:scale(1.07)}
+ to{opacity:1;transform:scale(1)}
+}
+@keyframes pocket-result-shock{
+ from{opacity:.4;transform:translateY(8px) scale(.95)}
+ to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes pocket-winner-reveal{
+ from{opacity:.3;transform:translateY(7px)}
+ to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-pocket-game] .stamp span,
+ html[data-pocket-game] .winner-name{
+  animation:none!important;transition:none!important;
+ }
+}
