@@ -38,7 +38,7 @@ for(const [game,state] of [['bust-or-bank','data-valid="false"'],['generala','da
  assert.ok(aaaGameCss.includes('data-pocket-game="'+game+'"]') && aaaGameCss.includes(state),'visible held/selected states for '+game);
 }
 assert.ok(read('games/bust-or-bank.html').includes('selection not yet valid'),'invalid held dice have explanatory screen-reader label');
-assert.ok(read('games/bust-or-bank.html').includes("'tap to ' + (d.state === 'held' ? 'release' : 'keep')"),'available dice actions are announced');
+assert.ok(read('games/bust-or-bank.html').includes("', tap to ' + (d.state === 'held' ? 'release' : 'keep')"),'available dice actions are announced');
 
 const shutGame=read('games/shut-the-box.html'),bustGame=read('games/bust-or-bank.html'),brainGame=read('games/brain-raid.html');
 assert.ok(shutGame.includes('const ROLL_MS = reduceMotion ? 150 : 720;'),'Shut the Box uses responsive 720ms physical roll');
