@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#091e1c">
+<title>Pocket Gamebox — Multiplayer TV</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}
+body{margin:0;min-height:100dvh;background:radial-gradient(circle at 50% -20%,#31574b,#081b1b 65%);color:#fff4d8}
+main{width:min(1140px,calc(100% - 24px));margin:auto;padding:20px 0 70px}header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:clamp(1.7rem,5vw,3.2rem);margin:0;color:#ffe6a4}h2{margin:8px 0 15px}.muted{color:#c6cfce}
+a{color:#ffe6a4}button,input{font:inherit}button{border:1px solid #c89d51;border-radius:13px;min-height:48px;padding:12px 18px;background:linear-gradient(#e9bd65,#bd853c);color:#15241f;font-weight:800;cursor:pointer}
+button:disabled{opacity:.38;cursor:not-allowed}button.secondary{background:#23483d;color:#fff0c4;border-color:#5b8d7b}button:focus-visible,input:focus-visible{outline:3px solid white;outline-offset:3px}
+input{min-height:50px;border-radius:12px;border:1px solid #9db7a7;background:#152b28;color:white;padding:10px 12px;width:100%;font-size:1.15rem}
+.panel{background:#12342ed9;border:1px solid #627b5c;border-radius:22px;padding:clamp(17px,3vw,32px);box-shadow:0 18px 60px #0007}
+.actions,.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.actions>*{flex:1 1 180px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:18px}
+#message{min-height:28px;color:#ffce80;font-weight:650}
+.hidden{display:none!important}.code{font-size:clamp(2.4rem,7vw,5rem);font-weight:900;letter-spacing:.17em;color:#ffe5a3;margin:8px 0}
+#qr{width:min(280px,75vw);background:white;border:10px solid white;border-radius:13px}#joinurl{overflow-wrap:anywhere;font-size:.85rem}
+.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:16px 0;list-style:none;padding:0}
+.players li{border:1px solid #66826b;border-radius:12px;padding:12px;background:#0d2522;font-size:1.05rem}
+.players li.active{border-color:#ffe095;background:#5c451c}.players strong{display:block}.pill{font-size:.79rem;color:#a9cfc2}
+.tiles{display:flex;justify-content:center;flex-wrap:wrap;gap:9px;padding:20px 0}
+.tile{font-size:clamp(1.6rem,4vw,3rem);min-width:clamp(48px,9vw,90px);min-height:clamp(65px,11vw,112px);background:linear-gradient(145deg,#f8dda3,#c48d49);border:3px solid #f5e6ba;border-radius:9px;color:#352411;box-shadow:0 7px #6b4a2c}
+.tile.closed{opacity:.23;box-shadow:none;filter:grayscale(.5)}.tile.selected{outline:4px solid #6bf8c6;transform:translateY(-5px)}
+.dice{font-size:clamp(2rem,6vw,4.2rem);font-weight:900;text-align:center;padding:9px;color:#ffe3a3}
+.stat{text-align:center;font-size:1.3rem}.stat strong{font-size:2.2rem;color:#ffe3a3}
+footer{padding-top:25px;color:#a9bdb3;text-align:center;font-size:.9rem}
+@media(max-width:570px){header h1{font-size:1.5rem}.panel{padding:14px}.tile{min-width:47px;min-height:64px;font-size:1.5rem}.code{letter-spacing:.07em}.actions{flex-direction:column}.actions>*{width:100%}}
+</style></head><body>
+<main>
+<header><div><h1>POCKET GAMEBOX</h1><div class="muted">Shut the Box • Live multiplayer • Up to 8 players</div></div><div class="row"><button class="secondary" id="fullscreen">Fullscreen</button><a href="https://connex222.github.io/DICE-GAMES/">Standalone games / Back to Lobby</a></div></header>
+<p id="message" role="status" aria-live="polite"></p>
+<section id="welcome" class="panel"><h2>How would you like to play?</h2><p>Host on your TV or computer, then have everyone scan the QR code using their own phone. Each person gets private turn controls.</p>
+<div class="actions"><button id="host">Host a TV game</button><button class="secondary" id="join">Join on phone</button></div>
+<p class="muted">Standalone games remain available from the lobby above. Other dice games will receive multiplayer integration in later phases.</p></section>
+<section id="joinPanel" class="panel hidden"><h2>Join your friends</h2><label for="code">Four-letter room code</label><input id="code" maxlength="4" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="ABCD" aria-label="Room code">
+<p><label for="name">Your player name</label><input id="name" maxlength="24" autocomplete="nickname" placeholder="Your name"></p>
+<div class="actions"><button id="joinNow">Join game</button><button class="secondary" id="joinBack">Back</button></div></section>
+<section id="hostPanel" class="hidden">
+<div class="grid"><div class="panel" style="text-align:center"><h2>Scan to join</h2><div class="code" id="roomCode"></div><img id="qr" alt="QR code for joining this multiplayer game" width="280" height="280"><p id="joinurl"></p><p class="muted">Open your phone camera and scan. Or visit this page and enter the room code.</p></div>
+<div class="panel"><h2 id="hostTitle">Players joining</h2><ul id="hostPlayers" class="players"></ul><p class="muted">Minimum 2, maximum 8 players</p><button id="start" disabled>Start the game</button><button id="rematch" class="hidden">Play again</button></div></div>
+</section>
+<section id="board" class="panel hidden">
+<div class="row" style="justify-content:space-between"><h2 id="boardTitle">Shut the Box</h2><div id="turn" class="muted"></div></div>
+<div class="tiles" id="tiles"></div><div id="dice" class="dice">Ready to roll</div>
+<div id="instructions" class="stat"></div><h2>Players &amp; scores</h2><ul id="scoreboard" class="players"></ul>
+</section>
+<section id="phonePanel" class="panel hidden">
+<h2 id="phoneTitle">Waiting for the host…</h2><div id="phoneStatus" class="muted"></div><div id="phoneDice" class="dice"></div>
+<div class="tiles" id="phoneTiles"></div><div class="actions"><button id="roll">Roll dice</button><button id="pick">Shut selected tiles</button></div>
+<p class="muted">The TV shows everybody's progress. Your phone is your controller; keep this page open.</p></section>
+<footer>Server-authoritative dice • Reconnect after refreshing • No hidden player dice on the TV</footer></main>
+<script>
+(() => {
+'use strict';
+const $=id=>document.getElementById(id);
+const qs=new URLSearchParams(location.search);
+const socketURL=(location.protocol==='https:'?'wss://':'ws://')+location.host;
+let socket=null,role='',room='',token='',me='',state=null,selected=[];
+let pending=null;
+const screens=['welcome','joinPanel','hostPanel','board','phonePanel'];
+const show=(...ids)=>screens.forEach(id=>$(id).classList.toggle('hidden',!ids.includes(id)));
+const msg=s=>$('message').textContent=s;
+const stored=(key)=>{try{return JSON.parse(localStorage.getItem('pgb-mp-'+key)||'null')}catch{return null}};
+const save=(key,val)=>localStorage.setItem('pgb-mp-'+key,JSON.stringify(val));
+function connect(next){
+ if(socket && socket.readyState===1){socket.send(JSON.stringify(next));return;}
+ pending=next;
+ socket=new WebSocket(socketURL);
+ socket.onopen=()=>{if(pending){socket.send(JSON.stringify(pending));pending=null;}msg('Connected to game server.');};
+ socket.onerror=()=>msg('Cannot connect to the multiplayer server. Open the hosted multiplayer URL, not the static GitHub Pages copy.');
+ socket.onclose=()=>msg('Connection lost. Refresh to reconnect when the server is available.');
+ socket.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return;}receive(d)};
+}
+function send(type,extra={}){if(socket?.readyState!==1){msg('Not connected to the server.');return;}socket.send(JSON.stringify({type,code:room,...extra}));}
+const escapeText=s=>String(s||'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+function list(players,active){return players.map(p=>'<li class="'+(active===p.id?'active':'')+'"><strong>'+escapeText(p.name)+'</strong><span class="pill">'+(p.connected?'● Connected':'○ Reconnecting')+(p.finished?' • '+p.score+' points':'')+'</span></li>').join('');}
+function tileMarkup(tiles,selectable){return Array.from({length:9},(_,i)=>i+1).map(n=>'<button type="button" data-tile="'+n+'" class="tile '+(tiles.includes(n)?'closed ':'')+(selected.includes(n)?'selected':'')+'" '+(tiles.includes(n)||!selectable?'disabled':'')+' aria-pressed="'+selected.includes(n)+'">'+n+'</button>').join('');}
+function render(){
+ if(!state)return;
+ const host=role==='host',playing=state.status==='playing',finished=state.status==='finished',turn=state.currentPlayerId===me;
+ if(host){
+   show('hostPanel',playing||finished?'board':null);
+   $('hostTitle').textContent=finished?'Match finished':playing?'Match in progress':'Players joining';
+   $('hostPlayers').innerHTML=list(state.players,state.currentPlayerId);
+   $('start').classList.toggle('hidden',playing||finished);
+   $('start').disabled=state.players.length<2||state.players.length>8;
+   $('rematch').classList.toggle('hidden',!finished);
+   $('boardTitle').textContent=finished?'Game over — final scores':'Shut the Box';
+   $('turn').textContent=playing?'Turn '+state.turn+' of '+state.players.length:'';
+   $('tiles').innerHTML=tileMarkup(state.tiles,false);
+   $('dice').textContent=state.roll==null?'🎲':('🎲 '+state.roll);
+   $('instructions').textContent=finished?'Winner: '+state.players.filter(p=>state.winners.includes(p.id)).map(p=>p.name).join(' & '):state.players.find(p=>p.id===state.currentPlayerId)?.name+': '+state.instructions;
+   $('scoreboard').innerHTML=list(state.players,state.currentPlayerId);
+ }else{
+   show('phonePanel');
+   const p=state.players.find(p=>p.id===me);
+   $('phoneTitle').textContent='Hello '+(p?.name||'player');
+   $('phoneStatus').textContent=finished?'Game over! '+(state.winners.includes(me)?'You won!':'Check the scores on TV.'):playing?(turn?'Your turn!':'Waiting for '+(state.players.find(p=>p.id===state.currentPlayerId)?.name||'the next player')):'Waiting for host to start • '+state.players.length+' of 8 joined';
+   $('phoneDice').textContent=state.roll==null?'':('Dice total: '+state.roll);
+   const canPick=playing&&turn&&state.roll!==null;
+   $('phoneTiles').innerHTML=tileMarkup(state.tiles,canPick);
+   $('roll').disabled=!(playing&&turn&&state.roll===null);
+   $('pick').disabled=!(canPick&&selected.length&&selected.reduce((a,b)=>a+b,0)===state.roll);
+   $('roll').classList.toggle('hidden',!playing||!turn);
+   $('pick').classList.toggle('hidden',!playing||!turn);
+ }
+}
+function receive(d){
+ if(d.type==='error'){msg(d.message);return;}
+ if(d.type==='expired'){msg('This room has expired. Start a new game.');localStorage.removeItem('pgb-mp-session');return;}
+ if(d.type==='hosted'){room=d.code;token=d.token;role='host';save('session',{role,room,token});$('roomCode').textContent=room;
+   const link=location.origin+'/multiplayer.html?join='+room;
+   $('qr').src='/qr?code='+encodeURIComponent(room);$('joinurl').textContent=link;history.replaceState(null,'','/multiplayer.html?host='+room);
+ }
+ if(d.type==='joined'){room=d.code;token=d.token;me=d.playerId;role='player';save('session',{role,room,token});history.replaceState(null,'','/multiplayer.html?join='+room);}
+ if(d.type==='state'){if(d.roomCode!==room)return;state=d;selected=[];render();}
+}
+$('host').onclick=()=>{role='host';connect({type:'host'});show('hostPanel');};
+$('join').onclick=()=>show('joinPanel');
+$('joinBack').onclick=()=>show('welcome');
+$('joinNow').onclick=()=>{room=$('code').value.trim().toUpperCase();const name=$('name').value.trim();if(!/^[A-HJ-NP-Z2-9]{4}$/.test(room)||!name){msg('Enter your four-character code and your name.');return;}connect({type:'join',code:room,name});};
+$('start').onclick=()=>send('start');
+$('rematch').onclick=()=>send('rematch');
+$('roll').onclick=()=>send('roll');
+$('phoneTiles').onclick=e=>{const btn=e.target.closest('[data-tile]');if(!btn||btn.disabled||!state||state.currentPlayerId!==me||state.roll===null)return;const n=Number(btn.dataset.tile);selected=selected.includes(n)?selected.filter(v=>v!==n):[...selected,n];render();};
+$('pick').onclick=()=>{if(selected.reduce((a,b)=>a+b,0)===state.roll)send('pick',{tiles:selected});};
+$('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.().catch(()=>msg('Fullscreen is unavailable in this browser.'));};
+const saved=stored('session');
+if(saved&&saved.room&&saved.token&&(!qs.has('join')||qs.get('join')===saved.room)&&(!qs.has('host')||qs.get('host')===saved.room)){
+ room=saved.room;role=saved.role;token=saved.token;
+ connect({type:role==='host'?'resumeHost':'resumePlayer',code:room,token});
+ show(role==='host'?'hostPanel':'phonePanel');
+}else if(qs.has('join')){$('code').value=(qs.get('join')||'').toUpperCase();show('joinPanel');}
+})();
+</script></body></html>

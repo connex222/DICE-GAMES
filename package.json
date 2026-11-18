@@ -1,0 +1,17 @@
+{
+  "name": "pocket-gamebox-multiplayer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "npm test && node multiplayer/server.mjs",
+    "test": "node --test multiplayer/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.3",
+    "qrcode": "^1.5.4"
+  }
+}
