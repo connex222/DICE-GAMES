@@ -406,3 +406,46 @@ html[data-pocket-game="brain-raid"].br-art-winner #dlgOver .over-z svg{visibilit
   background-position:32% center!important;
  }
 }
+
+
+/* Brain Raid header mascot — replace the tiny legacy SVG with the already
+ * approved AAA zombie host portrait. This is the top-left title icon only;
+ * the independent gameplay mascot and lobby controls remain untouched.
+ * The asset loader adds br-mascot-idle only after the real image loads. */
+html[data-pocket-game="brain-raid"] .topbar .tb-left{
+ min-width:0;gap:clamp(7px,1.25vw,14px);
+}
+html[data-pocket-game="brain-raid"] .topbar .title{
+ display:flex!important;align-items:center;gap:clamp(8px,1.3vw,15px);
+ min-width:0;white-space:nowrap;
+}
+html[data-pocket-game="brain-raid"] #titleZ{
+ display:inline-block;position:relative;flex:none;
+ width:clamp(43px,5.6vmin,64px)!important;
+ height:clamp(43px,5.6vmin,64px)!important;
+ margin:0!important;border-radius:12px;
+}
+html[data-pocket-game="brain-raid"].br-mascot-idle #titleZ{
+ background-image:url("brain-raid-v3/mascot-idle.webp");
+ background-size:185% auto;
+ background-position:50% 6%;
+ background-repeat:no-repeat;
+ border:1px solid #c9f27caa;
+ box-shadow:0 0 0 2px #262036,0 0 13px #b0f66c80,inset 0 0 9px #12091e55;
+}
+html[data-pocket-game="brain-raid"].br-mascot-idle #titleZ svg{
+ visibility:hidden;
+}
+@media(max-width:599px){
+ html[data-pocket-game="brain-raid"] #titleZ{
+  width:44px!important;height:44px!important;
+ }
+ html[data-pocket-game="brain-raid"] .topbar .title{
+  gap:7px;font-size:clamp(17px,5vw,24px)!important;
+ }
+}
+@media(max-width:359px){
+ html[data-pocket-game="brain-raid"] #titleZ{
+  width:39px!important;height:39px!important;
+ }
+}
