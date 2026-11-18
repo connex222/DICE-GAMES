@@ -32,6 +32,11 @@ assert.ok(index.includes('pocket-aaa-lobby.css')&&index.includes('pocket-aaa-lob
 assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('repeat(4')&&aaaCss.includes('max-width:720px'),'7/4/mobile responsive card layout');
 assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
 assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
+assert.ok(aaaGameCss.includes('Gameplay polish pass'),'shared action/score polish loaded');
+assert.ok(aaaGameCss.includes(':focus-visible')&&aaaGameCss.includes('outline-offset:3px'),'keyboard users receive visible focus');
+assert.ok(aaaGameCss.includes('font-variant-numeric:tabular-nums'),'score figures stay aligned');
+assert.ok(read('assets/collection-fullscreen.js').includes('if (window.parent !== window) return;'),'embedded games never create a duplicate fullscreen overlay');
+assert.ok(score.includes('track.volume = volume();'),'music adjusts playback volume when ducked for voice and effects');
 for(const slug of games){
  const art='assets/aaa-cards/'+slug+'.webp';
  assert.equal(index.split('src="'+art+'"').length-1,2,slug+' approved art appears on TV/desktop and phone');
