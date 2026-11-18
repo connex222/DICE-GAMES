@@ -117,7 +117,7 @@ function processMessage(ws,ctx,data) {
  throw Error('Unsupported request.');
 }
 const HEADERS={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
- 'content-security-policy':"default-src 'self'; media-src 'self' https://cdn.creativeclaw.co; img-src 'self' data:; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'"};
+ 'content-security-policy':"default-src 'self'; media-src 'self'; img-src 'self' data:; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'"};
 function respond(res,status,body,contentType='text/plain; charset=utf-8'){
  res.writeHead(status,{...HEADERS,'content-type':contentType});res.end(body);
 }
