@@ -43,6 +43,12 @@ for(const face of ['brain','feet','shot','genius','double','bomb','lucky']){
 }
 assert.ok(brainLoader.includes('picture.onerror=()=>{}'),'missing art leaves the functional vector fallback');
 assert.ok(brainV3.includes('Approved visual art slots'),'approved images are progressively enabled');
+assert.ok(brainSource.includes('const rollingArt = [FACE_ART.brain, FACE_ART.feet, FACE_ART.shot]'),'rolling dice use matching vector art before the final face settles');
+assert.ok(brainSource.includes("label: danger ? 'Risk it all & roll' : 'Roll for more'"),'risk button label reflects danger');
+assert.ok(brainSource.includes("label: 'Bank brains'"),'bank action is clear without changing rules');
+assert.ok(!brainV3.includes('face[data-face="lucky"]{\\n background-image:url("brain-raid-v3/face-bomb.webp")'),'lucky escape cannot be mistaken for a dangerous bomb');
+assert.ok(brainLoader.includes('new MutationObserver(syncMood)'),'mascot expression follows original game state');
+
 assert.ok(brainV3.includes('prefers-reduced-motion:reduce'),'Brain Raid Visual 3.0 respects reduced motion');
 assert.ok(brainSource.includes('Engine.createState')&&brainSource.includes('function renderSlots')&&brainSource.includes('function renderDock'),'visual rebuild retains live gameplay engine');
 new vm.Script(brainLoader,{filename:'brain-raid-v3-art.js'});
