@@ -43,7 +43,13 @@ let effectsOn=localStorage.getItem('pg-effects-off')!=='yes';
 let lastVoiceAt=0,lastRollAt=0,queuedVoice=0;
 function audio(key){const a=new Audio(BASE+key+'.mp3');a.preload='auto';return a;}
 function stop(a){if(a){try{a.pause();a.currentTime=0;}catch(_){}}}
-function stopAll(){stop(voice);voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);stop(channels.roll);stop(channels.event);clearTimeout(queuedVoice);queuedVoice=0;}
+function stopAll(){
+ stop(voice);voice=null;
+ window.PocketGameboxGameMusic?.setVoiceActive(false);
+ stop(channels.roll);stop(channels.event);
+ channels.roll=null;channels.event=null;
+ clearTimeout(queuedVoice);queuedVoice=0;
+}
 function paint(){
  voiceButton.textContent='VO';voiceButton.title=voiceOn?'Voice on — tap to mute':'Voice off — tap to enable';
  voiceButton.setAttribute('aria-label',voiceOn?'Mute recorded narration':'Enable recorded narration');
@@ -72,8 +78,10 @@ function speak(key){
  if(!voiceOn||!voiceSet.has(key)||document.hidden)return;
  const now=Date.now();
  const minimum=(key==='shut-no-move')?30000:(key==='gen-combo'?13000:7000);
+ // Finale and reveal events must not disappear behind the routine narration throttle.
+ const important=/(?:winner|victory|perfect|record|reveal|bust|win)$/.test(key);
  if(now-(lastVoiceByKey.get(key)||0)<minimum)return;
- if(now-lastVoiceAt<2750)return;
+ if(!important&&now-lastVoiceAt<2750)return;
  lastVoiceAt=now;lastVoiceByKey.set(key,now);
  clearTimeout(queuedVoice);
  const delay=Math.max(0,lastRollAt+1000-now);
@@ -86,6 +94,7 @@ function speak(key){
   const current=voice;
   window.PocketGameboxGameMusic?.setVoiceActive(true);
   current.onended=()=>{if(voice===current){voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);}};
+  current.onerror=()=>{if(voice===current){voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);}};
   current.play().catch(()=>{if(voice===current){voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);}});
  },delay);
 }
@@ -95,7 +104,7 @@ voiceButton.addEventListener('click',()=>{
 });
 effectsButton.addEventListener('click',()=>{
  effectsOn=!effectsOn;localStorage.setItem('pg-effects-off',effectsOn?'no':'yes');
- if(!effectsOn){stop(channels.roll);stop(channels.event);}else playFx('dice');
+ if(!effectsOn){stop(channels.roll);stop(channels.event);channels.roll=null;channels.event=null;}
  paint();
 });
 window.addEventListener('storage',e=>{
