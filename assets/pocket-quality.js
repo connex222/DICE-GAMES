@@ -43,7 +43,7 @@ let effectsOn=localStorage.getItem('pg-effects-off')!=='yes';
 let lastVoiceAt=0,lastRollAt=0,queuedVoice=0;
 function audio(key){const a=new Audio(BASE+key+'.mp3');a.preload='auto';return a;}
 function stop(a){if(a){try{a.pause();a.currentTime=0;}catch(_){}}}
-function stopAll(){stop(voice);voice=null;stop(channels.roll);stop(channels.event);clearTimeout(queuedVoice);queuedVoice=0;}
+function stopAll(){stop(voice);voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);stop(channels.roll);stop(channels.event);clearTimeout(queuedVoice);queuedVoice=0;}
 function paint(){
  voiceButton.textContent='VO';voiceButton.title=voiceOn?'Voice on — tap to mute':'Voice off — tap to enable';
  voiceButton.setAttribute('aria-label',voiceOn?'Mute recorded narration':'Enable recorded narration');
@@ -63,6 +63,8 @@ function playFx(key){
  const sound=audio(key);
  sound.volume=kind==='roll'?.70:.62;
  channels[kind]=sound;
+ // A dice rattle or win cue must sit in FRONT of the background score.
+ window.PocketGameboxGameMusic?.duckFor(kind==='roll'?850:1350);
  sound.onended=()=>{if(channels[kind]===sound)channels[kind]=null;};
  sound.play().catch(()=>{if(channels[kind]===sound)channels[kind]=null;audioStatus.textContent='Sound needs a tap on this device. Use the sound-effects control to enable it.';});
 }
@@ -82,13 +84,14 @@ function speak(key){
   if(variants){const index=cycles[key]||0;cycles[key]=index+1;key=variants[index%variants.length];}
   voice=audio(key);voice.volume=.76;
   const current=voice;
-  current.onended=()=>{if(voice===current)voice=null;};
-  current.play().catch(()=>{if(voice===current)voice=null;});
+  window.PocketGameboxGameMusic?.setVoiceActive(true);
+  current.onended=()=>{if(voice===current){voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);}};
+  current.play().catch(()=>{if(voice===current){voice=null;window.PocketGameboxGameMusic?.setVoiceActive(false);}});
  },delay);
 }
 voiceButton.addEventListener('click',()=>{
  voiceOn=!voiceOn;localStorage.setItem('pg-quiet-voice',voiceOn?'on':'off');
- if(!voiceOn){stop(voice);clearTimeout(queuedVoice);}paint();
+ if(!voiceOn){stop(voice);window.PocketGameboxGameMusic?.setVoiceActive(false);clearTimeout(queuedVoice);}paint();
 });
 effectsButton.addEventListener('click',()=>{
  effectsOn=!effectsOn;localStorage.setItem('pg-effects-off',effectsOn?'no':'yes');
@@ -97,14 +100,14 @@ effectsButton.addEventListener('click',()=>{
 });
 window.addEventListener('storage',e=>{
  if(e.key==='pg-effects-off'){effectsOn=e.newValue!=='yes';if(!effectsOn){stop(channels.roll);stop(channels.event);}}
- if(e.key==='pg-quiet-voice'){voiceOn=e.newValue==='on';if(!voiceOn)stop(voice);}
+ if(e.key==='pg-quiet-voice'){voiceOn=e.newValue==='on';if(!voiceOn){stop(voice);window.PocketGameboxGameMusic?.setVoiceActive(false);}}
  paint();
 });
 window.addEventListener('message',e=>{
  if(e.source!==frame.contentWindow||!e.data)return;
  if(e.data.type==='pocket-audio-pref'){
   if(typeof e.data.effects==='boolean'){effectsOn=e.data.effects;localStorage.setItem('pg-effects-off',effectsOn?'no':'yes');if(!effectsOn){stop(channels.roll);stop(channels.event);}}
-  if(typeof e.data.voice==='boolean'){voiceOn=e.data.voice;localStorage.setItem('pg-quiet-voice',voiceOn?'on':'off');if(!voiceOn)stop(voice);}
+  if(typeof e.data.voice==='boolean'){voiceOn=e.data.voice;localStorage.setItem('pg-quiet-voice',voiceOn?'on':'off');if(!voiceOn){stop(voice);window.PocketGameboxGameMusic?.setVoiceActive(false);}}
   paint();return;
  }
  if(e.data.type!=='pocket-audio'||typeof e.data.key!=='string')return;
