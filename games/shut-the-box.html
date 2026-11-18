@@ -28,7 +28,7 @@
   --pad:clamp(8px,2.2vmin,22px);
   --gap:clamp(6px,1.6vmin,16px);
   --tap:48px;
-  --roll-ms:900ms;
+  --roll-ms:720ms;
   --on-success:#04261B;
 
   /* Dice and tiles */
@@ -1219,7 +1219,7 @@ const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6,
 const BASE = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ROLL_MS = reduceMotion ? 220 : 900;
+const ROLL_MS = reduceMotion ? 150 : 720;
 root.style.setProperty('--roll-ms', `${ROLL_MS}ms`);
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1333,7 +1333,8 @@ function animateRoll(la) {
     void dies[di].offsetWidth;
     dies[di].classList.add('rolling');
   });
-  Sound.rattle(idx.length, ROLL_MS);
+  // The Pocket Gamebox wrapper plays the recorded rattle; use local synthesis only standalone.
+  if (window.parent === window) Sound.rattle(idx.length, ROLL_MS);
   ui.busy = true;
   later(() => {
     ui.busy = false;
