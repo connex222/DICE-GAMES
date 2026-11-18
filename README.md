@@ -70,3 +70,14 @@ Each in-game music control uses the same saved **Music ON/OFF** preference as th
 ## For developers and AI assistants
 
 See `CLAUDE.md` for the build rules.
+
+## Connection resilience and Render operations (18 November 2026)
+
+- The multiplayer server sends WebSocket pings every **25 seconds**. A phone that does not pong before the next heartbeat is terminated and marked offline through the normal disconnect handler; its original seat and token remain available for rejoining.
+- On **SIGTERM**, the server stops accepting connections, sends `serverRestarting` to TV and phone clients, closes their sockets with WebSocket **1012 (Service Restart)**, and exits within 10 seconds.
+- Both TV and phone show a reconnect overlay and retry automatically with **1, 2, 4, 8, then 10-second** delays (capped at 10 seconds). A saved room token is used to reclaim the existing host/player seat. A missing room prompts a return to the lobby.
+- **Important limitation:** disconnect/rejoin works while the original process remains alive. Rooms are **in memory**; a Render restart or free-tier sleep destroys the room and live game state. Automatic WebSocket reconnection cannot restore a match across that process restart.
+- `GET /health` returns JSON: `{"ok":true,"rooms":0,"uptime":123}` (uptime is seconds, room count varies). Render checks `/health`.
+- `npm start` now starts the Node server directly. `npm test` runs node:test integration and engine tests, including the heartbeat, rejoin, health and SIGTERM regressions. Tests run at **build time**, not every cold start.
+- **Lockfile caveat:** this repository has no committed npm lockfile yet. The Render build bootstraps one with `npm install --package-lock-only` before `npm ci --omit=dev && npm test`. Commit a generated `package-lock.json` to remove the bootstrap step in a later change.
+- The existing Render service currently deploys from `feature/tv-multiplayer-qr`; merging the PR into that branch is necessary to reach that service. If the Render dashboard ignores `render.yaml`, update its Build Command to match the YAML. Opening this PR alone does not deploy.
