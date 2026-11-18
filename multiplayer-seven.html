@@ -1,0 +1,311 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#09231e"><title>Pocket Gamebox | Seven-game multiplayer</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#081b19;color:#f9efd7}*{box-sizing:border-box}
+body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 50% -30%,#385f4c,#102b26 55%,#060e10 100%)}
+button,a,input,select{font:inherit}button{cursor:pointer;min-height:48px;padding:10px 17px;border:1px solid #f5d591;border-radius:12px;background:linear-gradient(#ffdc88,#c99747);color:#1d271f;font-weight:800;box-shadow:0 4px 0 #65442077}button:disabled{opacity:.43;cursor:not-allowed}
+button.secondary,select{background:#1b4339;color:#fff2cc;border:1px solid #9eac86;box-shadow:none}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #fff8d7;outline-offset:3px}
+a{color:#ffe2a0}input,select{width:100%;min-height:48px;padding:9px 12px;background:#102b28;color:white;border:1px solid #95a98c;border-radius:12px;font-size:1rem}
+main{max-width:1480px;margin:0 auto;padding:clamp(12px,2.4vw,30px)}
+header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:15px}h1{font:900 clamp(1.65rem,4.7vw,3.1rem)/1.1 Georgia,serif;letter-spacing:.075em;color:#ffe2a0;text-shadow:0 4px #53381e;margin:0}h2{color:#ffe5af;margin:6px 0 15px;font:800 clamp(1.3rem,2.5vw,2rem) Georgia,serif}h3{margin:4px 0;color:#f3d391}
+small,.muted{color:#becec3}.top-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.top-right button{padding:6px 12px;min-height:40px}
+.panel{background:linear-gradient(135deg,#1a4036f2,#0b2724f5);border:1px solid #8a9b79;border-radius:22px;padding:clamp(15px,2.5vw,28px);box-shadow:0 18px 50px #0007,inset 0 1px #fff2d424}
+.hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.row,.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.actions>*{flex:1 1 150px}.big{font-size:clamp(1.4rem,3vw,2.3rem);font-weight:800}.code{text-align:center;font:900 clamp(2.7rem,6vw,5rem)/1.2 system-ui,sans-serif;letter-spacing:.15em;color:#ffe19b}
+#qr{width:min(270px,75vw);height:auto;background:#fff;padding:8px;border-radius:16px;display:block;margin:12px auto}#joinlink{word-break:break-word;color:#d7e8cf;font-size:.8rem}
+#status{min-height:30px;font-weight:700;color:#ffcf86;padding:5px 2px}.kicker{font-size:.78rem;letter-spacing:.18em;color:#ffd288;font-weight:800}.joinblock{text-align:center}
+#games{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}
+.gamechoice{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px;overflow:hidden;background:#183d34;color:#fff1c3;border:2px solid #6a876b;box-shadow:none;min-height:170px}
+.gamechoice img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:#10291f}
+.gamechoice.current{border-color:#ffe195;background:#594826;color:#ffe6a0}
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));list-style:none;gap:8px;padding:0}
+.roster li{padding:11px;background:#091e1c;border:1px solid #68806a;border-radius:12px}
+.roster li.active{background:#654922;border-color:#f5d388}.roster b{display:block}.roster small{font-size:.75rem}
+#board{background:linear-gradient(150deg,#0c251fe8,#113b30ed);border:2px solid #c49c5b}
+#gameArt{width:100%;max-height:220px;object-fit:cover;object-position:center;border-radius:13px;opacity:.88;mask-image:linear-gradient(#000 65%,transparent)}
+#boardHeading{font-size:clamp(1.5rem,3vw,2.7rem);margin:10px 0}#gameDisplay{text-align:center;min-height:90px;padding:10px}
+.dice{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;padding:14px 3px}.die{display:inline-flex;justify-content:center;align-items:center;width:clamp(50px,7vw,94px);height:clamp(56px,7vw,94px);border:3px solid #eddfbb;border-radius:13px;background:linear-gradient(140deg,#fff8e4,#d8bc86);color:#152822;font:900 clamp(1.5rem,4vw,3rem)/1 Georgia,serif;box-shadow:0 6px 0 #614526}.die.clickable{cursor:pointer}.die.held{background:linear-gradient(#bcebd5,#3a9079);border-color:#a5f2d6;box-shadow:0 6px #124a3b}.die.closed{opacity:.23}.die.selected{outline:4px solid #78ffcf;outline-offset:2px;transform:translateY(-3px)}.die.unknown{background:#243e38;color:#baccbf}.dice .die:disabled{cursor:default}
+#playerControls{display:flex;flex-direction:column;gap:12px}.button-row{display:flex;gap:9px;flex-wrap:wrap}.button-row button{flex:1 1 130px}.scoreboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}.scorecard{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.scorecard button{font-size:.9rem;padding:7px;min-height:45px}.scorecard button.used{background:#223a31;opacity:.5;color:#aabbac}
+.statline{display:flex;justify-content:space-around;gap:8px;flex-wrap:wrap;padding:9px;color:#ffd89e;font-weight:750}
+#music{background:#234739;color:#ffe2aa;box-shadow:none}#phoneNote{color:#bddacb;padding-top:8px}
+#gameHint{min-height:30px;color:#fff0c4;font-weight:700}#roomLabel{letter-spacing:.13em;color:#ffe9b5}
+.notice{border-left:4px solid #dcb465;padding-left:10px;color:#cddcd1}
+body.phone main{max-width:640px}body.phone #board{display:none!important}body:not(.phone) #controller{display:none!important}
+body.phone #gameArt{max-height:145px}body.phone h1{font-size:1.6rem}body.phone .die{width:54px;height:58px;font-size:1.8rem}
+footer{padding-top:24px;font-size:.82rem;color:#a5bbb2;text-align:center}
+@media(max-width:600px){.gamechoice{min-height:120px}.gamechoice img{max-height:75px}.code{letter-spacing:.09em}.panel{padding:15px}.top-right{width:100%}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+</style></head><body><main><header><div><div class="kicker">PREMIUM DICE COLLECTION</div><h1>POCKET GAMEBOX</h1><small>Seven games • Shared television • Two to eight phones</small></div><div class="top-right"><button type="button" id="fullscreen" class="secondary">⛶ Fullscreen</button><button type="button" id="music" aria-pressed="false">♫ Music off</button><button type="button" id="fx" class="secondary" aria-pressed="true">✦ FX on</button><a href="https://connex222.github.io/DICE-GAMES/">← Standalone Lobby</a></div></header>
+<p role="status" aria-live="polite" id="status"></p>
+<section id="welcome" class="panel"><h2>Play together, properly</h2><p>Host on your TV or PC. Everyone scans the QR code and plays on their own phone — no passing devices around.</p><div class="actions"><button id="hostBtn">Host TV multiplayer</button><button id="joinBtn" class="secondary">Join from my phone</button></div><p class="muted">For solo play, bots or pass-and-play, use the original standalone collection.</p></section>
+<section id="joinForm" class="panel hidden"><h2>Join a game</h2><label for="roomInput">Room code</label><input id="roomInput" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"><p><label for="nameInput">Your name</label><input id="nameInput" maxlength="22" autocomplete="nickname" placeholder="Enter player name"></p><div class="actions"><button id="joinNow">Join game</button><button class="secondary" id="joinCancel">Back</button></div></section>
+<section id="hostLobby" class="hidden">
+<div class="grid"><div class="panel joinblock"><h2>Scan to join</h2><div class="code" id="roomCode">----</div><img id="qr" alt="QR code to join this room"><div id="joinlink"></div><p class="muted">Point a phone camera at the QR code, or enter the four-letter code.</p></div>
+<div class="panel"><h2>Who's playing?</h2><ul class="roster" id="lobbyPlayers"></ul><p id="count" class="muted"></p><div class="actions"><button id="startGame" disabled>Start game</button><button id="rematch" class="hidden">Play again</button></div></div></div>
+<div class="panel" style="margin-top:15px"><h2>Choose your game</h2><div id="games"></div><p class="notice">All seven titles use the original scoring and rules engines. The host chooses before starting; each player gets their own controls.</p></div></section>
+<section id="board" class="panel hidden"><img id="gameArt" alt=""><h2 id="boardHeading"></h2><div id="roomLabel"></div><div class="statline" id="stats"></div><div id="gameDisplay"></div><h2>Scores and players</h2><ul class="roster" id="scoreboard"></ul><div class="actions" id="hostNext"></div></section>
+<section id="controller" class="panel hidden"><h2 id="phoneHeading">Your controller</h2><div class="statline" id="phoneStats"></div><div id="phoneNote"></div><div id="playerControls"></div></section>
+<footer>Secure server-generated dice • QR joining • Private Liar’s Dice hands • Save your room on each device</footer></main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const games=[['shut-the-box','Shut the Box'],['gilded-five','Gilded Five'],['liars-dice',"Liar's Dice"],['bust-or-bank','Bust or Bank'],['generala','Generala'],['ten-of-a-kind','Ten of a Kind'],['brain-raid','Brain Raid']];
+const tracks={
+ 'shut-the-box':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/d7e69c81-9783-4873-9868-5cc3d7349f54.mp3',
+ 'gilded-five':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/dcb55b31-ddfa-41f0-9263-683ec9196bfd.mp3',
+ 'liars-dice':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/62fd415c-15aa-4934-b2a1-0fdac263d80d.mp3',
+ 'bust-or-bank':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/fdf6b5e2-585f-4326-849c-53fa1e2498cb.mp3',
+ 'generala':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/a14d2965-700a-4447-875b-a637a50cf692.mp3',
+ 'ten-of-a-kind':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/f326ac70-3f10-491a-b9a5-9f252707ffea.mp3',
+ 'brain-raid':'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/d336ec0e-92f9-4b5b-a29d-5ed46699f43b.mp3'
+};
+const categories=[['ones','Aces'],['twos','Twos'],['threes','Threes'],['fours','Fours'],['fives','Fives'],['sixes','Sixes'],
+ ['threeK','3 of a Kind'],['fourK','4 of a Kind'],['full','Full House'],['smS','Small Straight'],['lgS','Large Straight'],['yahtzee','Gilded Five'],['chance','Chance']];
+const genCats=[...categories.slice(0,6),['straight','Straight'],['full','Full'],['poker','Four of a Kind'],['generala','Generala']];
+let socket,session,room='',role='',me='',game='shut-the-box',data=null,choice=[],state=null;
+const params=new URLSearchParams(location.search);
+let musicEnabled=localStorage.getItem('pocket-gamebox.lobby-music-enabled')!=='false';
+let song=new Audio();song.volume=.10;song.loop=true;song.preload='none';
+let fxEnabled=localStorage.getItem('pocket-gamebox.fx-enabled')!=='false';const fxSound=new Audio();fxSound.volume=.45;let cueId='';
+const escapeText=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]));
+const show=(...ids)=>['welcome','joinForm','hostLobby','board','controller'].forEach(id=>$(id).classList.toggle('hidden',!ids.includes(id)));
+const say=x=>$('status').textContent=x;
+const save=x=>{session=x;localStorage.setItem('pocket-gamebox.seven-mp',JSON.stringify(x));};
+const saved=()=>{try{return JSON.parse(localStorage.getItem('pocket-gamebox.seven-mp')||'null')}catch{return null}};
+const nameOf=id=>data?.players?.find(p=>p.id===id)?.name||'Player';
+const send=(type,extra={})=>{if(socket?.readyState!==1)return say('Server connection is not available. Refresh to reconnect.');socket.send(JSON.stringify({type,code:room,...extra}));};
+const action=(type,extra={})=>send('action',{action:{type,...extra}});
+const isTurn=()=>state?.status==='PLAYING'&&data?.currentPlayerId===me;
+function connect(message){
+ const url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
+ socket=new WebSocket(url);
+ socket.onopen=()=>{socket.send(JSON.stringify(message));say('Connected to multiplayer server.');};
+ socket.onerror=()=>say('The game server cannot be reached. Check the connection.');
+ socket.onclose=()=>say('Connection interrupted. Refresh to reconnect to the same game.');
+ socket.onmessage=e=>{try{receive(JSON.parse(e.data))}catch(err){say('Game message could not be displayed.');}};
+}
+function receive(m){
+ if(m.type==='error'){say(m.message);return;}
+ if(m.type==='expired'){localStorage.removeItem('pocket-gamebox.seven-mp');say('Room expired — return to the lobby to start again.');return;}
+ if(m.type==='hosted'){
+   role='host';room=m.code;save({role,room,token:m.token});
+   $('roomCode').textContent=room;$('qr').src='/qr?code='+encodeURIComponent(room);
+   $('joinlink').textContent=location.origin+'/multiplayer-seven.html?join='+room;
+   history.replaceState(null,'','?host='+room);document.body.classList.remove('phone');changeTrack();
+ }
+ if(m.type==='joined'){
+  role='player';room=m.code;me=m.id;save({role,room,token:m.token});
+  history.replaceState(null,'','?join='+room);document.body.classList.add('phone');
+ }
+ if(m.type==='state'){
+  if(m.code!==room)return;
+  const oldGame=game;data=m;game=m.game;state=m.state;choice=[];
+  if(oldGame!==game)changeTrack();
+  if(role==='host')playCue(m.state);
+  render();
+ }
+}
+function changeTrack(){
+ if(role!=='host')return;
+ const src=tracks[game];if(song.src!==src){song.pause();song.src=src;}
+ if(musicEnabled)song.play().catch(()=>{});
+}
+function playCue(incoming){
+ if(!incoming||!fxEnabled)return;
+ const last=incoming.lastAction;if(!last)return;
+ const id=game+':'+(last.seq||last.at||last.type+':'+incoming.turnIndex+':'+incoming.gameData?.rolls);
+ if(id===cueId)return;cueId=id;
+ const cues={
+  'shut-the-box':{START_GAME:'shut-start',ROLL:'shut-dice-fx',SHUT:'shut-tile-fx'},
+  'gilded-five':{START_GAME:'gilded-new-game',ROLL:'gilded-roll',SCORE:'gilded-next-player'},
+  'liars-dice':{START_GAME:'liar-start',BID:'liar-bid',CHALLENGE:'liar-reveal-fx',NEXT_ROUND:'liar-shake'},
+  'bust-or-bank':{START_GAME:'bust-start',ROLL:'bust-dice-fx',BANK:'bust-bank-fx',PASS:'bust-bust-fx'},
+  'generala':{START_GAME:'gen-start',ROLL:'gen-dice-fx',SCORE:'gen-combo-fx'},
+  'ten-of-a-kind':{START_GAME:'ten-start',ROLL:'ten-dice-fx',LOCK:'ten-lock-fx'},
+  'brain-raid':{START_GAME:'brain-roll',ROLL:'zombie-dice-fx',STOP:'zombie-bank-fx'}
+ };
+ const key=incoming.status==='GAME_OVER'?
+  ({'shut-the-box':'shut-victory-fx','gilded-five':'gilded-winner','liars-dice':'liar-win-fx','bust-or-bank':'bust-win','generala':'gen-victory-fx','ten-of-a-kind':'ten-perfect-fx','brain-raid':'zombie-victory-fx'})[game]
+  :cues[game]?.[last.type];
+ if(!key)return;
+ fxSound.pause();fxSound.src='/assets/audio/'+key+'.mp3';fxSound.currentTime=0;
+ song.volume=.035;fxSound.play().catch(()=>{});
+ setTimeout(()=>{song.volume=.10;},1300);
+}
+function render(){
+ if(!data)return;
+ const isHost=role==='host';
+ const playing=!!state,done=state?.status==='GAME_OVER';
+ if(isHost){
+  show('hostLobby',playing?'board':null);
+  $('lobbyPlayers').innerHTML=roster(data.players,state?.players);
+  $('count').textContent=data.players.length+' / 8 players joined (minimum 2)';
+  $('startGame').disabled=data.players.length<2||playing;
+  $('startGame').classList.toggle('hidden',playing);
+  $('rematch').classList.toggle('hidden',!done);
+  $('games').querySelectorAll('[data-game]').forEach(b=>{b.classList.toggle('current',b.dataset.game===game);b.disabled=playing;});
+  $('boardHeading').textContent=games.find(g=>g[0]===game)?.[1]||game;
+  $('gameArt').src='/assets/aaa-cards/'+game+'.webp';
+  $('gameArt').alt=games.find(g=>g[0]===game)?.[1]+' artwork';
+  $('roomLabel').textContent='ROOM '+room+' • '+(done?'FINAL RESULTS':'ROUND IN PROGRESS');
+  $('scoreboard').innerHTML=roster(data.players,state?.players,data.currentPlayerId);
+  $('stats').textContent=done?'WINNER: '+winnerText():state?'CURRENT: '+nameOf(data.currentPlayerId):'';
+  $('gameDisplay').innerHTML=playing?gameBoard():'';$('hostNext').innerHTML='';
+  if(playing&&['shut-the-box','brain-raid','liars-dice'].includes(game)){
+    const phase=state.gameData.phase;
+    const transition=(game==='liars-dice'?'REVEAL':'TURN_OVER');
+    if(phase===transition)$('hostNext').innerHTML='<button type="button" data-action="next">Continue to next '+(game==='liars-dice'?'round':'player')+'</button>';
+  }
+  if(done)$('gameDisplay').insertAdjacentHTML('beforeend','<div class="big">🏆 '+escapeText(winnerText())+'</div>');
+ }else {
+  show('controller');
+  $('phoneHeading').textContent='Hello, '+nameOf(me);
+  $('phoneStats').textContent='ROOM '+room+' • '+(state?(done?'FINISHED':isTurn()?'YOUR TURN':'WAITING'):'LOBBY');
+  $('phoneNote').textContent=!state?'You are connected. Wait for the TV host to start.':done?'Winner: '+winnerText():isTurn()?'Your turn — make your move on this phone.':'Current player: '+nameOf(data.currentPlayerId)+'. Follow the action on TV.';
+  $('playerControls').innerHTML=state?gamePhone():(!data.hostOnline?'<p>Host disconnected. Your room is still saved.</p>':'<p class="muted">The host will select a game and start when everyone has joined.</p>');
+ }
+}
+function roster(players,gamePlayers=[],activeId){
+ return players.map(p=>{const gp=gamePlayers?.find(x=>x.id===p.id);return '<li class="'+(activeId===p.id?'active':'')+'"><b>'+escapeText(p.name)+'</b><small>'+(p.connected?'● Online':'○ Reconnecting')+(gp&&gp.score!=null?' · '+escapeText(gp.score)+' pts':'')+'</small></li>';}).join('');
+}
+function winnerText(){
+ const g=state?.gameData||{};
+ const ids=g.winnerIds|| (g.winnerId?[g.winnerId]:[]);
+ return ids.length?ids.map(nameOf).join(' & '):'Results';
+}
+function tileHtml(items,selected=[],interactive=false){
+ return '<div class="dice">'+items.map((item,i)=>{
+  const label=typeof item==='object'?(item.value??item.v??item.face??'?'):item;
+  const held=!!(typeof item==='object'&&(item.held||item.locked||item.state==='held'));
+  const closed=!!(typeof item==='object'&&(item.closed||item.state==='set'));
+  const selectedNow=selected.includes(i);
+  return '<button class="die '+(held?'held ':'')+(closed?'closed ':'')+(selectedNow?'selected ':'')+'" data-die="'+i+'" '+(!interactive||closed?'disabled':'')+' aria-pressed="'+(held||selectedNow)+'">'+escapeText(label)+'</button>';
+ }).join('')+'</div>';
+}
+function shutTiles(g,interactive){
+ const count=g.options.tiles;
+ return '<div class="dice">'+Array.from({length:count},(_,i)=>{const n=i+1,closed=!(g.open&(1<<i)),on=choice.includes(n);
+  return '<button class="die '+(closed?'closed ':'')+(on?'selected':'')+'" data-tile="'+n+'" '+(closed||!interactive?'disabled':'')+' aria-pressed="'+on+'">'+n+'</button>';
+ }).join('')+'</div>';
+}
+function faceName(hand){return hand.map(x=>x.face||'?').join(' · ');}
+function gameBoard(){
+ if(!state)return '';
+ const g=state.gameData;
+ switch(game){
+  case 'shut-the-box':return '<div class="big">Round '+g.round+' • '+(g.phase==='CHOOSING'?'Roll total '+g.total:g.phase==='TURN_OVER'?'Turn complete':'Ready to roll')+'</div>'+shutTiles(g,false);
+  case 'gilded-five':return '<div class="big">Round '+g.round+' / 13 • Rolls '+g.rolls+'/3</div>'+tileHtml(g.dice);
+  case 'generala':return '<div class="big">Round '+g.round+' • Rolls '+g.rolls+'/3</div>'+tileHtml(g.dice.map(x=>x.value));
+  case 'liars-dice':return '<div class="big">Round '+g.round+' • '+(g.bid?'Bid: '+g.bid.quantity+' × '+g.bid.face:'No bid yet')+'</div><p>Private dice are displayed only on player phones.</p>'+(g.reveal?'<div class="big">'+(g.reveal.ok?'Bid was TRUE':'Bid was FALSE')+' · '+g.reveal.count+' matching dice</div>':'');
+  case 'bust-or-bank':return '<div class="big">Turn total '+g.turnScore+' • '+g.phase+'</div>'+tileHtml(g.dice);
+  case 'ten-of-a-kind':{const b=g.boards[state.players[state.turnIndex]?.id];return '<div class="big">Round '+g.round+' • Match ten dice</div>'+(b?tileHtml(b.dice.map(x=>x.v)):'');}
+  case 'brain-raid':return '<div class="big">'+escapeText(g.mode.toUpperCase())+' • '+g.turn.turnBrains+' brains collected</div><p>'+escapeText(faceName(g.turn.hand))+'</p><div class="big">Hits '+g.turn.hits+'</div>';
+  default:return '';
+ }
+}
+const button=(label,key,disabled=false,extra='')=>'<button data-action="'+key+'" '+(disabled?'disabled':'')+' '+extra+'>'+escapeText(label)+'</button>';
+const diceWithAction=(items,key,disabled=false)=>'<div class="dice">'+items.map((d,i)=>{
+ const v=typeof d==='object'?(d.value??d.v):d;const held=!!d?.held||!!d?.locked||d?.state==='held';const closed=d?.state==='set';
+ return '<button class="die '+(held?'held ':'')+(closed?'closed':'')+'" data-action="'+key+'" data-index="'+i+'" '+(disabled||closed?'disabled':'')+' aria-pressed="'+held+'">'+escapeText(v)+'</button>';
+ }).join('')+'</div>';
+function scoreButtons(list,card,kind){return '<div class="scorecard">'+list.map(([id,label])=>button(label+(card?.[id]!=null?' · '+card[id]:'') ,'score-'+kind+'-'+id,card?.[id]!=null)).join('')+'</div>';}
+function gamePhone(){
+ const s=state,g=s.gameData,turn=isTurn(),done=s.status==='GAME_OVER';
+ const inactive=!turn||done;let html='';
+ switch(game){
+  case 'shut-the-box':
+   html='<div class="big">Round '+g.round+' / '+g.options.rounds+(g.phase==='CHOOSING'?' • Roll '+g.total:'')+'</div>'+shutTiles(g,turn&&g.phase==='CHOOSING');
+   if(g.phase==='READY')html+='<div class="button-row">'+button('Roll two dice','roll2',inactive)+(g.options.oneDie&&g.open<64?button('Roll one die','roll1',inactive):'')+'</div>';
+   if(g.phase==='CHOOSING')html+=button('Shut selected tiles ('+choice.reduce((a,b)=>a+b,0)+' / '+g.total+')','shut',inactive||choice.reduce((a,b)=>a+b,0)!==g.total);
+   if(g.phase==='TURN_OVER')html+=button('Next player','next',inactive);
+   break;
+  case 'gilded-five':{
+   const p=s.players.find(x=>x.id===me),card=p?.cards?.[0]?.s;
+   html='<div class="big">Round '+g.round+' / 13 • Rolls '+g.rolls+'/3</div>';
+   html+=diceWithAction(g.dice.map((v,i)=>({value:v,held:g.held[i]})),'hold',inactive||g.rolls===0||g.rolls===3);
+   html+=button('Roll dice','roll',inactive||g.rolls>=3);
+   if(g.rolls)html+='<h3>Choose a scoring box</h3>'+scoreButtons(categories,card,'gilded');
+   break;}
+  case 'generala':{
+   const card=g.cards?.[me];
+   html='<div class="big">Round '+g.round+' • Rolls '+g.rolls+'/3</div>'+diceWithAction(g.dice,'hold',inactive||g.phase!=='ROLLED'||g.rolls>=3);
+   html+=button('Roll dice','roll',inactive||g.rolls>=3);
+   if(g.phase==='ROLLED')html+='<h3>Choose a scoring box</h3>'+scoreButtons(genCats,card,'generala');
+   break;}
+  case 'liars-dice':{
+   const myDice=g.dice?.[me]||[];
+   html='<div class="big">Round '+g.round+' • Your secret cup</div>'+tileHtml(myDice);
+   html+='<p>Current bid: <strong>'+(g.bid?g.bid.quantity+' dice showing '+g.bid.face:'No bid')+'</strong></p>';
+   if(g.phase==='BIDDING'){
+    html+='<div class="grid"><div><label for="quantity">Quantity</label><input type="number" id="quantity" min="1" max="'+Object.values(g.diceCount).reduce((a,b)=>a+b,0)+'" value="'+(g.bid?.quantity||1)+'"></div>';
+    html+='<div><label for="face">Face value</label><select id="face">'+[1,2,3,4,5,6].map(n=>'<option value="'+n+'">'+n+'</option>').join('')+'</select></div></div>';
+    html+='<div class="button-row">'+button('Raise the bid','bid',inactive)+button('Call liar!','challenge',inactive||!g.bid)+'</div>';
+   }
+   if(g.phase==='REVEAL')html+='<div class="big">'+(g.reveal?.ok?'The bid was true':'The bid was false')+'</div>'+button('Next round','next',inactive);
+   break;}
+  case 'bust-or-bank':{
+   html='<div class="big">Turn score: '+g.turnScore+' • '+g.phase+'</div>'+diceWithAction(g.dice,'toggle',inactive||g.phase!=='SELECTING');
+   if(g.phase==='READY'||g.phase==='SELECTING')html+='<div class="button-row">'+button('Roll','roll',inactive)+button('Bank points','bank',inactive||g.phase!=='SELECTING')+'</div>';
+   if(g.phase==='BUSTED')html+=button('Next player','pass',inactive);
+   break;}
+  case 'ten-of-a-kind':{
+   const b=g.boards?.[me];
+   html=b?'<div class="big">Round '+g.round+' • Rolls '+b.rolls+'</div>'+diceWithAction(b.dice,'lock',inactive)+button('Roll unlocked dice','roll',inactive):'<p>Waiting for dice board</p>';
+   break;}
+  case 'brain-raid':{
+   const t=g.turn;
+   html='<div class="big">'+g.mode.toUpperCase()+'</div><p>Brain total this turn: <strong>'+t.turnBrains+'</strong> • Hits: '+t.hits+'</p><p>Last roll: '+escapeText(faceName(t.hand))+'</p>';
+   if(g.phase==='READY'||g.phase==='DECIDE')html+='<div class="button-row">'+button('Roll zombie dice','roll',inactive)+button('Bank brains','stop',inactive||g.phase!=='DECIDE')+'</div>';
+   if(g.phase==='TURN_OVER')html+=button('Next player','next',inactive);
+   break;}
+ }
+ return html;
+}
+function onGameAction(key,element){
+ if(!state)return;
+ if(key==='next')return action(game==='liars-dice'?'NEXT_ROUND':'NEXT_TURN');
+ if(key==='roll'||key==='roll2'||key==='roll1')return action('ROLL',game==='shut-the-box'?{count:key==='roll1'?1:2}:{});
+ if(key==='shut')return action('SHUT',{tiles:[...choice]});
+ if(key==='hold')return action('TOGGLE_HOLD',{index:Number(element.dataset.index)});
+ if(key==='toggle')return action('TOGGLE_DIE',{index:Number(element.dataset.index)});
+ if(key==='lock')return action('LOCK',{index:Number(element.dataset.index)});
+ if(key==='bank')return action('BANK');
+ if(key==='pass')return action('PASS');
+ if(key==='stop')return action('STOP');
+ if(key==='bid')return action('BID',{quantity:Number($('quantity')?.value),face:Number($('face')?.value)});
+ if(key==='challenge')return action('CHALLENGE');
+ if(key.startsWith('score-'))return action('SCORE',{category:key.slice(key.indexOf('-',6)+1)});
+}
+$('playerControls').addEventListener('click',e=>{
+ const tile=e.target.closest('[data-tile]');
+ if(tile){if(!isTurn()||state.gameData.phase!=='CHOOSING')return;const v=Number(tile.dataset.tile);choice=choice.includes(v)?choice.filter(n=>n!==v):[...choice,v];render();return;}
+ const b=e.target.closest('[data-action]');if(b&&!b.disabled)onGameAction(b.dataset.action,b);
+});
+$('hostNext').addEventListener('click',e=>{if(e.target.closest('[data-action=next]'))onGameAction('next')});
+$('games').innerHTML=games.map(([id,name])=>'<button class="gamechoice" data-game="'+id+'"><img alt="" src="/assets/aaa-cards/'+id+'.webp">'+escapeText(name)+'</button>').join('');
+$('games').addEventListener('click',e=>{const b=e.target.closest('[data-game]');if(b&&!b.disabled)send('chooseGame',{game:b.dataset.game});});
+$('hostBtn').onclick=()=>{role='host';document.body.classList.remove('phone');show('hostLobby');connect({type:'host'});};
+$('joinBtn').onclick=()=>show('joinForm');
+$('joinCancel').onclick=()=>show('welcome');
+$('joinNow').onclick=()=>{
+ room=$('roomInput').value.trim().toUpperCase();
+ const name=$('nameInput').value.trim();
+ if(!/^[A-HJ-NP-Z2-9]{4}$/.test(room)||!name)return say('Enter the room code and your name.');
+ document.body.classList.add('phone');show('controller');connect({type:'join',code:room,name});
+};
+$('startGame').onclick=()=>send('start');
+$('rematch').onclick=()=>send('rematch');
+$('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.().catch(()=>say('Fullscreen unavailable on this browser.'));};
+$('music').onclick=()=>{musicEnabled=!musicEnabled;localStorage.setItem('pocket-gamebox.lobby-music-enabled',String(musicEnabled));$('music').textContent=musicEnabled?'♫ Music on':'♫ Music off';$('music').setAttribute('aria-pressed',String(musicEnabled));
+$('fx').textContent=fxEnabled?'✦ FX on':'✦ FX off';$('fx').setAttribute('aria-pressed',String(fxEnabled));if(!musicEnabled)song.pause();else changeTrack();};
+$('music').textContent=musicEnabled?'♫ Music on':'♫ Music off';$('music').setAttribute('aria-pressed',String(musicEnabled));
+$('fx').onclick=()=>{fxEnabled=!fxEnabled;localStorage.setItem('pocket-gamebox.fx-enabled',String(fxEnabled));$('fx').textContent=fxEnabled?'✦ FX on':'✦ FX off';$('fx').setAttribute('aria-pressed',String(fxEnabled));if(!fxEnabled)fxSound.pause();};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)song.pause();else if(role==='host'&&musicEnabled)changeTrack();});
+const prev=saved();
+if(prev?.room&&prev?.token&&(!params.has('join')||params.get('join')===prev.room)&&(!params.has('host')||params.get('host')===prev.room)){
+ room=prev.room;role=prev.role;
+ document.body.classList.toggle('phone',role==='player');show(role==='host'?'hostLobby':'controller');
+ connect({type:role==='host'?'resumeHost':'resumePlayer',code:room,token:prev.token});
+}else if(params.has('join')){$('roomInput').value=params.get('join')?.toUpperCase()||'';show('joinForm');}
+})();
+</script></body></html>
