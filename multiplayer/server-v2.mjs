@@ -120,6 +120,10 @@ const server=http.createServer(async(req,res)=>{
   try{return respond(res,200,await readFile(new URL('../multiplayer-seven.html',import.meta.url)),'text/html; charset=utf-8');}
   catch(e){return respond(res,500,'The multiplayer interface is unavailable');}
  }
+ if(/^\/assets\/audio\/[a-z0-9-]+\.mp3$/.test(url.pathname)){
+  try{return respond(res,200,await readFile(new URL('..'+url.pathname,import.meta.url)),'audio/mpeg');}
+  catch{return respond(res,404,'Sound unavailable');}
+ }
  if(/^\/assets\/aaa-cards\/[a-z0-9-]+\.webp$/.test(url.pathname)){
   try{return respond(res,200,await readFile(new URL('..'+url.pathname,import.meta.url)),'image/webp');}
   catch{return respond(res,404,'Artwork unavailable');}
