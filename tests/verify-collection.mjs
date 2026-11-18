@@ -54,6 +54,11 @@ for(const file of ['pocket-quality.js','pocket-lobby.js','clean-audio.js']){
 }
 assert.ok(mixer.includes('channels={roll:null,event:null}'),'independent dice/effect channels');
 assert.ok(mixer.includes("key==='shut-no-move'"),'Shut the Box repetition guard');
+assert.ok(mixer.includes('const important=/(?:winner|victory|perfect|record|reveal|bust|win)$/.test(key)'),'finale and reveal narration bypass routine global throttle');
+assert.ok(mixer.includes('if(!important&&now-lastVoiceAt<2750)return;'),'routine narration remains paced');
+assert.ok(!mixer.includes("else playFx('dice');"),'enabling effects must not cause a fake dice roll');
+assert.ok(mixer.includes('current.onerror=()=>'),'failed narration releases music ducking');
+assert.ok(mixer.includes('channels.roll=null;channels.event=null'),'clearing audio stops stale channels');
 assert.ok(css.includes('prefers-reduced-motion'),'reduced motion covered');
 assert.ok(play.includes('id="bgm"')&&play.includes('assets/game-music.js'),'game wrapper loads dedicated music toggle');
 assert.ok(play.includes('aria-label="Back to Pocket Gamebox Lobby"'),'every game wrapper exposes clear Back to Lobby navigation');
