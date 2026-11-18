@@ -1,0 +1,295 @@
+/* Brain Raid Visual 3.0 — interactive horror-comedy stage.
+ * All selectors are scoped. The existing game engine, controls and DOM
+ * remain authoritative. No screenshot is used as a clickable surface. */
+html[data-pocket-game="brain-raid"] {
+ --br-lime:#c5ff65; --br-acid:#7fe33a; --br-pink:#ff7cc1;
+ --br-purple:#a278ff; --br-cream:#fff1cf; --br-edge:#c89d60;
+ --br-ink:#120c20; --br-surface:#21142d;
+ --bg-primary:#100c1e; --bg-surface:#21152d; --bg-card:#36213c;
+ --text-main:#fff2df; --text-muted:#d6c6dc;
+ --accent-primary:#b9f35f; --accent-success:#aafa5b;
+ --accent-warning:#ffd27c; --accent-danger:#ff777d;
+ --line:#d5a57369; --on-success:#1a1c12;
+ color-scheme:dark;
+}
+html[data-pocket-game="brain-raid"] body {
+ background:linear-gradient(180deg,#0d0918aa,#160c20a8 58%,#090e12eb),
+   url("../assets/brain-raid-graveyard.svg") center center/cover fixed!important;
+ color:var(--br-cream)!important;
+}
+html[data-pocket-game="brain-raid"] .shell {isolation:isolate}
+html[data-pocket-game="brain-raid"] .topbar {
+ background:linear-gradient(110deg,#100b1ceF,#3c1d4cef 48%,#11141bed)!important;
+ border-bottom:2px solid #9ae34daa!important;
+ box-shadow:inset 0 2px #fff4,0 6px 28px #05030dde!important;
+}
+html[data-pocket-game="brain-raid"] .topbar .title{
+ font:900 clamp(19px,3vw,39px)/1.06 Impact,"Arial Black",system-ui,sans-serif!important;
+ letter-spacing:.07em!important;color:#c3ff67!important;
+ text-shadow:0 3px #284a1a,0 5px 3px #0a0413,0 0 22px #9df34375!important;
+}
+html[data-pocket-game="brain-raid"] .topbar .icon-btn{
+ border:1px solid #d0a77499!important;color:#fff0d3!important;
+ background:linear-gradient(150deg,#41274a,#1c1829)!important;
+ box-shadow:inset 0 1px #fff4,0 3px 10px #0009!important;
+}
+html[data-pocket-game="brain-raid"] .viewport{
+ min-width:0;background:linear-gradient(90deg,#0d081468,transparent 18% 82%,#0d081468);
+}
+html[data-pocket-game="brain-raid"] .lobby{
+ width:100%;max-width:1180px;gap:clamp(10px,1.6vmin,21px);
+ padding-block:clamp(12px,2.2vmin,24px);
+}
+html[data-pocket-game="brain-raid"] .hero{
+ position:relative;isolation:isolate;overflow:hidden;
+ min-height:clamp(170px,25vh,310px);padding:clamp(16px,3.2vmin,38px)!important;
+ border:2px solid #d2aa6b!important;border-radius:25px!important;
+ background:radial-gradient(ellipse at 24% 45%,#533176b0,transparent 55%),
+   linear-gradient(110deg,#24132fe8,#170e25eb 55%,#14251def)!important;
+ box-shadow:inset 0 0 0 3px #26142e,inset 0 1px 24px #98ff4050,
+  0 14px 42px #000d,0 0 28px #9d50ec32!important;
+}
+html[data-pocket-game="brain-raid"] .hero::before{
+ content:"";position:absolute;inset:8px;z-index:-1;
+ border:1px solid #ffe1ad35;border-radius:18px;
+ background:radial-gradient(circle at 76% 45%,#a7e44816,transparent 52%);
+ pointer-events:none;
+}
+html[data-pocket-game="brain-raid"] .hero::after{
+ content:"THE HORDE IS HUNGRY";position:absolute;right:clamp(14px,3vw,34px);
+ top:clamp(12px,2vw,24px);font:900 clamp(12px,1.5vw,20px)/1.2 Impact,system-ui,sans-serif;
+ letter-spacing:.14em;color:#d8ff9b;text-shadow:0 2px 4px #000;
+ pointer-events:none;
+}
+html[data-pocket-game="brain-raid"] .hero-z{
+ width:clamp(110px,21vw,230px);height:clamp(120px,23vw,240px);
+ filter:drop-shadow(0 0 19px #a1ff5f90) drop-shadow(9px 10px 7px #000d);
+}
+html[data-pocket-game="brain-raid"] .lede{
+ color:#faeddc!important;max-width:58ch!important;
+ font-size:clamp(15px,1.8vw,21px)!important;line-height:1.58!important;
+ text-shadow:0 2px 5px #000d;
+}
+html[data-pocket-game="brain-raid"] .lobby .card,
+html[data-pocket-game="brain-raid"] .panel{
+ background:linear-gradient(160deg,#372244f2 0%,#1a1228f6 65%,#151823fa)!important;
+ border:2px solid #b8966cbb!important;border-radius:20px!important;
+ box-shadow:inset 0 2px #fae1b428,inset 0 0 20px #b5f55b0b,
+   0 12px 28px #050510c4!important;
+}
+html[data-pocket-game="brain-raid"] .card h2,
+html[data-pocket-game="brain-raid"] .panel-title{
+ color:#f8e5bb!important;font-weight:900;
+ letter-spacing:.095em!important;text-transform:uppercase;
+ text-shadow:0 2px 4px #000a;
+}
+html[data-pocket-game="brain-raid"] .lobby .seg{
+ gap:clamp(8px,1.4vw,16px);padding:7px;
+ background:#140f22!important;border:1px solid #bd985e66;
+}
+html[data-pocket-game="brain-raid"] .lobby .seg label{
+ min-width:0;position:relative;
+}
+html[data-pocket-game="brain-raid"] .lobby .seg label span{
+ display:flex;flex-direction:column;justify-content:center;gap:7px;
+ min-height:clamp(72px,9vh,120px);border-radius:13px!important;
+ padding:10px 12px!important;
+ border:2px solid #9779b180!important;
+ background:radial-gradient(ellipse at top,#5a28728c,transparent 82%),
+ linear-gradient(#31213e,#161222)!important;
+ color:#fff3dd!important;text-align:center;
+ font-weight:900!important;font-size:clamp(15px,1.8vw,23px)!important;
+ box-shadow:inset 0 1px #fff4,0 4px 10px #000a;
+}
+html[data-pocket-game="brain-raid"] .lobby .seg label span small{
+ font-size:clamp(11px,1vw,15px);color:#ddcee5!important;
+ font-weight:600;line-height:1.35;white-space:normal;
+}
+html[data-pocket-game="brain-raid"] .lobby .seg input:checked+span{
+ color:#d9ff93!important;border-color:#c7fa76!important;
+ background:radial-gradient(ellipse at top,#6b99465c,transparent),
+ linear-gradient(#2a3b26,#18291e)!important;
+ box-shadow:0 0 0 2px #aaff6430,0 0 23px #8cff5353,inset 0 2px #efffd755!important;
+}
+html[data-pocket-game="brain-raid"] .lobby :is(.name-input,.type-btn){
+ background:#140e21!important;color:#fff5e8!important;
+ border:1px solid #ab8868!important;border-radius:10px!important;
+}
+html[data-pocket-game="brain-raid"] .lobby .roster .avatar{
+ border:2px solid #d3a66f;box-shadow:0 0 16px #a3ff4e3b;
+}
+html[data-pocket-game="brain-raid"] .scoreboard{
+ background:#130e21e8!important;border-color:#b58f5d!important;
+ box-shadow:inset 0 1px #f5dba52b,0 5px 18px #0009;
+}
+html[data-pocket-game="brain-raid"] .chip{
+ border:1px solid #aa875c9e!important;
+ background:linear-gradient(125deg,#35243e,#191826)!important;
+ box-shadow:inset 0 1px #fff2,0 5px 14px #0009!important;
+}
+html[data-pocket-game="brain-raid"] .chip.active{
+ border-color:#c5fa79!important;
+ background:linear-gradient(125deg,#29482f,#1b2b29)!important;
+ box-shadow:0 0 0 1px #aeef6366,0 0 19px #a9ff4d40!important;
+}
+html[data-pocket-game="brain-raid"] .chip-score{
+ color:#dcff9d!important;font-variant-numeric:tabular-nums;
+ font-weight:900;text-shadow:0 0 10px #a2ff4774;
+}
+html[data-pocket-game="brain-raid"] .table{min-width:0;gap:clamp(8px,1.6vmin,17px)}
+html[data-pocket-game="brain-raid"] .cup-panel{
+ border-left:4px solid #b3ff72!important;
+ background:linear-gradient(145deg,#271830,#131b27)!important;
+}
+html[data-pocket-game="brain-raid"] .cup{
+ border:1px solid #a3b86c77;border-radius:13px;
+ padding:clamp(5px,1vw,12px);
+ background:radial-gradient(ellipse at center,#34603e48,transparent);
+}
+html[data-pocket-game="brain-raid"] .tray{
+ position:relative;isolation:isolate;overflow:hidden;
+ padding:clamp(10px,2.5vmin,28px)!important;
+ border:clamp(5px,.8vmin,12px) solid #594463!important;
+ border-radius:clamp(24px,3vw,54px)!important;
+ background:radial-gradient(ellipse at 52% 57%,#28623d 0%,#183b37 30%,#1c1831 62%,#0e0e1b 94%)!important;
+ box-shadow:inset 0 0 0 3px #b89a68,inset 0 0 36px #000f,
+  inset 0 0 48px #6bff3970,0 16px 44px #000d,
+  0 0 23px #a0e95f30!important;
+}
+html[data-pocket-game="brain-raid"] .tray::before{
+ content:"";position:absolute;inset:clamp(3px,.6vw,11px);z-index:-1;pointer-events:none;
+ border:2px dashed #b9ff6a64;border-radius:clamp(17px,2.4vw,43px);
+ box-shadow:inset 0 0 35px #9aff2335;
+}
+html[data-pocket-game="brain-raid"] .tray::after{
+ content:"";position:absolute;left:12%;right:12%;bottom:0;height:22%;
+ background:radial-gradient(ellipse,#8eff4540,transparent 70%);
+ pointer-events:none;z-index:-1;
+}
+html[data-pocket-game="brain-raid"] .tray-head{position:relative;z-index:1}
+html[data-pocket-game="brain-raid"] .mascot{
+ filter:drop-shadow(0 0 12px #a3f6537d);
+}
+html[data-pocket-game="brain-raid"] .zdie:not(.empty){
+ border:3px solid #fff0c9ae!important;
+ border-radius:19%!important;
+ background:linear-gradient(137deg,#fffee6 0%,#f8e5bd 38%,#cfb88c 83%,#806e65 100%)!important;
+ box-shadow:inset 2px 2px 3px #fff, inset -6px -8px 12px #3e2c2e70,
+   0 9px 0 #68583a,0 14px 19px #000c,0 0 17px #83ff5290!important;
+ filter:none!important;
+ transform-style:preserve-3d;
+}
+html[data-pocket-game="brain-raid"] .zdie[data-kind="black"]{
+ background:linear-gradient(135deg,#5b366d,#191526)!important;
+ border-color:#b478e4!important;
+}
+html[data-pocket-game="brain-raid"] .zdie[data-kind="blue"]{
+ border-color:#8fe3ff!important;
+}
+html[data-pocket-game="brain-raid"] .zdie .face{
+ display:grid;place-items:center;font-size:calc(var(--s)*.53);
+ line-height:1;filter:drop-shadow(0 2px 2px #2113295a);
+}
+html[data-pocket-game="brain-raid"] .zdie .face svg{
+ display:block;width:65%;height:65%;overflow:visible;
+ filter:drop-shadow(1px 2px 1px #27152265);
+}
+html[data-pocket-game="brain-raid"] .zdie .grade{
+ color:#30302a!important;font-weight:950;
+ text-shadow:0 1px #fff8!important;
+}
+html[data-pocket-game="brain-raid"] .zdie[data-kind="black"] .grade{
+ color:#fff0a7!important;text-shadow:0 1px 4px #000!important;
+}
+html[data-pocket-game="brain-raid"] .zdie .badge{
+ box-shadow:0 0 12px #baff73a0;background:#28132d;color:#d6ff91;
+}
+html[data-pocket-game="brain-raid"] .slot-label{
+ color:#fff2df!important;font-weight:900;text-shadow:0 2px 5px #000d;
+}
+html[data-pocket-game="brain-raid"] #brainPanel{
+ border-color:#e789c3!important;
+ background:linear-gradient(135deg,#48253f,#231728)!important;
+}
+html[data-pocket-game="brain-raid"] #lifePanel{
+ border-color:#ff8c70!important;
+ background:linear-gradient(135deg,#462227,#261323)!important;
+}
+html[data-pocket-game="brain-raid"] .big-num{
+ color:#ffe6f3!important;font-variant-numeric:tabular-nums;
+ text-shadow:0 0 18px #ff89c4a0;font-size:clamp(2rem,6vmin,4rem);
+}
+html[data-pocket-game="brain-raid"] .life i.hit{
+ border-color:#ffb373;background:#77292f;
+ box-shadow:inset 0 0 12px #ff756b86,0 0 12px #ff696b8b;
+}
+html[data-pocket-game="brain-raid"] .panel.warn{
+ border-color:#ff595c!important;
+ box-shadow:inset 0 0 20px #ff5a4d40,0 0 23px #ff52529a!important;
+}
+html[data-pocket-game="brain-raid"] .dock{
+ background:linear-gradient(180deg,#2e1c3bf0,#140f21fb)!important;
+ border-top:2px solid #cba268!important;
+ box-shadow:0 -8px 26px #000c,inset 0 2px #f7de9d38!important;
+}
+html[data-pocket-game="brain-raid"] .btn{
+ border:2px solid #d8ac6b!important;border-radius:14px!important;
+ min-height:max(58px,var(--tap));padding:.55em .9em;
+ font-weight:900;letter-spacing:.045em;
+ box-shadow:inset 0 2px #fff5,0 4px 0 #0b0a10,0 6px 13px #000b!important;
+}
+html[data-pocket-game="brain-raid"] .btn-primary{
+ background:linear-gradient(#cfff83,#7fb638 58%,#52852b)!important;
+ color:#142014!important;text-shadow:0 1px #fff9b0!important;
+}
+html[data-pocket-game="brain-raid"] .btn-success{
+ background:linear-gradient(#ffbbe0,#dd6aa7 58%,#9a3567)!important;
+ color:#260d24!important;text-shadow:0 1px #ffe8f4!important;
+}
+html[data-pocket-game="brain-raid"] .btn-danger{
+ background:linear-gradient(#ff9f82,#cb414b 58%,#7a1d30)!important;
+ color:#fff9e8!important;
+}
+html[data-pocket-game="brain-raid"] .btn:disabled{
+ opacity:.55!important;background:#39333a!important;color:#d1c6cd!important;
+ box-shadow:none!important;cursor:not-allowed;
+}
+html[data-pocket-game="brain-raid"] .stamp span{
+ max-width:90%;overflow-wrap:anywhere;border:4px solid currentColor!important;
+ background:#160f23f2!important;box-shadow:0 10px 40px #000d,0 0 23px currentColor;
+}
+html[data-pocket-game="brain-raid"] dialog{
+ border:2px solid #cba56e!important;background:#1c1428!important;
+ color:#ffefd9!important;box-shadow:0 20px 60px #000e;
+}
+html[data-pocket-game="brain-raid"] .winner-name{
+ color:#cbff7a!important;text-shadow:0 2px #20361e,0 0 24px #91fa51a3!important;
+}
+@media(min-width:800px){
+ html[data-pocket-game="brain-raid"] .lobby{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;
+ }
+ html[data-pocket-game="brain-raid"] .lobby .hero,
+ html[data-pocket-game="brain-raid"] .lobby .resume{grid-column:1/-1}
+ html[data-pocket-game="brain-raid"] .lobby .card:last-child{grid-column:1/-1}
+}
+@media(max-width:600px){
+ html[data-pocket-game="brain-raid"] .hero{min-height:150px;padding:12px!important}
+ html[data-pocket-game="brain-raid"] .hero::after{
+  position:static;display:block;order:3;font-size:11px;letter-spacing:.04em;
+ }
+ html[data-pocket-game="brain-raid"] .hero-z{width:92px;height:105px}
+ html[data-pocket-game="brain-raid"] .tray{
+  border-width:5px!important;padding:8px!important;
+ }
+ html[data-pocket-game="brain-raid"] .zdie:not(.empty){border-width:2px!important}
+ html[data-pocket-game="brain-raid"] .btn{font-size:clamp(14px,4vw,18px)}
+}
+@media(max-height:520px) and (orientation:landscape){
+ html[data-pocket-game="brain-raid"] .hero{min-height:130px}
+ html[data-pocket-game="brain-raid"] .tray{padding:6px!important}
+ html[data-pocket-game="brain-raid"] .btn{min-height:46px}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-pocket-game="brain-raid"] :is(.hero,.zdie,.btn,.mascot){animation:none!important;transition:none!important}
+}
