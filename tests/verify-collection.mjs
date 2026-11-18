@@ -33,6 +33,12 @@ assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('re
 assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
 assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
 assert.ok(aaaGameCss.includes('Gameplay polish pass'),'shared action/score polish loaded');
+assert.ok(aaaGameCss.includes('Signature result feedback'),'actual victory and danger states receive premium styling');
+assert.ok(aaaGameCss.includes('.stamp[data-tone="success"] span'),'winning result uses the game-engine outcome tone');
+assert.ok(aaaGameCss.includes('.stamp[data-tone="danger"] span'),'losing result uses the game-engine outcome tone');
+assert.ok(aaaGameCss.includes('.winner-name'),'winner reveal is styled without modifying scoring');
+assert.ok(aaaGameCss.includes('prefers-reduced-motion:no-preference')&&aaaGameCss.includes('animation:none!important'),'celebrations honour reduced-motion preferences');
+
 assert.ok(aaaGameCss.includes(':focus-visible')&&aaaGameCss.includes('outline-offset:3px'),'keyboard users receive visible focus');
 assert.ok(aaaGameCss.includes('font-variant-numeric:tabular-nums'),'score figures stay aligned');
 assert.ok(read('assets/collection-fullscreen.js').includes('if (window.parent !== window) return;'),'embedded games never create a duplicate fullscreen overlay');
