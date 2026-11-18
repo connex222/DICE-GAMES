@@ -2,7 +2,7 @@ services:
   - type: web
     name: pocket-gamebox-multiplayer
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install --omit=dev
     startCommand: npm start
     healthCheckPath: /health
