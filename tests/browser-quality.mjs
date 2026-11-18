@@ -225,10 +225,13 @@ try{
   report.tests.push({slug,stage:'refresh',storageKeys:progress.map(x=>x[0]),assets:assetHits.slice(0,12),errors,failedRequests});
   check(errors.length===0,'No browser JS exceptions '+slug,{errors});
   check(failedRequests.length===0,'No missing asset responses '+slug,{failedRequests});
-  await page.locator('#home').click();
-  check(await page.locator('#confirm.open').count()===1,'Back-to-games confirmation '+slug);
-  await page.locator('#quit').click();
-  await page.waitForURL('**/index.html');
+  // The approved UX returns straight to the collection with no confirmation dialog.
+  // Await navigation explicitly so this checks the real click and not stale DOM.
+  await Promise.all([
+    page.waitForURL('**/index.html'),
+    page.locator('#home').click()
+  ]);
+  check(await page.locator('#confirm').count()===0,'No obsolete lobby confirmation '+slug);
   const saved=page.locator('.mobile-card[href="play.html?game='+slug+'"]');
   check(await saved.getAttribute('data-progress')==='SAVED','Return to collection shows saved game '+slug);
   await context.close();
