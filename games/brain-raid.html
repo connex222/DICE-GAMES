@@ -1661,10 +1661,13 @@ function animateRoll(la) {
     el.slots.querySelectorAll('.zdie').forEach((d) => { d.classList.remove('rolling'); void d.offsetWidth; d.classList.add('rolling'); });
   });
   if (!reduceMotion) {
-    const faces = ['🧠', '👣', '💥'];
+    const rollingArt = [FACE_ART.brain, FACE_ART.feet, FACE_ART.shot];
     clearInterval(ui.flicker);
     ui.flicker = setInterval(() => {
-      el.slots.querySelectorAll('.zdie .face').forEach((f) => { f.textContent = faces[Math.floor(Math.random() * 3)]; });
+      // Cosmetic, non-authoritative flicker. The result always comes from la.hand.
+      el.slots.querySelectorAll('.zdie .face').forEach((f) => {
+        f.innerHTML = rollingArt[Math.floor(Math.random() * rollingArt.length)];
+      });
     }, 105);
   }
   later(() => {
@@ -1982,9 +1985,9 @@ function renderDock(s) {
       const need = cfg.handSize - t.runners.length;
       const danger = t.hits >= dangerAt(cfg);
       const left = cfg.shotsToBust - t.hits;
-      setBtn(el.btnA, { label: 'Score & Stop', small: `Bank ${plural(t.turnBrains, 'brain', 'brains')}`, act: 'stop', variant: 'success', enabled: act });
+      setBtn(el.btnA, { label: 'Bank brains', small: `Keep ${plural(t.turnBrains, 'brain', 'brains')}`, act: 'stop', variant: 'success', enabled: act });
       setBtn(el.btnB, {
-        label: 'Push Luck & Roll',
+        label: danger ? 'Risk it all & roll' : 'Roll for more',
         small: danger ? `${plural(left, 'hit', 'hits')} from blasted` : t.runners.length ? `${plural(t.runners.length, 'runner', 'runners')} + ${need} new` : `${need} new dice`,
         act: 'roll',
         variant: danger ? 'danger' : 'primary',
