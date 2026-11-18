@@ -33,8 +33,23 @@ document.getElementById('stay').addEventListener('click',()=>{modal.classList.re
 document.getElementById('quit').addEventListener('click',()=>{location.assign('index.html');});
 modal.addEventListener('click',e=>{if(e.target===modal)document.getElementById('stay').click();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))document.getElementById('stay').click();});
-document.getElementById('expand').addEventListener('click',()=>document.body.classList.add('immersive'));
-document.getElementById('float').addEventListener('click',()=>document.body.classList.remove('immersive'));
+// The visible wrapper fullscreen control is the single fullscreen owner.
+const expandButton=document.getElementById('expand');
+const restoreButton=document.getElementById('float');
+expandButton.addEventListener('click',()=>{
+ document.body.classList.add('immersive');
+ if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
+  // A real click supplies user activation. Immersive view remains usable if denied.
+  try{const promise=document.documentElement.requestFullscreen();promise?.catch?.(()=>{});}catch(_){}
+ }
+});
+restoreButton.addEventListener('click',()=>{
+ document.body.classList.remove('immersive');
+ if(document.fullscreenElement)try{document.exitFullscreen()?.catch?.(()=>{});}catch(_){}
+});
+document.addEventListener('fullscreenchange',()=>{
+ if(!document.fullscreenElement)document.body.classList.remove('immersive');
+});
 // No old offline audio caches; disable previously installed service workers.
 if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
 </script><script src="assets/pocket-quality.js"></script><script src="assets/game-music.js?v=20261118" defer></script><script src="assets/collection-fullscreen.js?v=20261114" defer></script></body></html>
