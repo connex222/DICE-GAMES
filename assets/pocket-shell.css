@@ -20,3 +20,32 @@
 #effects,#listen{font:900 12px/1 system-ui,sans-serif!important;letter-spacing:.035em;flex:0 0 44px;padding:0!important}
 #effects[aria-pressed="true"],#listen[aria-pressed="true"]{background:#28563f!important;color:#fbedb9!important;border-color:#f2d087!important}
 #effects[aria-pressed="false"],#listen[aria-pressed="false"]{background:#222e2e!important;color:#bbc5c3!important;border-color:#6e858077!important}
+
+/* Original per-game soundtrack: independent music toggle, always in page flow. */
+.bar #bgm{
+  flex:0 0 auto;min-width:68px!important;min-height:44px!important;
+  padding:0 7px!important;font:800 12px/1.1 system-ui,sans-serif!important;
+  white-space:nowrap;
+}
+.bar #bgm[aria-pressed="true"]{background:#315e3e!important;color:#fff2bc!important;border-color:#f2d087!important}
+.bar #bgm[aria-pressed="false"]{background:#222e2e!important;color:#bbc5c3!important;border-color:#6e858077!important}
+/* 320–520 px phones: two REAL in-flow control rows, not shrinking six
+   tap targets into one clipped line or floating above the dice. */
+@media(max-width:520px){
+  .bar{height:auto!important;flex:0 0 auto!important;min-height:97px!important;
+    flex-wrap:wrap!important;align-content:center;gap:5px!important;
+    padding-block:5px!important}
+  .bar #home{order:1;flex:0 0 auto;min-width:60px!important}
+  .bar .label{order:2;flex:1 1 100px;min-width:0}
+  .bar #expand{order:3;flex:0 0 44px}
+  .bar #guide-toggle,.bar #effects,.bar #listen,.bar #bgm{
+    flex:1 1 calc(25% - 6px)!important;order:4;min-width:44px!important;
+  }
+  .bar #effects{order:5}
+  .bar #listen{order:6}
+  .bar #bgm{order:7}
+}
+@media(max-height:500px) and (orientation:landscape) and (max-width:520px){
+ .bar{min-height:86px!important}
+ .bar :is(#home,#expand,#guide-toggle,#effects,#listen,#bgm){min-height:38px!important}
+}
