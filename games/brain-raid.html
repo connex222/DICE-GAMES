@@ -567,6 +567,7 @@ dialog{background:#10261f;color:#f0f6e6;border:2px solid #92c663;border-radius:1
 @media(prefers-reduced-motion:reduce){.zdie,.btn{transition:none}}
 </style><link rel="stylesheet" href="../assets/stage8-responsive.css"><link rel="stylesheet" href="../assets/pocket-premium.css">
 <link rel="stylesheet" href="../assets/pocket-aaa-gameplay.css?v=20261118">
+<link rel="stylesheet" href="../assets/brain-raid-v3.css?v=20261118">
 </head>
 <body>
 <div id="app" class="shell" data-view="lobby">
@@ -1564,6 +1565,21 @@ const PLAYER_COLORS = ['#6366F1', '#F472B6', '#FB923C', '#94A3B8'];  // kept apa
 const KIND_VAR = { green: 'var(--die-green)', yellow: 'var(--die-yellow)', red: 'var(--die-red)', blue: 'var(--die-blue)', purple: 'var(--die-purple)', black: 'var(--die-black)' };
 const ICON = { brain: '🧠', genius: '🧠', feet: '👣', shot: '💥', double: '💥', bomb: '💣', lucky: '🧨' };
 const BADGE = { genius: '×3', double: '×2' };
+/* Original vector die art, rendered by the real face state rather than a
+ * static screenshot. The accessible face names and roll physics are unchanged. */
+const FACE_PATHS = Object.freeze({
+ brain: '<path fill="#ed7eb3" stroke="#582443" stroke-width="4" d="M50 20C35 8 19 20 21 35C6 42 11 59 21 64C19 82 38 91 50 80C64 92 85 81 80 66C96 55 87 40 80 36C83 19 63 10 50 20Z"/><g fill="none" stroke="#8d345c" stroke-width="3.5" stroke-linecap="round"><path d="M50 22V78M27 35Q42 30 41 45T29 62M72 35Q57 30 58 44T71 63M35 19Q31 30 42 34M68 20Q72 34 61 39M32 73Q43 68 45 80M67 75Q58 67 55 80"/></g>',
+ genius: '<path fill="#f4b4d1" stroke="#72375e" stroke-width="4" d="M50 22C30 8 12 28 18 45C8 67 27 89 50 79C74 89 91 65 82 46C86 24 66 10 50 22Z"/><path fill="#f9d95a" stroke="#8b5c1f" stroke-width="4" d="m24 27-5-18 18 10 13-16 13 16 18-10-5 18Z"/><g fill="none" stroke="#59375e" stroke-width="3.5"><path d="M50 25v52M27 40q11-9 18 3M73 41q-11-9-18 3M36 61q14 12 28 0"/></g>',
+ feet: '<g transform="rotate(-16 50 50)" fill="#292536"><path d="M20 39Q12 27 25 19L38 22 43 40 35 58Q29 65 23 55Z"/><rect x="20" y="9" width="9" height="10" rx="4"/><rect x="30" y="11" width="8" height="11" rx="4"/><path d="M58 74Q50 58 66 52L78 58 80 77 72 89Q64 94 59 85Z"/><rect x="65" y="39" width="9" height="12" rx="4"/><rect x="74" y="44" width="8" height="12" rx="4"/></g>',
+ shot: '<path fill="#f7ba47" stroke="#ad3b28" stroke-width="4" d="m51 5 8 25 22-13-10 24 23 7-24 9 13 25-27-14-9 26-9-27-25 12 12-24L5 44l28-6Z"/><path stroke="#47292d" stroke-width="7" stroke-linecap="round" d="M20 69 69 27"/><path stroke="#fff3c9" stroke-width="3" d="M26 66 67 30"/>',
+ double: '<path fill="#ffb955" stroke="#a83335" stroke-width="3" d="m29 8 7 14 13-8-5 16 15 7-16 5 9 15-19-7-6 16-6-16-17 6 11-17L5 31l18-2Z"/><path fill="#f97d5e" stroke="#a83335" stroke-width="3" d="m70 42 6 15 16-5-9 13 12 12-17-2-4 19-8-17-16 7 8-16-13-11 18 1Z"/>',
+ bomb: '<circle cx="47" cy="57" r="27" fill="#322637" stroke="#100d19" stroke-width="5"/><path d="M44 28v-9h18M63 20q2-9 9-11" fill="none" stroke="#ffd36a" stroke-width="7" stroke-linecap="round"/><path d="M35 57h25M48 44v26" stroke="#a9ef60" stroke-width="5" stroke-linecap="round"/><path fill="#ffcf57" d="m76 3 3 10 11 1-9 7 3 11-9-7-9 7 3-11-9-7 11-1Z"/>',
+ lucky: '<path fill="#acff70" stroke="#2c6638" stroke-width="5" d="M50 6 79 21 75 59Q68 78 50 93 30 79 23 58L21 21Z"/><path fill="none" stroke="#214c34" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="M31 50 44 63 71 35"/><path fill="#f9d367" d="m73 10 4 9 10 1-8 7 3 9-9-6-8 6 3-10-7-6 10-1Z"/>'
+});
+const FACE_ART = Object.fromEntries(Object.entries(FACE_PATHS).map(([key,paths]) => [
+ key, '<svg viewBox="0 0 100 100" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+paths+'</svg>'
+]));
+
 const WORD = { brain: 'Brain', genius: 'Genius brain', feet: 'Footprints', shot: 'Shotgun', double: 'Double barrel', bomb: 'Bomb!', lucky: 'Lucky bomb' };
 const SUB = { brain: '+1 brain', genius: '+3 brains', feet: 'Rolls again', shot: '1 hit', double: '2 hits', bomb: 'Instant blast', lucky: 'Clears your hits' };
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1583,7 +1599,7 @@ const nameOf = (s, id) => (s.players.find((p) => p.id === id) || {}).name || '';
 const dangerAt = (cfg) => cfg.shotsToBust - (cfg.cup.blue ? 2 : 1);
 const dieHTML = (kind, face, cls = '') => `<span class="zdie${cls}${face === 'genius' ? ' genius' : ''}" data-kind="${kind}" style="--dc:${KIND_VAR[kind]}">`
   + `<span class="grade" aria-hidden="true">${KINDS[kind].grade}</span>`
-  + (face ? `<span class="face emo" aria-hidden="true">${ICON[face]}</span>${BADGE[face] ? `<span class="badge">${BADGE[face]}</span>` : ''}` : '')
+  + (face ? `<span class="face emo" aria-hidden="true">${FACE_ART[face] || ICON[face]}</span>${BADGE[face] ? `<span class="badge">${BADGE[face]}</span>` : ''}` : '')
   + '</span>';
 
 /* UI-only state (never sent over the network) */
