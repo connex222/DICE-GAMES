@@ -5,13 +5,13 @@
 (() => {
   'use strict';
   const SONGS = Object.freeze({
-    'gilded-five': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/dcb55b31-ddfa-41f0-9263-683ec9196bfd.mp3',
-    'shut-the-box': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/d7e69c81-9783-4873-9868-5cc3d7349f54.mp3',
-    'liars-dice': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/62fd415c-15aa-4934-b2a1-0fdac263d80d.mp3',
-    'bust-or-bank': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/fdf6b5e2-585f-4326-849c-53fa1e2498cb.mp3',
-    'generala': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/a14d2965-700a-4447-875b-a637a50cf692.mp3',
-    'ten-of-a-kind': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/f326ac70-3f10-491a-b9a5-9f252707ffea.mp3',
-    'brain-raid': 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/d336ec0e-92f9-4b5b-a29d-5ed46699f43b.mp3'
+    'gilded-five': 'assets/audio/music-gilded-five.mp3',
+    'shut-the-box': 'assets/audio/music-shut-the-box.mp3',
+    'liars-dice': 'assets/audio/music-liars-dice.mp3',
+    'bust-or-bank': 'assets/audio/music-bust-or-bank.mp3',
+    'generala': 'assets/audio/music-generala.mp3',
+    'ten-of-a-kind': 'assets/audio/music-ten-of-a-kind.mp3',
+    'brain-raid': 'assets/audio/music-brain-raid.mp3'
   });
   const TITLES = Object.freeze({
     'gilded-five': 'Gilded Five',
@@ -50,7 +50,7 @@
     button.setAttribute('aria-pressed', String(enabled));
     button.setAttribute('aria-label', (enabled ? 'Mute' : 'Play') + ' ' + TITLES[slug] + ' background music');
     button.title = unavailable
-      ? 'Soundtrack unavailable; check your internet connection'
+      ? 'Local soundtrack unavailable'
       : TITLES[slug] + ' original soundtrack — ' + (enabled ? 'on' : 'off');
     button.dataset.music = enabled ? 'on' : 'off';
   }

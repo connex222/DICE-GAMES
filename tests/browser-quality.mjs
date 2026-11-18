@@ -9,10 +9,11 @@ const BASE='http://127.0.0.1:8765/';
 const games=['gilded-five','shut-the-box','liars-dice','bust-or-bank','generala','ten-of-a-kind','brain-raid'];
 const widths=[320,375,390,430];
 const report={timestamp:new Date().toISOString(),browser:'Chromium via GitHub Actions',tests:[],failures:[],warnings:[]};
+const creativeClawRequests=[];
 mkdirSync('qa-evidence/screens',{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true,args:['--autoplay-policy=no-user-gesture-required']});
 function check(ok,desc,info){if(!ok){report.failures.push({desc,info});console.error('FAIL',desc,JSON.stringify(info??{}));} else console.log('PASS',desc);}
-async function pageAt(context,url){const p=await context.newPage();await p.goto(url,{waitUntil:'domcontentloaded'});return p;}
+async function pageAt(context,url){const p=await context.newPage();p.on('request',req=>{if(/cdn\.creativeclaw\.co/i.test(req.url()))creativeClawRequests.push(req.url());});await p.goto(url,{waitUntil:'domcontentloaded'});return p;}
 try{
  // Lobby is a real collection, never eight tiles or an accidentally linked legacy index.
  for(const width of widths){
@@ -114,7 +115,16 @@ try{
   await music.click();
   check((await music.getAttribute('aria-pressed'))==='true','Music restores '+slug);
   const trackUrl=await page.evaluate(()=>window.PocketGameboxGameMusic?.source||'');
-  check(trackUrl.startsWith('https://cdn.creativeclaw.co/'),'Original game music source '+slug);
+  check(trackUrl.startsWith('assets/audio/music-'),'Original game music source '+slug);
+  const media=await page.evaluate(async()=>{
+    const source=window.PocketGameboxGameMusic?.source;
+    try{
+      const response=await fetch(source);
+      return {ok:response.ok,bytes:(await response.arrayBuffer()).byteLength,origin:new URL(response.url).origin};
+    }catch(e){return {ok:false,error:String(e)};}
+  });
+  check(media.ok&&media.bytes>4000&&media.origin===new URL(BASE).origin,'Bundled soundtrack served from game origin '+slug,media);
+
   const isLoaded=await iframe.locator('html').evaluate(el=>el.querySelector('#app')!==null||el.querySelector('.shell')!==null);
   check(isLoaded,'Game launched '+slug);
   await page.locator('#guide-toggle').click();
@@ -225,10 +235,13 @@ try{
   report.tests.push({slug,stage:'refresh',storageKeys:progress.map(x=>x[0]),assets:assetHits.slice(0,12),errors,failedRequests});
   check(errors.length===0,'No browser JS exceptions '+slug,{errors});
   check(failedRequests.length===0,'No missing asset responses '+slug,{failedRequests});
-  await page.locator('#home').click();
-  check(await page.locator('#confirm.open').count()===1,'Back-to-games confirmation '+slug);
-  await page.locator('#quit').click();
-  await page.waitForURL('**/index.html');
+  // The approved UX returns straight to the collection with no confirmation dialog.
+  // Await navigation explicitly so this checks the real click and not stale DOM.
+  await Promise.all([
+    page.waitForURL('**/index.html'),
+    page.locator('#home').click()
+  ]);
+  check(await page.locator('#confirm').count()===0,'No obsolete lobby confirmation '+slug);
   const saved=page.locator('.mobile-card[href="play.html?game='+slug+'"]');
   check(await saved.getAttribute('data-progress')==='SAVED','Return to collection shows saved game '+slug);
   await context.close();
@@ -270,6 +283,6 @@ try{
  }
 
 } catch(e){report.failures.push({desc:'Browser suite aborted',message:String(e),stack:e.stack});console.error(e);}
-finally{await browser.close();writeFileSync('qa-evidence/browser-report.json',JSON.stringify(report,null,2));}
+finally{check(creativeClawRequests.length===0,'No Creative Claw requests during browser music QA',creativeClawRequests);await browser.close();writeFileSync('qa-evidence/browser-report.json',JSON.stringify(report,null,2));}
 console.log(JSON.stringify({tests:report.tests.length,failures:report.failures.length,warnings:report.warnings.length}));
 if(report.failures.length)process.exitCode=1;
