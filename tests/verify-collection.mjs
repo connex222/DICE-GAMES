@@ -32,6 +32,14 @@ assert.ok(index.includes('pocket-aaa-lobby.css')&&index.includes('pocket-aaa-lob
 assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('repeat(4')&&aaaCss.includes('max-width:720px'),'7/4/mobile responsive card layout');
 assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
 assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
+for(const slug of games){
+ const art='assets/aaa-cards/'+slug+'.webp';
+ assert.equal(index.split('src="'+art+'"').length-1,2,slug+' approved art appears on TV/desktop and phone');
+ const f=new URL('../'+art,import.meta.url);
+ assert.ok(existsSync(f)&&statSync(f).size>20000,slug+' approved art is actually bundled, not broken');
+}
+assert.ok(aaaCss.includes("url('aaa-lobby.webp')"),'approved lobby ambience is referenced');
+assert.ok(existsSync(new URL('../assets/aaa-lobby.webp',import.meta.url)),'approved lobby image is bundled');
 new vm.Script(aaaLobby,{filename:'pocket-aaa-lobby.js'});
 console.log('PASS premium collection semantic cards, responsive gallery, controls and seven unique gameplay treatments');
 assert.ok(index.includes('PocketGameboxProgress?.reset()'),'reset clears actual game state, not only lobby prefs');
