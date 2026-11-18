@@ -43,6 +43,16 @@ for(const face of ['brain','feet','shot','genius','double','bomb','lucky']){
 }
 assert.ok(brainLoader.includes('picture.onerror=()=>{}'),'missing art leaves the functional vector fallback');
 assert.ok(brainV3.includes('Approved visual art slots'),'approved images are progressively enabled');
+const brainAssets=new URL('../assets/brain-raid-v3/',import.meta.url);
+const brainAssetFiles=readdirSync(brainAssets).filter(n=>n.endsWith('.webp'));
+assert.equal(brainAssetFiles.length,25,'all twenty-five approved Brain Raid illustrations/sprites shipped');
+for(const name of ['key-art','lobby-reference','gameplay-reference','mascot-sheet','dice-sheet','mode-reference','winner-reference',
+ 'lobby-hero','graveyard-atmosphere','roll-tray-atmosphere','mascot-idle','mascot-happy','mascot-scared','mascot-dizzy','mascot-triumphant',
+ 'mode-horde','mode-classic','winner-mascot','face-brain','face-feet','face-shot','face-genius','face-bomb','face-horde','face-toxic']){
+ const file=new URL(name+'.webp',brainAssets);
+ assert.ok(existsSync(file) && statSync(file).size>3500,'Brain Raid raster artwork is present: '+name);
+}
+
 assert.ok(brainSource.includes('const rollingArt = [FACE_ART.brain, FACE_ART.feet, FACE_ART.shot]'),'rolling dice use matching vector art before the final face settles');
 assert.ok(brainSource.includes("label: danger ? 'Risk it all & roll' : 'Roll for more'"),'risk button label reflects danger');
 assert.ok(brainSource.includes("label: 'Bank brains'"),'bank action is clear without changing rules');
