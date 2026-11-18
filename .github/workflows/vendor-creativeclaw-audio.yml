@@ -2,7 +2,7 @@ name: Bundle Creative Claw audio locally
 on:
   push:
     branches: [fix/vendor-creativeclaw-audio]
-    paths: ['CREATIVE-CLAW-AUDIO-SOURCES.json', 'tests/offline-audio.test.mjs']
+    paths: ['CREATIVE-CLAW-AUDIO-SOURCES.json', 'tests/offline-audio.test.mjs', '.github/workflows/vendor-creativeclaw-audio.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -17,7 +17,7 @@ jobs:
           node-version: '22'
       - run: command -v ffmpeg >/dev/null || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - run: node tools/vendor-creativeclaw-audio.mjs
-      - run: npm ci && npm test
+      - run: npm install --no-package-lock --ignore-scripts && npm test
       - name: Commit MP3s and size report
         run: |
           git config user.name 'github-actions[bot]'
