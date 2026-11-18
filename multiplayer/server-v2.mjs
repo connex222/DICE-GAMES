@@ -10,6 +10,10 @@ const PUBLIC_ORIGIN=process.env.PUBLIC_ORIGIN?.replace(/\/+$/,'');
 const HOST=PUBLIC_ORIGIN||process.env.RENDER_EXTERNAL_URL||(process.env.NODE_ENV==='production'?'https://pocket-gamebox-multiplayer.onrender.com':'http://localhost:'+PORT);
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const rooms=new Map();
+// Production heartbeat is fixed at 25 seconds; the shorter override is only for tests.
+const HEARTBEAT_MS=process.env.NODE_ENV==='test'&&Number(process.env.WS_HEARTBEAT_INTERVAL_MS)>0
+ ? Number(process.env.WS_HEARTBEAT_INTERVAL_MS) : 25_000;
+let shuttingDown=false;
 const code=()=>Array.from({length:4},()=>CODE_CHARS[randomInt(CODE_CHARS.length)]).join('');
 const token=()=>randomBytes(32).toString('base64url');
 const open=ws=>ws?.readyState===WebSocket.OPEN;
@@ -119,7 +123,9 @@ function respond(res,status,body,contentType='text/plain; charset=utf-8'){
 }
 const server=http.createServer(async(req,res)=>{
  const url=new URL(req.url||'/', 'http://localhost');
- if(url.pathname==='/health')return respond(res,200,'ok');
+ if(url.pathname==='/health')return respond(res,200,
+  JSON.stringify({ok:true,rooms:rooms.size,uptime:Math.floor(process.uptime())}),
+  'application/json; charset=utf-8');
  if(url.pathname==='/'||url.pathname==='/multiplayer-seven.html'||url.pathname==='/multiplayer.html'){
   try{return respond(res,200,await readFile(new URL('../multiplayer-seven.html',import.meta.url)),'text/html; charset=utf-8');}
   catch(e){return respond(res,500,'The multiplayer interface is unavailable');}
@@ -144,6 +150,9 @@ const server=http.createServer(async(req,res)=>{
 });
 const wss=new WebSocketServer({server,maxPayload:4096,perMessageDeflate:false});
 wss.on('connection',(ws,req)=>{
+ if(shuttingDown){ws.close(1012,'Server restarting');return;}
+ ws.isAlive=true;
+ ws.on('pong',()=>{ws.isAlive=true;});
  // Prevent unrelated sites from using the user's logged-in browser as an unsolicited controller.
  const origin=req.headers.origin;
  if(origin && !([PUBLIC_ORIGIN,HOST].filter(Boolean).includes(origin))){ws.close(1008,'Invalid origin');return;}
@@ -168,4 +177,43 @@ const timer=setInterval(()=>{
   send(room.host.ws,{type:'expired'});for(const p of room.players)send(p.ws,{type:'expired'});rooms.delete(id);
  }
 },60000);timer.unref();
+
+// A missed pong is detected at the next tick (within 50 seconds). terminate()
+// emits the ordinary 'close' event, so seats stay reserved for token-based rejoin.
+const heartbeat=setInterval(()=>{
+ for(const ws of wss.clients){
+  if(ws.readyState!==WebSocket.OPEN)continue;
+  if(ws.isAlive===false){ws.terminate();continue;}
+  ws.isAlive=false;
+  try{ws.ping();}catch{ws.terminate();}
+ }
+},HEARTBEAT_MS);
+heartbeat.unref();
+wss.on('close',()=>clearInterval(heartbeat));
+
+function shutdown(){
+ if(shuttingDown)return;
+ shuttingDown=true;
+ console.log('SIGTERM received: closing multiplayer connections for restart');
+ clearInterval(heartbeat);
+ clearInterval(timer);
+ // ws close handshakes may stall on sleeping phones; Render must not hang.
+ const deadline=setTimeout(()=>process.exit(0),9_500);
+ let httpClosed=false,wsClosed=false;
+ const finished=()=>{
+  if(httpClosed&&wsClosed){clearTimeout(deadline);process.exit(0);}
+ };
+ server.close(err=>{
+  if(err)console.error('HTTP shutdown error:',err);
+  httpClosed=true;finished();
+ });
+ for(const ws of wss.clients){
+  if(ws.readyState===WebSocket.OPEN){
+   send(ws,{type:'serverRestarting',message:'Server restarting, reconnecting…'});
+   ws.close(1012,'Server restarting');
+  }else if(ws.readyState!==WebSocket.CLOSED)ws.terminate();
+ }
+ wss.close(()=>{wsClosed=true;finished();});
+}
+process.once('SIGTERM',shutdown);
 server.listen(PORT,()=>console.log('Seven-game multiplayer server listening on',PORT));
