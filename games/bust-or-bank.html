@@ -28,7 +28,7 @@
   --pad:clamp(8px,2.2vmin,22px);
   --gap:clamp(6px,1.6vmin,16px);
   --tap:48px;
-  --roll-ms:1000ms;
+  --roll-ms:780ms;
   --on-success:#04261B;
 
   /* Dice */
@@ -1293,7 +1293,7 @@ const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6,
 const BASE = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ROLL_MS = reduceMotion ? 220 : 1000;
+const ROLL_MS = reduceMotion ? 150 : 780;
 root.style.setProperty('--roll-ms', `${ROLL_MS}ms`);
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB');
@@ -1374,11 +1374,11 @@ function animateRoll(action) {
     void dies[di].offsetWidth;
     dies[di].classList.add('rolling');
   });
-  Sound.rattle(action.rolled.length, ROLL_MS);
+  // Do not double the recorded Pocket Gamebox dice-rattle with procedural synthesis.
+  if (window.parent === window) Sound.rattle(action.rolled.length, ROLL_MS);
   if (action.hot) {
     showStamp('Hot dice!', 'warning', ROLL_MS + 500);
     Sound.hot();
-    pocketBustAudio('risk');
   }
   ui.busy = true;
   clearTimeout(ui.settleTimer);
