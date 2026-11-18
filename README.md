@@ -12,7 +12,17 @@ Seven dice games in one place, castable to a TV:
 | Ten of a Kind | Race to roll ten the same |
 | Brain Raid | Zombie push-your-luck game |
 
-**Play it:** https://connex222.github.io/DICE-GAMES/
+**Standalone (solo / bots / pass-and-play):** https://connex222.github.io/DICE-GAMES/
+
+**TV multiplayer (2–8 phones, seven games):** https://pocket-gamebox-multiplayer.onrender.com/multiplayer-seven.html
+
+### TV multiplayer, 18 November 2026
+
+Open the multiplayer URL on the TV or PC, choose **Host TV multiplayer**, choose one of the seven games, and display the generated QR code. Guests scan it from their own phone (or enter the four-letter room code), type their name, and wait for the host to start. The TV displays public information, the scores and current turn; phones provide individual controls. The original standalone version remains unchanged. Server rolls dice and validates moves. Liar's Dice keeps each person's secret cup private until a challenge reveal.
+
+This is the first seven-game TV implementation using each game's original core rules in default modes. Original optional variants, hardware audio quality and full physical eight-phone gameplay remain outstanding acceptance checks. Rooms live in server memory and are lost across service restarts or deploys; players can reconnect after a simple browser refresh while the room survives.
+
+
 
 ## How to use it
 
@@ -55,7 +65,7 @@ Each in-game music control uses the same saved **Music ON/OFF** preference as th
 - [November release record](docs/RELEASE-2026-11-12.md)
 - [Original alpha notes](docs/ALPHA-NOTES.md) and [historical notes](docs/history/)
 
-**Deployment:** GitHub Pages publishes the contents of `main` at the Play link above. There is no Render service for this static collection. Do not create one as part of routine releases.
+**Deployment:** GitHub Pages serves the standalone collection from `main`. The separate WebSocket-based TV multiplayer runs on the existing free Render service `pocket-gamebox-multiplayer` (deploy branch `feature/tv-multiplayer-qr`). No additional paid service is required. See `multiplayer/README.md` for limitations and operations.
 
 ## For developers and AI assistants
 
