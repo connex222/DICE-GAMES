@@ -1,0 +1,37 @@
+/* Pocket Gamebox premium in-game navigation. Runs in the wrapper,
+ * never inside the authoritative rules engines. All buttons remain in flow.
+ */
+.screen{background:radial-gradient(ellipse at 50% -20%,#2b4b37,#091b19 76%,#040b0c)}
+.bar{
+ background:linear-gradient(180deg,#244435 0%,#0b2621 68%,#071c1b)!important;
+ border-bottom:2px solid #d0ab6c!important;box-shadow:0 5px 24px #000a,inset 0 1px #ffefb527;
+ color:#ffebc4!important;z-index:4
+}
+.bar .label{font:900 clamp(15px,2vw,21px)/1 Georgia,serif!important;letter-spacing:.02em!important;
+ color:#ffe3a2!important;text-shadow:0 2px 6px #000b!important}
+.bar .home,.bar .expand{
+ border-color:#d6ac69!important;border-radius:11px!important;
+ background:linear-gradient(180deg,#315742,#173128)!important;color:#fff0c5!important;
+ box-shadow:inset 0 1px #fce7ae38,0 2px 8px #0008!important;
+}
+.bar .home:hover,.bar .expand:hover,
+.bar .home:focus-visible,.bar .expand:focus-visible{
+ background:linear-gradient(180deg,#4f754c,#244734)!important;filter:brightness(1.1)
+}
+#bgm[aria-pressed="true"]{background:linear-gradient(#48734a,#1b553e)!important}
+#game{background:#081c1a}
+#float{border-color:#e8c784!important;background:#17392ff0!important;color:#ffebb7!important}
+#confirm .dialog,#guide-panel .dialog{border:2px solid #cda967!important;
+ background:linear-gradient(165deg,#234a39,#0a221e)!important;
+ box-shadow:0 20px 70px #000d,inset 0 1px #ffe7a640!important}
+#confirm .dialog :is(h2,p),#guide-panel .dialog :is(h2,p){color:#f9e9cc}
+#confirm .dialog .actions button,#guide-panel .dialog .actions button{
+ border-color:#d0aa70;min-height:48px
+}
+#confirm .dialog .actions .quit{background:linear-gradient(#fbe8ad,#dbb15e)!important;color:#251a0b!important}
+@media(max-width:520px){
+ .bar{padding-inline:7px!important;row-gap:5px!important}
+ .bar .label{text-overflow:ellipsis;max-width:none!important}
+ .bar #home,.bar #expand{min-height:44px!important}
+}
+@media(prefers-reduced-motion:reduce){.bar .home,.bar .expand{transition:none!important}}
