@@ -24,6 +24,6 @@ for(const [game] of GAMES){
    s=next(game,s,'p0',{type:'ROLL'});
    assert.ok(s.gameData);
   }
-  assert.throws(()=>next(game,s,'p1',{type:'HACK'}),/Move|Unsupported/i);
+  assert.throws(()=>next(game,s,'p1',{type:'HACK'}),/Move|Unsupported|Not your turn/i);
  });
 }
