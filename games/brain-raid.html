@@ -1599,7 +1599,7 @@ const nameOf = (s, id) => (s.players.find((p) => p.id === id) || {}).name || '';
 const dangerAt = (cfg) => cfg.shotsToBust - (cfg.cup.blue ? 2 : 1);
 const dieHTML = (kind, face, cls = '') => `<span class="zdie${cls}${face === 'genius' ? ' genius' : ''}" data-kind="${kind}" style="--dc:${KIND_VAR[kind]}">`
   + `<span class="grade" aria-hidden="true">${KINDS[kind].grade}</span>`
-  + (face ? `<span class="face emo" aria-hidden="true">${FACE_ART[face] || ICON[face]}</span>${BADGE[face] ? `<span class="badge">${BADGE[face]}</span>` : ''}` : '')
+  + (face ? `<span class="face emo" data-face="${face}" aria-hidden="true">${FACE_ART[face] || ICON[face]}</span>${BADGE[face] ? `<span class="badge">${BADGE[face]}</span>` : ''}` : '')
   + '</span>';
 
 /* UI-only state (never sent over the network) */
@@ -2414,5 +2414,5 @@ const controller = new NetworkController();
   });
 })();
 </script>
-<script src="../assets/clean-audio.js"></script><script src="../assets/collection-fullscreen.js?v=20261114" defer></script></body>
+<script src="../assets/clean-audio.js"></script><script src="../assets/brain-raid-v3-art.js" defer></script><script src="../assets/collection-fullscreen.js?v=20261114" defer></script></body>
 </html>
