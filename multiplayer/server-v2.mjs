@@ -109,7 +109,7 @@ function processMessage(ws,ctx,data) {
  throw Error('Unsupported request.');
 }
 const HEADERS={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
- 'content-security-policy':"default-src 'self'; img-src 'self' data:; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'"};
+ 'content-security-policy':"default-src 'self'; media-src 'self' https://cdn.creativeclaw.co; img-src 'self' data:; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'"};
 function respond(res,status,body,contentType='text/plain; charset=utf-8'){
  res.writeHead(status,{...HEADERS,'content-type':contentType});res.end(body);
 }
@@ -119,6 +119,10 @@ const server=http.createServer(async(req,res)=>{
  if(url.pathname==='/'||url.pathname==='/multiplayer-seven.html'||url.pathname==='/multiplayer.html'){
   try{return respond(res,200,await readFile(new URL('../multiplayer-seven.html',import.meta.url)),'text/html; charset=utf-8');}
   catch(e){return respond(res,500,'The multiplayer interface is unavailable');}
+ }
+ if(/^\/assets\/aaa-cards\/[a-z0-9-]+\.webp$/.test(url.pathname)){
+  try{return respond(res,200,await readFile(new URL('..'+url.pathname,import.meta.url)),'image/webp');}
+  catch{return respond(res,404,'Artwork unavailable');}
  }
  if(url.pathname==='/qr'){
   const roomCode=url.searchParams.get('code')?.toUpperCase();
