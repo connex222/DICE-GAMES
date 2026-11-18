@@ -1,0 +1,159 @@
+/* Pocket Gamebox Premium Edition — shared gameplay visual skin.
+ * Visual-only: do not change tile states, dice face mapping, animations'
+ * authoritative outcomes, save keys, click handlers, or core layout grids.
+ */
+:root{
+  --aaa-ivory:#fff2c9;--aaa-gold:#ddb46b;--aaa-gold-hi:#ffe5a2;
+  --aaa-surface:#102b26;--aaa-panel:#15382e;--aaa-brass-edge:#c4934a;
+}
+html[data-pocket-game] body{background:radial-gradient(ellipse at 50% 0%,#274c38 0%,#081d1b 67%,#050d0e 100%)}
+html[data-pocket-game] .topbar{
+  background:linear-gradient(180deg,#0b2822,#122923 55%,#081a19)!important;
+  border-bottom:1px solid #caa5649c!important;
+  box-shadow:inset 0 1px #f6e2aa2e,0 5px 20px #0008!important;
+}
+html[data-pocket-game] .topbar :is(.title,.brand .foil){
+  color:var(--aaa-ivory);font-family:Georgia,'Times New Roman',serif;
+  text-shadow:0 2px 7px #000a,0 0 18px #e6ba5b32;
+}
+html[data-pocket-game] :is(.topbar .icon-btn,.gb-home){
+  border:1px solid #caa668a8!important;
+  background:linear-gradient(180deg,#254b37,#0b241e)!important;
+  color:#ffebbd!important;border-radius:10px!important;
+  box-shadow:inset 0 1px #ffefc136,0 3px 10px #0007;
+}
+html[data-pocket-game] :is(.topbar .icon-btn,.gb-home):is(:focus-visible,:hover){
+  border-color:#ffe3a1!important;filter:brightness(1.11);
+}
+html[data-pocket-game] :is(.scoreboard,.score-panel){
+  border-color:#b591557e!important;
+  background:linear-gradient(180deg,#133b2bb8,#09201bb8)!important;
+  box-shadow:inset 0 -1px #e5c38d20;
+}
+html[data-pocket-game] :is(.scoreboard,.score-panel) :is(.score,.num,.points,.value){
+  font-variant-numeric:tabular-nums;
+}
+html[data-pocket-game] :is(.card,.panel,.scorecard){
+  border-color:#bd955a8c!important;
+  box-shadow:inset 0 1px #ffedbc20,0 7px 25px #0005;
+}
+html[data-pocket-game] :is(.table,.game,.table-panel){
+  --aaa-wood-1:#65351e;--aaa-wood-2:#2f1a13;
+}
+html[data-pocket-game] :is(.dock,.actions):not(.table-panel .actions){
+  border-color:#cf9f5f65!important;
+}
+html[data-pocket-game] .dock{
+  background:linear-gradient(180deg,#163d30,#091f1c)!important;
+  border-top:1px solid #cca36894!important;
+  box-shadow:0 -7px 19px #0005,inset 0 1px #f6d79826;
+}
+html[data-pocket-game] .btn-primary{
+  background:linear-gradient(180deg,#18785d,#065036 62%,#053624)!important;
+  color:#fff1c6!important;border:1px solid #dfb771!important;
+  box-shadow:inset 0 1px #ffe8aa61,0 4px 12px #0006;
+  text-shadow:0 1px 2px #002d27;
+}
+html[data-pocket-game] .btn-success{
+  background:linear-gradient(180deg,#2e845c,#126044)!important;
+  color:#ffefcb!important;border:1px solid #d4b478!important;
+}
+html[data-pocket-game] .btn-danger{
+  background:linear-gradient(180deg,#9a3b43,#6d1c29)!important;
+  border:1px solid #f3a6a2!important;color:#fff1dd!important;
+}
+html[data-pocket-game] .btn-ghost{
+  background:linear-gradient(180deg,#25443b,#122a27)!important;
+  border:1px solid #ac946981!important;color:#fae9ca!important;
+}
+html[data-pocket-game] .btn:disabled{
+  filter:saturate(.4);box-shadow:none!important;opacity:.62;
+}
+html[data-pocket-game] .btn:is(:hover,:focus-visible):not(:disabled),
+html[data-pocket-game] .roll-btn:is(:hover,:focus-visible):not(:disabled){
+  filter:brightness(1.13);
+}
+html[data-pocket-game] :is(.tile,.die,.cube,.roll-btn){-webkit-tap-highlight-color:transparent}
+html[data-pocket-game] .face{
+  box-shadow:inset 0 1px 2px #fff9e88c,0 4px 7px #0007;
+}
+html[data-pocket-game] :is(.dialog,dialog[open],.modal) {
+  border-color:#d9b06a!important;
+}
+html[data-pocket-game="shut-the-box"] .box{
+  border:clamp(6px,1.5vmin,17px) solid #7c4a2c!important;
+  border-radius:clamp(14px,2vw,30px)!important;
+  background:
+   radial-gradient(ellipse at 48% 45%,#1a6547,#104231 72%,#09291f 100%) padding-box,
+   repeating-linear-gradient(96deg,#60351f 0,#854b2b 12px,#643b23 20px,#4e271b 27px) border-box!important;
+  box-shadow:inset 0 0 0 3px #bb8950,inset 0 0 40px #001c11a8,0 12px 36px #000d!important;
+}
+html[data-pocket-game="shut-the-box"] .box::before{
+  content:"";position:absolute;inset:3px;pointer-events:none;border:1px solid #f3cf833f;border-radius:12px;
+}
+html[data-pocket-game="shut-the-box"] .tile-face{
+  background:linear-gradient(90deg,#d7a76c 0%,#f9d69a 20%,#efbf7d 55%,#d9a667 100%)!important;
+  color:#312015!important;
+  box-shadow:inset 2px 0 #ffedc38a,inset -2px 0 #75412638,inset 0 0 0 1px #99542d,0 4px #8a4e2b,0 7px 8px #0007!important;
+  text-shadow:0 1px #fff6d49a;
+}
+html[data-pocket-game="shut-the-box"] .tile-face::after{
+  content:"";display:block;position:absolute;bottom:0;left:16%;right:16%;height:7px;
+  border-radius:5px 5px 0 0;background:linear-gradient(90deg,#6c4518,#f7d386,#9d691d);
+  box-shadow:0 -1px #fff0bd82;pointer-events:none;
+}
+html[data-pocket-game="shut-the-box"] .tile-back{
+  background:repeating-linear-gradient(89deg,#4a281c,#76452b 7px,#65391d 18px)!important;
+  box-shadow:inset 0 3px 12px #0009,inset 0 0 0 1px #ae7b498c!important;
+}
+html[data-pocket-game="shut-the-box"] .tile.sel .tile-face{
+  box-shadow:0 0 0 3px #baffc6,inset 0 0 0 2px #f5ffda,0 7px 16px #0009!important;
+}
+html[data-pocket-game="shut-the-box"] .readout-total{
+  color:#ffe4a8;text-shadow:0 3px 6px #000a;font-variant-numeric:tabular-nums;
+}
+html[data-pocket-game="shut-the-box"] .pick-line{color:#f7e1b7}
+html[data-pocket-game="shut-the-box"] .dice{filter:drop-shadow(0 6px 8px #021f18a8)}
+html[data-pocket-game="liars-dice"] .arena-wrap{
+  border-color:#b47c687d!important;
+  background:radial-gradient(ellipse at center,#632a3d,#2c1526 67%,#160f18)!important;
+  box-shadow:inset 0 0 50px #19070c80,0 12px 30px #0007;
+}
+html[data-pocket-game="liars-dice"] .cup{
+  filter:drop-shadow(0 5px 7px #060607b5);
+}
+html[data-pocket-game="bust-or-bank"] .board-wrap{
+  background:radial-gradient(ellipse at center,#184c4a87,#071d1f00 74%);
+}
+html[data-pocket-game="bust-or-bank"] #btnA:not(:disabled){
+  box-shadow:inset 0 1px #ffe9ae7a,0 0 16px #f9ce6855;
+}
+html[data-pocket-game="generala"] .scorecard{
+  border-color:#b99663!important;box-shadow:0 8px 30px #000a,inset 0 0 0 2px #eec78338;
+}
+html[data-pocket-game="ten-of-a-kind"] .game{
+  background:radial-gradient(ellipse at center,#162f3c77,transparent 70%);
+}
+html[data-pocket-game="brain-raid"] :is(.tray,.panel){
+  border-color:#a2b6748c!important;
+}
+html[data-pocket-game="brain-raid"] .tray{
+  background:radial-gradient(ellipse at 50% 40%,#2a3a3b,#151b2b 76%,#0f1524)!important;
+  box-shadow:inset 0 0 35px #15162b,0 8px 22px #0009;
+}
+html[data-pocket-game="brain-raid"] .hero{filter:drop-shadow(0 5px 17px #672a70a3)}
+html[data-pocket-game="gilded-five"] .table-panel{
+  border-color:#c5a365!important;box-shadow:inset 0 0 0 1px #efcc7c28,0 9px 25px #0007;
+}
+html[data-pocket-game="gilded-five"] .roll-btn{
+  background:linear-gradient(180deg,#167256,#074c35)!important;border-color:#e3c17c!important;
+}
+@media(max-width:600px){
+ html[data-pocket-game] :is(.topbar .icon-btn,.gb-home){min-width:40px;min-height:40px}
+ html[data-pocket-game] .btn{min-height:48px}
+ html[data-pocket-game="shut-the-box"] .box{border-width:6px!important}
+ html[data-pocket-game="shut-the-box"] .tile-face::after{height:4px}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-pocket-game] :is(.btn,.tile-face,.roll-btn){transition:none!important}
+}
