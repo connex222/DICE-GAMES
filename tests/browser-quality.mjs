@@ -24,6 +24,44 @@ try{
   if(width===390)await page.screenshot({path:'qa-evidence/screens/collection-390.png',fullPage:true});
   await context.close();
  }
+ // Screen-safe wrapper geometry on phones, tablets, desktops and HDTV.
+ // No audio-control overlay, horizontal clipping, or hidden in-flow lobby exit.
+ const deviceSizes=[
+  [320,568],[375,667],[390,844],[430,932],[520,844],
+  [768,1024],[1024,768],[1366,768],[1920,1080]
+ ];
+ for(const [width,height] of deviceSizes){
+  const context=await browser.newContext({
+   viewport:{width,height},deviceScaleFactor:1,isMobile:width<=520,hasTouch:width<=768
+  });
+  const page=await pageAt(context,BASE+'play.html?game=shut-the-box');
+  await page.waitForTimeout(180);
+  const fit=await page.evaluate(()=>{
+   const elements=[...document.querySelectorAll('.bar .home,.bar .label,.bar .expand')];
+   const rectangles=elements.map(el=>{
+    const r=el.getBoundingClientRect();
+    return {id:el.id||el.className,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};
+   });
+   const cut=rectangles.filter(r=>r.left < -2||r.right > innerWidth+2||r.top < -2||r.bottom > innerHeight+2);
+   const overlaps=[];
+   for(let i=0;i<rectangles.length;i++)for(let j=i+1;j<rectangles.length;j++){
+    const a=rectangles[i],b=rectangles[j];
+    if(Math.min(a.right,b.right)-Math.max(a.left,b.left)>2 &&
+      Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2)overlaps.push([a.id,b.id]);
+   }
+   return {cut,overlaps,overflow:document.documentElement.scrollWidth-innerWidth,
+     iframeHeight:document.getElementById('game')?.getBoundingClientRect().height,
+     hasMusic:!!document.getElementById('bgm')};
+  });
+  check(fit.hasMusic,'Original music toggle exists @'+width);
+  check(fit.cut.length===0,'No clipped wrapper buttons @'+width,fit);
+  check(fit.overlaps.length===0,'No overlapping wrapper buttons @'+width,fit);
+  check(fit.overflow<=8,'No horizontal overflow @'+width,fit);
+  check(fit.iframeHeight>=180,'Playable iframe area preserved @'+width,fit);
+  if([320,430,768,1366].includes(width))
+   await page.screenshot({path:'qa-evidence/screens/pocket-music-'+width+'.png'});
+  await context.close();
+ }
  // Each game: iframe loads, unique guide, real help and access to its saved state.
  for(const slug of games){
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
@@ -39,6 +77,16 @@ try{
   const iframe=page.frameLocator('#game');
   await iframe.locator('body').waitFor({state:'attached',timeout:12000});
   const title=await page.locator('#title').innerText();
+  const music=page.locator('#bgm');
+  check(await music.count()===1,'One per-game music toggle '+slug);
+  const originalMusic=await music.getAttribute('aria-pressed');
+  await music.click();
+  check((await music.getAttribute('aria-pressed'))!==(originalMusic),'Music mute toggles '+slug);
+  check((await page.evaluate(()=>localStorage.getItem('pocket-gamebox.lobby-music-enabled')))==='false','Game music mute persists '+slug);
+  await music.click();
+  check((await music.getAttribute('aria-pressed'))==='true','Music restores '+slug);
+  const trackUrl=await page.evaluate(()=>window.PocketGameboxGameMusic?.source||'');
+  check(trackUrl.startsWith('https://cdn.creativeclaw.co/'),'Original game music source '+slug);
   const isLoaded=await iframe.locator('html').evaluate(el=>el.querySelector('#app')!==null||el.querySelector('.shell')!==null);
   check(isLoaded,'Game launched '+slug);
   await page.locator('#guide-toggle').click();
