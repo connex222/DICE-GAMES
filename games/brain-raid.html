@@ -1636,7 +1636,8 @@ function showStamp(text, tone, ms, sub = '') {
 /* ---- Roll animation: dice tumble and flicker through faces, then land ---- */
 function animateRoll(la) {
   ui.busy = true;
-  Sound.shake();
+  // The collection wrapper owns recorded dice audio; keep synthesised shake for standalone play.
+  if (window.parent === window) Sound.shake();
   Mascot.set('scared', 'Here goes…', 0);
   ui.keys.slots = '';
   scheduleRender();
@@ -1648,7 +1649,7 @@ function animateRoll(la) {
     clearInterval(ui.flicker);
     ui.flicker = setInterval(() => {
       el.slots.querySelectorAll('.zdie .face').forEach((f) => { f.textContent = faces[Math.floor(Math.random() * 3)]; });
-    }, 70);
+    }, 105);
   }
   later(() => {
     clearInterval(ui.flicker);
