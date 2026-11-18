@@ -1,6 +1,6 @@
 /* Original Creative Claw soundtrack: Seven Small Victories. Independent from voice and SFX. */
 (()=>{'use strict';
-const key='pocket-gamebox.lobby-music-enabled', url='/assets/audio/music-lobby.mp3';
+const key='pocket-gamebox.lobby-music-enabled', url='assets/audio/music-lobby.mp3';
 const audio=new Audio();audio.src=url;audio.loop=true;audio.preload='none';audio.volume=.24;
 let enabled=localStorage.getItem(key)!=='false';
 const btn=null;

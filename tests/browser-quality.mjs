@@ -114,7 +114,7 @@ try{
   await music.click();
   check((await music.getAttribute('aria-pressed'))==='true','Music restores '+slug);
   const trackUrl=await page.evaluate(()=>window.PocketGameboxGameMusic?.source||'');
-  check(trackUrl.startsWith('/assets/audio/music-'),'Original game music source '+slug);
+  check(trackUrl.startsWith('assets/audio/music-'),'Original game music source '+slug);
   const isLoaded=await iframe.locator('html').evaluate(el=>el.querySelector('#app')!==null||el.querySelector('.shell')!==null);
   check(isLoaded,'Game launched '+slug);
   await page.locator('#guide-toggle').click();

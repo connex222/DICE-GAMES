@@ -5,13 +5,13 @@
 (() => {
   'use strict';
   const SONGS = Object.freeze({
-    'gilded-five': '/assets/audio/music-gilded-five.mp3',
-    'shut-the-box': '/assets/audio/music-shut-the-box.mp3',
-    'liars-dice': '/assets/audio/music-liars-dice.mp3',
-    'bust-or-bank': '/assets/audio/music-bust-or-bank.mp3',
-    'generala': '/assets/audio/music-generala.mp3',
-    'ten-of-a-kind': '/assets/audio/music-ten-of-a-kind.mp3',
-    'brain-raid': '/assets/audio/music-brain-raid.mp3'
+    'gilded-five': 'assets/audio/music-gilded-five.mp3',
+    'shut-the-box': 'assets/audio/music-shut-the-box.mp3',
+    'liars-dice': 'assets/audio/music-liars-dice.mp3',
+    'bust-or-bank': 'assets/audio/music-bust-or-bank.mp3',
+    'generala': 'assets/audio/music-generala.mp3',
+    'ten-of-a-kind': 'assets/audio/music-ten-of-a-kind.mp3',
+    'brain-raid': 'assets/audio/music-brain-raid.mp3'
   });
   const TITLES = Object.freeze({
     'gilded-five': 'Gilded Five',
