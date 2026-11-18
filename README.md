@@ -23,7 +23,21 @@ To play from your own PC instead, download the repository and double-click `STAR
 
 ## Sound
 
-All 94 sound files are included in `assets/audio`. If any go missing from a local copy, double-click `INSTALL-NEW-SOUNDS.bat` to download them again.
+All 94 approved game-effect and narrator recordings are included in `assets/audio`. If any go missing from a local copy, double-click `INSTALL-NEW-SOUNDS.bat` to download them again.
+
+The collection has its own original lobby track, **Seven Small Victories**. As of 18 November 2026, each of the seven games also has a **distinct original Creative Claw instrumental theme**:
+
+- **Gilded Five:** elegant art-deco casino jazz.
+- **Shut the Box:** light-hearted traditional British pub piano.
+- **Liar's Dice:** sly, low-key jazz-noir suspense.
+- **Bust or Bank:** playful funk-and-brass risk music.
+- **Generala:** relaxed Latin jazz with guitar and piano.
+- **Ten of a Kind:** optimistic rhythmic mallets and synth textures.
+- **Brain Raid:** quirky, comic monster-caper orchestration.
+
+Each in-game music control uses the same saved **Music ON/OFF** preference as the collection lobby. The soundtrack starts when the browser allows it, or after a real interaction where autoplay is restricted. It stays very quiet, dips under voice lines and dice effects, and pauses when the page is hidden.
+
+**Important:** the seven new themes stream from permanent Creative Claw-hosted URLs and therefore require internet access. The original local game audio and rules are unchanged; games remain playable without streamed music. The new music has passed source and mock audio checks, but it has not been certified on every physical phone, TV or speaker.
 
 ## Status
 
