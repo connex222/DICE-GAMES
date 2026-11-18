@@ -1599,7 +1599,7 @@ function renderDice(s, sel, canAct) {
     slot.disabled = !tappable;
     slot.setAttribute('aria-pressed', d.state === 'held' ? 'true' : 'false');
     const stateWord = { idle: 'not rolled yet', free: 'rolled', held: 'kept', set: 'set aside' }[d.state];
-    slot.setAttribute('aria-label', `Die ${i + 1}: ${d.value}, ${stateWord}`);
+    slot.setAttribute('aria-label', `Die ${i + 1}: ${d.value}, ${stateWord}${d.state === 'held' && !sel.valid ? ', selection not yet valid' : ''}${tappable ? ', tap to ' + (d.state === 'held' ? 'release' : 'keep') : ''}`);
   });
 }
 
