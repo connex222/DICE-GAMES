@@ -7,7 +7,7 @@ import {GAMES,start,next,view,current} from './engines.mjs';
 
 const PORT=Number(process.env.PORT||3000);
 const PUBLIC_ORIGIN=process.env.PUBLIC_ORIGIN?.replace(/\/+$/,'');
-const HOST=process.env.NODE_ENV==='production'?'https://pocket-gamebox-seven.onrender.com':'http://localhost:'+PORT;
+const HOST=process.env.NODE_ENV==='production'?'https://pocket-gamebox-multiplayer.onrender.com':'http://localhost:'+PORT;
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const rooms=new Map();
 const code=()=>Array.from({length:4},()=>CODE_CHARS[randomInt(CODE_CHARS.length)]).join('');
