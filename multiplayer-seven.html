@@ -116,6 +116,12 @@ function connect(message){
  ws.onerror=()=>{if(socket===ws)say('The game server cannot be reached. Retrying…');};
  ws.onclose=e=>{
   if(socket!==ws||roomLost)return;
+  if(e.code===4001){
+   roomLost=true;
+   reconnectNotice('This session was opened elsewhere',
+    'This player seat is now in use on another device or browser tab. Return to the lobby if you want to start again.',true);
+   return;
+  }
   reconnecting=true;
   if(e.code===1012)restarting=true;
   const delay=retryDelay;
@@ -137,7 +143,7 @@ function receive(m){
  }
  if(m.type==='error'){
   if(session?.token&&/Room not found|saved player session is no longer available|Host session not recognised/i.test(m.message)){
-   roomLost=true;
+   roomLost=true;session=null;
    localStorage.removeItem('pocket-gamebox.seven-mp');
    reconnectNotice('This multiplayer room has ended',
     'The server restarted and its in-memory rooms were cleared. Return to the lobby to host or join a new match.',true);
@@ -145,7 +151,13 @@ function receive(m){
   }
   say(m.message);return;
  }
- if(m.type==='expired'){localStorage.removeItem('pocket-gamebox.seven-mp');say('Room expired — return to the lobby to start again.');return;}
+ if(m.type==='expired'){
+  roomLost=true;session=null;
+  localStorage.removeItem('pocket-gamebox.seven-mp');
+  reconnectNotice('This multiplayer room has expired',
+   'The room was inactive for too long. Return to the multiplayer lobby to begin a new match.',true);
+  return;
+ }
  if(m.type==='hosted'){
    connected();role='host';room=m.code;save({role,room,token:m.token});
    $('roomCode').textContent=room;$('qr').src='/qr?code='+encodeURIComponent(room);
