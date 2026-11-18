@@ -21,6 +21,14 @@ Seven dice games in one place, castable to a TV:
 
 To play from your own PC instead, download the repository and double-click `START-POCKET-GAMEBOX.bat`.
 
+## Premium Edition visuals — 18 November 2026
+
+The lobby is now a **real responsive seven-game gallery**, not a single static image with invisible hitboxes. Each game has individual ChatGPT-generated premium artwork bundled locally as WebP (the casino dice, wooden tiles, bluffing cups, jackpot risk, Generala scorecard, ten matching dice and comic zombies). A separate lounge backdrop adds atmosphere without replacing accessible controls.
+
+All seven active games use one shared visual system, with distinctly themed surfaces. **Shut the Box** features a wood-and-brass box treatment while preserving the actual interactive tiles and dice. Back to Lobby, fullscreen, voice/effects/music, saved progress, rules and every existing game engine are unchanged.
+
+The visual overhaul is not yet a physical-device quality certificate: review the updated browser QA matrix at 320/375/390/430/768/1024/1366/1920 px and test on actual phones and televisions before marking a production release.
+
 ## Sound
 
 All 94 approved game-effect and narrator recordings are included in `assets/audio`. If any go missing from a local copy, double-click `INSTALL-NEW-SOUNDS.bat` to download them again.
