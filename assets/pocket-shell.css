@@ -49,3 +49,21 @@
  .bar{min-height:86px!important}
  .bar :is(#home,#expand,#guide-toggle,#effects,#listen,#bgm){min-height:38px!important}
 }
+
+/* Compact tablets and small desktop windows: reserve two complete toolbar rows.
+   Keep every control in document flow; none may overlap the playing surface. */
+@media (min-width:521px) and (max-width:820px){
+ .bar{height:auto!important;min-height:104px!important;flex:0 0 auto!important;
+   flex-wrap:wrap!important;align-content:center;gap:6px!important;padding-block:6px!important}
+ .bar #home{order:1;flex:0 0 auto}
+ .bar .label{order:2;flex:1 1 150px;min-width:0}
+ .bar #expand{order:3;flex:0 0 44px}
+ .bar #guide-toggle,.bar #effects,.bar #listen,.bar #bgm{
+   order:4;flex:1 1 0!important;min-width:44px!important}
+ .bar #effects{order:5}
+ .bar #listen{order:6}
+ .bar #bgm{order:7}
+}
+@media (min-width:521px) and (max-width:820px) and (orientation:landscape) and (max-height:500px){
+ .bar{min-height:94px!important}
+}
