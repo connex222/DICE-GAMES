@@ -33,6 +33,20 @@ assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('re
 assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
 assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
 assert.ok(aaaGameCss.includes('Gameplay polish pass'),'shared action/score polish loaded');
+const brainV3=read('assets/brain-raid-v3.css'),brainLoader=read('assets/brain-raid-v3-art.js');
+const brainSource=read('games/brain-raid.html');
+assert.ok(brainSource.includes('brain-raid-v3.css')&&brainSource.includes('brain-raid-v3-art.js'),'Brain Raid Visual 3.0 assets are wired');
+assert.ok(brainSource.includes('const FACE_ART = Object.fromEntries'),'Brain Raid uses original vector dice faces');
+assert.ok(brainSource.includes('data-face="${face}"'),'Brain Raid retains actual authoritative face keys');
+for(const face of ['brain','feet','shot','genius','double','bomb','lucky']){
+ assert.ok(brainSource.includes(face+': '),'custom icon shape available for '+face);
+}
+assert.ok(brainLoader.includes('picture.onerror=()=>{}'),'missing art leaves the functional vector fallback');
+assert.ok(brainV3.includes('Approved visual art slots'),'approved images are progressively enabled');
+assert.ok(brainV3.includes('prefers-reduced-motion:reduce'),'Brain Raid Visual 3.0 respects reduced motion');
+assert.ok(brainSource.includes('Engine.createState')&&brainSource.includes('function renderSlots')&&brainSource.includes('function renderDock'),'visual rebuild retains live gameplay engine');
+new vm.Script(brainLoader,{filename:'brain-raid-v3-art.js'});
+
 assert.ok(aaaGameCss.includes('Turn-by-turn tactile clarity'),'dice selection uses grounded state treatments');
 for(const [game,state] of [['bust-or-bank','data-valid="false"'],['generala','data-state="held"'],['shut-the-box','.tile.sel'],['ten-of-a-kind','.dbtn.locked']]){
  assert.ok(aaaGameCss.includes('data-pocket-game="'+game+'"]') && aaaGameCss.includes(state),'visible held/selected states for '+game);
