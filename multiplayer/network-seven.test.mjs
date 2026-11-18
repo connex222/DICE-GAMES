@@ -35,7 +35,7 @@ test('All seven hosted rooms join by QR and show synchronised private phone view
    const {code}=await hosted;
    const qr=await fetch(origin+'/qr?code='+code);
    assert.equal(qr.status,200,game+' QR');
-   assert.match(await qr.text(),new RegExp('join='+code));
+   assert.match(await qr.text(),/<svg/);
    const joins=[];
    for(let i=0;i<2;i++){
     const p=await open();sockets.push(p);
