@@ -30,7 +30,7 @@ The loader in `assets/brain-raid-v3-art.js` checks each file. Artwork activates 
 
 ## QA still required
 
-- Run `npm test` or the repository's verified collection test command, plus full gameplay from first turn to winner in Classic and Horde.
+- Run `node tests/verify-collection.mjs` in the checked-out repository (there is no root `package.json`), plus full gameplay from first turn to winner in Classic and Horde.
 - Test 320, 375, 390, 430px portrait phone widths; phone landscape; tablets; desktop; 1920×1080 TV.
 - Validate resumed saved games, no clipped controls, zero duplicated fullscreen buttons, no confirmation when returning to lobby, working audio toggles, and reduced-motion.
 - Verify all 25 committed WebP files load without HTTP errors on the published game and are visually aligned.
