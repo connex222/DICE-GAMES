@@ -157,3 +157,33 @@ html[data-pocket-game="gilded-five"] .roll-btn{
 @media(prefers-reduced-motion:reduce){
  html[data-pocket-game] :is(.btn,.tile-face,.roll-btn){transition:none!important}
 }
+
+/* Gameplay polish pass: make available actions and scoring legible on TV.
+ * Purely presentational; state classes remain controlled by each game engine. */
+html[data-pocket-game] :is(.scoreboard,.score-panel,.scorecard,.readout-total){
+  font-variant-numeric:tabular-nums;
+}
+html[data-pocket-game] :is(button,[role="button"],a[href],select):focus-visible{
+  outline:3px solid #fff0ae!important;
+  outline-offset:3px!important;
+  position:relative;
+  z-index:2;
+}
+html[data-pocket-game] :is(.btn-primary,.btn-success,.roll-btn):not(:disabled){
+  transition:filter .15s ease,box-shadow .15s ease,transform .12s ease;
+}
+@media(hover:hover) and (pointer:fine){
+ html[data-pocket-game] :is(.btn-primary,.btn-success,.roll-btn):not(:disabled):hover{
+   filter:brightness(1.16);
+ }
+}
+@media(pointer:coarse){
+ html[data-pocket-game] :is(button,[role="button"],.btn,.roll-btn){
+   touch-action:manipulation;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-pocket-game] :is(.btn-primary,.btn-success,.roll-btn){
+   transition:none!important;
+ }
+}
