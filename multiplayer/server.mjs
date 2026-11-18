@@ -131,7 +131,7 @@ const server=http.createServer(async(req,res)=>{
     if(!validCode(code)||!rooms.has(code))return respond(res,404,'Room not found');
     // Trust the actual server origin, not arbitrary forwarded host headers.
     const configured=process.env.PUBLIC_ORIGIN?.replace(/\/$/,'');
-    const origin=configured||('https://'+req.headers.host);
+    const origin=configured||((req.headers.host||'').startsWith('localhost')?'http://':'https://')+req.headers.host;
     try{
       const svg=await QRCode.toString(origin+'/multiplayer.html?join='+code,{type:'svg',width:320,margin:2,errorCorrectionLevel:'M'});
       return respond(res,200,svg,'image/svg+xml');
