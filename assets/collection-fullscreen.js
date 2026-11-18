@@ -1,6 +1,14 @@
 /* POCKET GAMEBOX: accessible, gesture-initiated fullscreen on TV and phones. */
 (() => {
   'use strict';
+  // The parent play.html already owns fullscreen and Back to Lobby. Never
+  // mount a second fixed button INSIDE an iframe: it can obscure dice/ROLL.
+  if (window.parent !== window) return;
+  // Prefer real in-flow controls in the collection lobby and game wrapper.
+  // Do not duplicate them with a z-index 2-billion floating control.
+  if (document.getElementById('full') ||
+      document.getElementById('expand') ||
+      document.querySelector('[data-action="full"]')) return;
   const root = document.documentElement;
   const supported = () => typeof root.requestFullscreen === 'function' && typeof document.exitFullscreen === 'function';
   const active = () => Boolean(document.fullscreenElement);
