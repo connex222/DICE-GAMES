@@ -233,6 +233,42 @@ try{
   check(await saved.getAttribute('data-progress')==='SAVED','Return to collection shows saved game '+slug);
   await context.close();
  }
+
+ // Cross-device acceptance sweep for EVERY actual game, not only the wrapper.
+ // This does not assert that gameplay has completed or that speakers work.
+ for(const [width,height] of [[320,568],[375,667],[430,932],[768,1024],[1024,768],[1366,768],[1920,1080]]){
+  for(const slug of games){
+   const context=await browser.newContext({
+    viewport:{width,height},deviceScaleFactor:1,isMobile:width<=430,hasTouch:width<=768
+   });
+   try{
+    const page=await pageAt(context,BASE+'play.html?game='+slug);
+    const frame=page.frameLocator('#game');
+    await frame.locator('body').waitFor({state:'attached',timeout:12000});
+    const result=await frame.locator('body').evaluate(()=>{
+     const w=innerWidth, h=innerHeight, doc=document.documentElement;
+     const visible=el=>{const st=getComputedStyle(el),r=el.getBoundingClientRect();
+      return st.display!=='none'&&st.visibility!=='hidden'&&r.width>0&&r.height>0;};
+     const controls=[...document.querySelectorAll('button,a,[role="button"],input,select')]
+      .filter(visible).map(el=>{const r=el.getBoundingClientRect();
+       return {name:(el.getAttribute('aria-label')||el.textContent||el.id||el.tagName).trim().slice(0,36),
+        left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};
+      });
+     const offscreen=controls.filter(r=>r.right<0||r.left>w||r.width<1);
+     const clipped=controls.filter(r=>r.left< -8||r.right>w+8);
+     return {width:w,height:h,scrollWidth:doc.scrollWidth,overflow:doc.scrollWidth-w,
+      controls:controls.length,offscreen:offscreen.slice(0,8),clipped:clipped.slice(0,8)};
+    });
+    check(result.controls>0,'Interactive game controls render '+slug+' @'+width,result);
+    if(result.overflow>15||result.clipped.length||result.offscreen.length)
+     report.warnings.push({slug,viewport:width+'x'+height,issue:'Inspect in-game horizontal overflow or clipped controls',result});
+    report.tests.push({slug,stage:'cross-device-game-screen',viewport:width+'x'+height,geometry:result});
+    if([320,768,1920].includes(width))
+     await page.screenshot({path:'qa-evidence/screens/'+slug+'-'+width+'-screen.png'});
+   }finally{await context.close();}
+  }
+ }
+
 } catch(e){report.failures.push({desc:'Browser suite aborted',message:String(e),stack:e.stack});console.error(e);}
 finally{await browser.close();writeFileSync('qa-evidence/browser-report.json',JSON.stringify(report,null,2));}
 console.log(JSON.stringify({tests:report.tests.length,failures:report.failures.length,warnings:report.warnings.length}));
