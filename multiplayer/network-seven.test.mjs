@@ -60,5 +60,22 @@ test('All seven hosted rooms join by QR and show synchronised private phone view
    send(joins[1].ws,'action',code,{action:{type:'ROLL',values:[6,6,6,6,6]}});
    assert.match((await denial).message,/Wait until it is your turn|not allowed|Wait for your turn/i,game+' action authority');
   }
+
+  // Full eight-handset acceptance at the transport level, plus a ninth rejection.
+  const h8=await open();sockets.push(h8);
+  const hc=wait(h8,d=>d.type==='hosted');send(h8,'host');
+  const {code:room8}=await hc;
+  for(let i=0;i<8;i++){
+   const p=await open();sockets.push(p);
+   const joined=wait(p,d=>d.type==='joined');
+   send(p,'join',room8,{name:'Eight '+i});await joined;
+  }
+  const extra=await open();sockets.push(extra);
+  const full=wait(extra,d=>d.type==='error');
+  send(extra,'join',room8,{name:'Ninth player'});
+  assert.match((await full).message,/full|eight/i);
+  const started=wait(h8,d=>d.type==='state'&&d.phase==='PLAYING');
+  send(h8,'start',room8);
+  assert.equal((await started).players.length,8);
  } finally {for(const ws of sockets)try{ws.close()}catch{}child.kill('SIGTERM');}
 });
