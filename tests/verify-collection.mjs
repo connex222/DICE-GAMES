@@ -5,10 +5,13 @@ import vm from 'node:vm';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const games=['gilded-five','shut-the-box','liars-dice','bust-or-bank','generala','ten-of-a-kind','brain-raid'];
 const index=read('index.html'),play=read('play.html'),mixer=read('assets/pocket-quality.js'),css=read('assets/pocket-premium.css');
+const aaaLobby=read('assets/pocket-aaa-lobby.js'),aaaCss=read('assets/pocket-aaa-lobby.css'),aaaGameCss=read('assets/pocket-aaa-gameplay.css');
 const score=read('assets/game-music.js'),shell=read('assets/pocket-shell.css');
 assert.equal(readdirSync(new URL('../games/',import.meta.url)).filter(n=>n.endsWith('.html')).length,7,'exactly seven actual game pages');
 for(const slug of games){
  const g=read('games/'+slug+'.html');
+ assert.ok(g.includes('pocket-aaa-gameplay.css'),'AAA common cosmetic layer loaded in '+slug);
+ assert.ok(aaaGameCss.includes('data-pocket-game="'+slug+'"'),'distinct visual identity is styled for '+slug);
  assert.equal((index.match(new RegExp('href="play\\.html\\?game='+slug+'"','g'))||[]).length,2,slug+' desktop + phone tile');
  assert.ok(play.includes("'"+slug+"'")||play.includes('"'+slug+'"'),slug+' wrapper mapping');
  assert.ok(g.includes('../assets/pocket-premium.css'),slug+' uses shared premium layer');
@@ -22,6 +25,23 @@ for(const slug of games){
  console.log('PASS',slug,'route, source syntax, save, help and premium layer');
 }
 assert.ok(!index.includes('index(6).html'),'legacy index is not a game');
+assert.ok(!index.includes('<main class="desktop"><img'),'desktop lobby must never be a static image map');
+assert.equal((index.match(/class="aaa-card hot"/g)||[]).length,7,'seven real premium desktop cards');
+assert.ok(index.includes('id="desktop-play"'),'real large Play button is available');
+assert.ok(index.includes('pocket-aaa-lobby.css')&&index.includes('pocket-aaa-lobby.js'),'responsive premium art CSS + interaction present');
+assert.ok(aaaCss.includes('grid-template-columns:repeat(7')&&aaaCss.includes('repeat(4')&&aaaCss.includes('max-width:720px'),'7/4/mobile responsive card layout');
+assert.ok(aaaCss.includes('prefers-reduced-motion'),'reduced motion in AAA lobby');
+assert.ok(aaaGameCss.includes('.tile-face')&&aaaGameCss.includes('.tile-back'),'wood and brass shut-the-box skin applied');
+for(const slug of games){
+ const art='assets/aaa-cards/'+slug+'.webp';
+ assert.equal(index.split('src="'+art+'"').length-1,2,slug+' approved art appears on TV/desktop and phone');
+ const f=new URL('../'+art,import.meta.url);
+ assert.ok(existsSync(f)&&statSync(f).size>20000,slug+' approved art is actually bundled, not broken');
+}
+assert.ok(aaaCss.includes("url('aaa-lobby.webp')"),'approved lobby ambience is referenced');
+assert.ok(existsSync(new URL('../assets/aaa-lobby.webp',import.meta.url)),'approved lobby image is bundled');
+new vm.Script(aaaLobby,{filename:'pocket-aaa-lobby.js'});
+console.log('PASS premium collection semantic cards, responsive gallery, controls and seven unique gameplay treatments');
 assert.ok(index.includes('PocketGameboxProgress?.reset()'),'reset clears actual game state, not only lobby prefs');
 assert.equal((play.match(/'games\/[^']+\.html'/g)||[]).length,7,'seven wrapper entries');
 for(const file of ['pocket-quality.js','pocket-lobby.js','clean-audio.js']){

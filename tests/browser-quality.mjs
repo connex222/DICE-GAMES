@@ -24,6 +24,34 @@ try{
   if(width===390)await page.screenshot({path:'qa-evidence/screens/collection-390.png',fullPage:true});
   await context.close();
  }
+ // Premium desktop gallery must be REAL semantic cards, with no image-map
+ // collisions and a working selected-card Play action at laptop/TV sizes.
+ for(const [width,height] of [[768,1024],[1024,768],[1366,768],[1920,1080]]){
+  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1});
+  const page=await pageAt(context,BASE);
+  check(await page.locator('.desktop .aaa-card').count()===7,'Seven clickable premium cards @'+width);
+  check(await page.locator('#desktop-play').isVisible(),'Large Play available @'+width);
+  const layout=await page.evaluate(()=>{
+   const nodes=[...document.querySelectorAll('.desktop .aaa-card,.desktop .control')];
+   const rects=nodes.map(n=>{const b=n.getBoundingClientRect();return {id:n.dataset.game||n.id,l:b.left,r:b.right,t:b.top,b:b.bottom};});
+   const clipped=rects.filter(n=>n.l < -2 || n.r > innerWidth+2);
+   const overlap=[];
+   for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+    const a=rects[i],b=rects[j];
+    if(Math.min(a.r,b.r)-Math.max(a.l,b.l)>5&&Math.min(a.b,b.b)-Math.max(a.t,b.t)>5)
+     overlap.push(a.id+' / '+b.id);
+   }
+   return {overflow:document.documentElement.scrollWidth-innerWidth,clipped,overlap};
+  });
+  check(layout.overflow<=8,'No premium lobby horizontal overflow @'+width,layout);
+  check(layout.clipped.length===0,'Premium controls fit viewport @'+width,layout);
+  check(layout.overlap.length===0,'Premium card and toolbar surfaces do not overlap @'+width,layout);
+  if(width===1366)await page.screenshot({path:'qa-evidence/screens/premium-desktop-lobby-1366.png',fullPage:true});
+  await page.locator('.desktop .aaa-card[data-game="shut-the-box"]').focus();
+  await page.locator('#desktop-play').click();
+  check(page.url().includes('play.html?game=shut-the-box'),'Selected game launches from premium Play @'+width);
+  await context.close();
+ }
  // Screen-safe wrapper geometry on phones, tablets, desktops and HDTV.
  // No audio-control overlay, horizontal clipping, or hidden in-flow lobby exit.
  const deviceSizes=[

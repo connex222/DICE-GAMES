@@ -21,8 +21,9 @@ function refresh(){
   const slug=new URL(link.href,location.href).searchParams.get('game');
   if(!Object.hasOwn(gameKeys,slug))continue;
   const saved=hasActiveGame(slug);
-  link.setAttribute('aria-label',(saved?'Continue saved game: ':'Play ')+slug.replaceAll('-',' '));
-  if(link.classList.contains('mobile-card')){
+  const title=link.querySelector('.aaa-card-name,.mobile-card-details strong')?.textContent?.trim()||slug.replaceAll('-',' ');
+  link.setAttribute('aria-label',(saved?'Continue saved game: ':'Play ')+title);
+  if(link.classList.contains('mobile-card')||link.classList.contains('aaa-card')){
    if(saved)link.dataset.progress='SAVED';else delete link.dataset.progress;
    const label=link.querySelector('.mobile-card-play');
    if(label)label.firstChild.textContent=saved?'CONTINUE ':'PLAY ';

@@ -1,0 +1,130 @@
+/* Pocket Gamebox — responsive premium casino-parlour lobby.
+ * Real semantic cards and controls replace image-map hit targets.
+ * New image assets can replace the card sources without changing a link.
+ * Every interaction remains native HTML and keyboard-accessible.
+ */
+:root{--aaa-gold:#e8bf6b;--aaa-bright:#fff0bd;--aaa-ink:#0b1c1b;--aaa-maroon:#4c1225}
+body{background:radial-gradient(ellipse at 50% -10%,#315644 0%,#071916 58%,#040a0b 100%);color:#f9e9c4}
+.desktop{
+  position:relative!important;isolation:isolate;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  width:100%!important;max-width:1920px!important;max-height:none!important;
+  min-height:100svh;aspect-ratio:auto!important;line-height:normal!important;
+  padding:clamp(18px,3vmin,38px) clamp(16px,3vw,52px) 26px!important;
+  margin:0 auto!important;overflow:hidden;background:radial-gradient(ellipse at 50% 57%,#164f3fdb,#051918dd 70%),linear-gradient(160deg,#091f1f,#050d12);
+}
+.desktop::before{
+  content:"";position:absolute;inset:-24px;z-index:-2;pointer-events:none;
+  background:url('aaa-lobby.webp') center/cover no-repeat;
+  opacity:.22;filter:blur(12px) saturate(.7) brightness(.68);
+}
+.desktop::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,#0308087c,transparent 16% 84%,#0308087c),
+   linear-gradient(0deg,#060e10c9,transparent 26% 74%,#090d11c5);
+}
+.aaa-header{margin:0 auto clamp(16px,2vw,28px);text-align:center;max-width:100%;position:relative}
+.aaa-header::after{content:"◆ ─── ✦ ─── ◆";display:block;color:#d7a758;font-size:clamp(12px,1.4vw,19px);margin-top:9px;letter-spacing:.21em}
+.aaa-kicker{font:800 clamp(10px,.9vw,13px)/1.3 system-ui,sans-serif;letter-spacing:.4em;color:#f9d89b;margin:0 0 7px}
+.aaa-title{font:900 clamp(39px,5.2vw,91px)/.9 Georgia,'Times New Roman',serif!important;letter-spacing:.055em;color:#ffe6a2;margin:0;text-shadow:0 1px 1px #fff3bd,0 3px #8e5d23,0 6px 8px #030302,0 0 33px #ffc76a6e}
+.aaa-title span{display:block;letter-spacing:.02em}
+.aaa-edition{display:inline-block;font:800 clamp(10px,1.05vw,15px)/1.4 system-ui,sans-serif;letter-spacing:.26em;padding:4px 22px;margin:12px 0 0;border:1px solid #dcbf7d;border-radius:4px;color:#fff2bd;background:linear-gradient(90deg,#32101b,#611b2d,#32101b);box-shadow:0 0 0 2px #080c0b,0 4px 12px #0009}
+.aaa-intro{font:600 clamp(11px,.95vw,14px)/1.3 system-ui,sans-serif;letter-spacing:.12em;color:#d0c6aa;margin:13px 0 0}
+.aaa-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));width:min(100%,1720px);gap:clamp(8px,1vw,17px);align-items:stretch}
+.aaa-card{
+  position:relative;display:flex;flex-direction:column;min-width:0;border-radius:15px;overflow:hidden;
+  border:2px solid #e5bc6e;background:linear-gradient(150deg,#5b3c22,#1d2e2c);
+  box-shadow:0 0 0 2px #4e3420,inset 0 0 0 1px #ffefbd55,0 9px 26px #000b;
+  color:#f9d994;transition:transform .22s ease,filter .22s ease,box-shadow .22s ease,border-color .22s ease;
+  text-align:center;text-decoration:none;
+}
+.aaa-card::before{content:"";position:absolute;inset:3px 3px auto;z-index:2;height:2px;background:linear-gradient(90deg,transparent,#fff1c2,transparent);pointer-events:none}
+.aaa-card:hover,.aaa-card:focus-visible,.aaa-card[data-selected="true"]{
+  border-color:#ffe8ab;box-shadow:0 0 0 2px #ba8941,inset 0 0 0 1px #fff9db83,0 0 26px #eec46b53,0 14px 31px #000d;
+  transform:translateY(-5px);filter:brightness(1.09);
+}
+.aaa-card:focus-visible{outline:3px solid #fff2be;outline-offset:4px}
+.aaa-card-art{display:block;aspect-ratio:3/4;width:100%;min-height:0;overflow:hidden}
+.aaa-card-art img{width:100%;height:100%;display:block;object-fit:cover;object-position:center;transition:transform .35s ease}
+.aaa-card:hover .aaa-card-art img,.aaa-card:focus-visible .aaa-card-art img{transform:scale(1.055)}
+.aaa-card-bottom{position:relative;z-index:1;display:grid;place-items:center;flex:1;min-height:65px;padding:10px 6px 11px;background:linear-gradient(180deg,#192923,#091c1a);border-top:1px solid #b98a47}
+.aaa-card-name{font:900 clamp(12px,1.12vw,19px)/1.05 Georgia,serif;text-wrap:balance;text-shadow:0 2px 3px #000;color:#ffdfa3}
+.aaa-card-note{font:600 clamp(9px,.8vw,12px)/1.2 system-ui,sans-serif;color:#b8c6ac;margin-top:5px}
+.aaa-card[data-progress="SAVED"] .aaa-card-note{color:#8fe7b0}
+.aaa-card[data-progress="SAVED"] .aaa-card-note::after{content:" • Continue"}
+.aaa-launch{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:clamp(12px,2.5vw,30px);margin:clamp(15px,2vw,27px) 0}
+#desktop-play{
+  display:inline-flex;align-items:center;justify-content:center;gap:13px;min-width:min(310px,80vw);min-height:62px;
+  padding:8px 27px;border:2px solid #f5d389;border-radius:16px;color:#ffe6a4;
+  background:linear-gradient(180deg,#0b6950,#06452f 52%,#032d28);
+  box-shadow:0 0 0 3px #614321,0 0 24px #edc16f7f,inset 0 2px #fff6bd62,0 12px 29px #000c;
+  font:900 clamp(21px,2vw,30px)/1 Georgia,serif;letter-spacing:.08em;text-shadow:0 2px #03261e;
+  transition:transform .16s,filter .16s;
+}
+#desktop-play:hover,#desktop-play:focus-visible{filter:brightness(1.15);transform:translateY(-2px)}
+#desktop-play:focus-visible{outline:3px solid #fff2be;outline-offset:4px}
+.aaa-launch-label{font:600 clamp(11px,1vw,13px)/1.2 system-ui,sans-serif;color:#dfcfaa;letter-spacing:.08em;text-align:center}
+.aaa-toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:clamp(7px,1vw,14px);
+  width:100%;padding:clamp(11px,1vw,17px) 8px 2px;border-top:1px solid #b88e4f7a;
+}
+.aaa-toolbar .control{
+  position:relative!important;inset:auto!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;
+  width:auto!important;height:auto!important;min-width:110px;min-height:46px;padding:9px 14px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:800 12px/1.1 system-ui,sans-serif;letter-spacing:.045em;
+  color:#ffe8b7;border:1px solid #e5bc6e;border-radius:999px;
+  background:linear-gradient(#372c22,#16180f);box-shadow:inset 0 1px #fff5cd3d,0 4px 13px #0008;
+}
+.aaa-toolbar .control:hover,.aaa-toolbar .control:focus-visible{background:linear-gradient(#69502d,#302518);box-shadow:0 0 0 2px #fff5bf,0 0 18px #e3ae5682}
+.aaa-toolbar .control svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:2}
+.aaa-toolbar .control .state-dot{position:static;flex:none;padding:2px 5px;font-size:9px}
+.aaa-toolbar .control:disabled{opacity:.55}
+.aaa-toolbar .control-label{white-space:nowrap}
+@media(min-width:721px) and (max-width:1199px){
+ .desktop{justify-content:flex-start}
+ .aaa-grid{grid-template-columns:repeat(4,minmax(0,1fr));max-width:900px;gap:13px}
+ .aaa-card-art{aspect-ratio:6/5}
+ .aaa-header{margin-bottom:18px}
+ .aaa-card-bottom{min-height:57px}
+}
+@media(min-width:721px) and (max-height:790px) and (min-width:1200px){
+ .desktop{padding-top:10px!important;padding-bottom:8px!important}
+ .aaa-header{margin-bottom:12px}
+ .aaa-title{font-size:clamp(33px,4vw,62px)!important}
+ .aaa-card-art{aspect-ratio:1/1.1}
+ .aaa-card-bottom{min-height:58px}
+ .aaa-launch{margin:15px 0}
+ #desktop-play{min-height:54px}
+ .aaa-toolbar{padding-top:10px}
+}
+@media(max-width:720px){
+ .desktop{display:none!important}
+ .mobile{background:transparent}
+ .mobile-header{border-bottom:1px solid #c89b55!important;background:
+   linear-gradient(0deg,#071a19e8,#071c19c8),
+   url('aaa-lobby.webp') center 40%/cover no-repeat!important}
+ .mobile h1{font-family:Georgia,'Times New Roman',serif;color:#ffdf9c}
+ .mobile-version{letter-spacing:.13em!important}
+ .mobile-premium-grid{gap:12px}
+ .mobile-card{position:relative;border:2px solid #d4a95e;border-radius:13px;background:linear-gradient(170deg,#1b4438,#09191b);
+   box-shadow:0 0 0 1px #352b1b,0 10px 24px #000b}
+ .mobile-card:focus-visible{outline:3px solid #ffe5a5;outline-offset:3px}
+ .mobile-art{aspect-ratio:4/5!important}
+ .mobile-art img{object-fit:cover;object-position:center}
+ .mobile-card-details{min-height:85px;padding:12px 10px;row-gap:7px}
+ .mobile-card-details strong{font-family:Georgia,serif;font-size:clamp(14px,4vw,19px);color:#ffe7a9}
+ .mobile-card-details small{font-size:11px;line-height:1.35}
+ .mobile-card-play{min-height:34px;font-size:11px}
+ .mobile-audio{border:1px solid #d0aa69}
+ .mobile-audio-grid button,.mobile-footer-actions button{min-height:46px}
+}
+@media(max-width:360px){
+ .mobile-premium-grid{gap:8px}
+ .mobile-card-details{padding:9px 7px}
+ .mobile-card-details strong{font-size:13px}
+ .mobile-card-play{padding:5px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .aaa-card,.aaa-card-art img,#desktop-play{transition:none!important}
+ .aaa-card:hover,.aaa-card:focus-visible,.aaa-card[data-selected="true"]{transform:none}
+}
