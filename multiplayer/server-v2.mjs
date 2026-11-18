@@ -85,6 +85,10 @@ function processMessage(ws,ctx,data) {
   if(!isHost)throw Error('Only the host can choose the game.');
   switchGame(room,data.game);return;
  }
+ if(type==='returnLobby'){
+  if(!isHost)throw Error('Only the host can return to the multiplayer lobby.');
+  room.state=null;broadcast(room);return;
+ }
  if(type==='start'||type==='rematch'){
   if(!isHost)throw Error('Only the host can start a match.');
   if(type==='start'&&room.state)throw Error('Match already started.');
