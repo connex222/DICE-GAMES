@@ -293,3 +293,121 @@ html[data-pocket-game="brain-raid"] .winner-name{
 @media(prefers-reduced-motion:reduce){
  html[data-pocket-game="brain-raid"] :is(.hero,.zdie,.btn,.mascot){animation:none!important;transition:none!important}
 }
+
+/* Approved visual art slots. Enabled only after the optional files load;
+ * the playable vector layout remains visible on first paint or offline. */
+html[data-pocket-game="brain-raid"].br-art-scene body{
+ background:linear-gradient(180deg,#0d0918b8,#160c20ab 58%,#090e12f2),
+ url("brain-raid-v3/graveyard-atmosphere.webp") center/cover fixed!important;
+}
+html[data-pocket-game="brain-raid"].br-art-lobby .hero{
+ background:linear-gradient(90deg,#110a20a0 0%,#160d20a8 38%,#151023e6 68%,#111523fa),
+ url("brain-raid-v3/lobby-hero.webp") left center/cover no-repeat!important;
+}
+html[data-pocket-game="brain-raid"].br-art-lobby .hero-z{
+ visibility:hidden; /* Preserve the content position but avoid a duplicate host */
+}
+html[data-pocket-game="brain-raid"].br-art-mode-horde .lobby .seg label:has(input[value="horde"]) span{
+ background:linear-gradient(180deg,#1a112844,#140e24e6 83%),
+ url("brain-raid-v3/mode-horde.webp") center 39%/cover no-repeat!important;
+ text-shadow:0 2px 4px #000,0 0 9px #000!important;
+}
+html[data-pocket-game="brain-raid"].br-art-mode-classic .lobby .seg label:has(input[value="classic"]) span{
+ background:linear-gradient(180deg,#1a112844,#140e24e6 83%),
+ url("brain-raid-v3/mode-classic.webp") center 38%/cover no-repeat!important;
+ text-shadow:0 2px 4px #000,0 0 9px #000!important;
+}
+html[data-pocket-game="brain-raid"].br-art-tray .tray{
+ background:radial-gradient(ellipse at 50% 46%,#2852369c,#101022b8 75%),
+ url("brain-raid-v3/roll-tray-atmosphere.webp") center/cover no-repeat!important;
+}
+html[data-pocket-game="brain-raid"] .face[data-face]{
+ border-radius:16%;background-position:center;background-size:contain;background-repeat:no-repeat;
+}
+html[data-pocket-game="brain-raid"].br-face-brain .face[data-face="brain"]{
+ background-image:url("brain-raid-v3/face-brain.webp");
+}
+html[data-pocket-game="brain-raid"].br-face-feet .face[data-face="feet"]{
+ background-image:url("brain-raid-v3/face-feet.webp");
+}
+html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="shot"]{
+ background-image:url("brain-raid-v3/face-shot.webp");
+}
+html[data-pocket-game="brain-raid"].br-face-genius .face[data-face="genius"]{
+ background-image:url("brain-raid-v3/face-genius.webp");
+}
+html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="bomb"]{
+ background-image:url("brain-raid-v3/face-bomb.webp");
+}
+/* The remaining two Horde faces do not have separate engine identifiers.
+ * Keep the real double/lucky semantics on the readable vector fallback. */
+html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="double"]{
+ background-image:url("brain-raid-v3/face-shot.webp");
+}
+html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="lucky"]{
+ background-image:url("brain-raid-v3/face-bomb.webp");
+}
+html[data-pocket-game="brain-raid"] .face[data-face="brain"] svg,
+html[data-pocket-game="brain-raid"] .face[data-face="feet"] svg,
+html[data-pocket-game="brain-raid"] .face[data-face="shot"] svg,
+html[data-pocket-game="brain-raid"] .face[data-face="genius"] svg,
+html[data-pocket-game="brain-raid"] .face[data-face="bomb"] svg,
+html[data-pocket-game="brain-raid"] .face[data-face="double"] svg,
+html[data-pocket-game="brain-raid"] .face[data-face="lucky"] svg{
+ display:block;
+}
+/* The individual art loads independently. Only hide its vector fallback
+ * when that exact image has been decoded successfully. */
+html[data-pocket-game="brain-raid"].br-face-brain .face[data-face="brain"] svg,
+html[data-pocket-game="brain-raid"].br-face-feet .face[data-face="feet"] svg,
+html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="shot"] svg,
+html[data-pocket-game="brain-raid"].br-face-genius .face[data-face="genius"] svg,
+html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="bomb"] svg,
+html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="double"] svg,
+html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="lucky"] svg{
+ visibility:hidden;
+}
+html[data-pocket-game="brain-raid"].br-mascot-idle #mascot[data-br-mood="idle"],
+html[data-pocket-game="brain-raid"].br-mascot-happy #mascot[data-br-mood="happy"],
+html[data-pocket-game="brain-raid"].br-mascot-scared #mascot[data-br-mood="scared"],
+html[data-pocket-game="brain-raid"].br-mascot-dizzy #mascot[data-br-mood="dizzy"],
+html[data-pocket-game="brain-raid"].br-mascot-triumphant #mascot[data-br-mood="triumphant"]{
+ background-size:cover!important;background-repeat:no-repeat!important;
+ background-position:center 25%!important;
+ box-shadow:0 0 16px #acfa5e85,inset 0 0 0 2px #d9bb78;
+ border-radius:18%;
+}
+html[data-pocket-game="brain-raid"].br-mascot-idle #mascot[data-br-mood="idle"]{
+ background-image:url("brain-raid-v3/mascot-idle.webp")!important;
+}
+html[data-pocket-game="brain-raid"].br-mascot-happy #mascot[data-br-mood="happy"]{
+ background-image:url("brain-raid-v3/mascot-happy.webp")!important;
+}
+html[data-pocket-game="brain-raid"].br-mascot-scared #mascot[data-br-mood="scared"]{
+ background-image:url("brain-raid-v3/mascot-scared.webp")!important;
+}
+html[data-pocket-game="brain-raid"].br-mascot-dizzy #mascot[data-br-mood="dizzy"]{
+ background-image:url("brain-raid-v3/mascot-dizzy.webp")!important;
+}
+html[data-pocket-game="brain-raid"].br-mascot-triumphant #mascot[data-br-mood="triumphant"]{
+ background-image:url("brain-raid-v3/mascot-triumphant.webp")!important;
+}
+html[data-pocket-game="brain-raid"].br-mascot-idle #mascot[data-br-mood="idle"] svg,
+html[data-pocket-game="brain-raid"].br-mascot-happy #mascot[data-br-mood="happy"] svg,
+html[data-pocket-game="brain-raid"].br-mascot-scared #mascot[data-br-mood="scared"] svg,
+html[data-pocket-game="brain-raid"].br-mascot-dizzy #mascot[data-br-mood="dizzy"] svg,
+html[data-pocket-game="brain-raid"].br-mascot-triumphant #mascot[data-br-mood="triumphant"] svg{
+ visibility:hidden;
+}
+html[data-pocket-game="brain-raid"].br-art-winner #dlgOver .over-z{
+ background-image:url("brain-raid-v3/winner-mascot.webp");
+ background-position:center top;background-size:cover;
+ border-radius:18px;border:2px solid #e1b876;
+ box-shadow:0 0 25px #aaff6e65;
+}
+html[data-pocket-game="brain-raid"].br-art-winner #dlgOver .over-z svg{visibility:hidden}
+@media (max-width:600px){
+ html[data-pocket-game="brain-raid"].br-art-lobby .hero{
+  background-position:32% center!important;
+ }
+}
