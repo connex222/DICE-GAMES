@@ -1720,7 +1720,7 @@ function handleAction(s) {
   const cfg = Engine.cfgOf(s);
   switch (la.type) {
     case 'START_GAME':
-      zombieAnnounce('roll');
+      // Starting a match does not roll dice; leave the recorded rattle for real rolls.
       clearTimers();
       ui.busy = false;
       Sound.turnStart();
