@@ -58,6 +58,11 @@ assert.ok(brainSource.includes("label: danger ? 'Risk it all & roll' : 'Roll for
 assert.ok(brainSource.includes("label: 'Bank brains'"),'bank action is clear without changing rules');
 assert.ok(!brainV3.includes('face[data-face="lucky"]{\\n background-image:url("brain-raid-v3/face-bomb.webp")'),'lucky escape cannot be mistaken for a dangerous bomb');
 assert.ok(brainLoader.includes('new MutationObserver(syncMood)'),'mascot expression follows original game state');
+assert.ok(brainV3.includes('Brain Raid header mascot — replace'),'header zombie has dedicated AAA replacement styling');
+assert.ok(brainV3.includes('.br-mascot-idle #titleZ'),'header artwork appears only after actual image load');
+assert.ok(brainV3.includes('.br-mascot-idle #titleZ svg'),'legacy title SVG hidden only when approved portrait exists');
+assert.ok(brainSource.includes('id="titleZ"'),'header title hook retained without touching navigation');
+
 
 assert.ok(brainV3.includes('prefers-reduced-motion:reduce'),'Brain Raid Visual 3.0 respects reduced motion');
 assert.ok(brainSource.includes('Engine.createState')&&brainSource.includes('function renderSlots')&&brainSource.includes('function renderDock'),'visual rebuild retains live gameplay engine');
