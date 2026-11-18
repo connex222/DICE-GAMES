@@ -1,0 +1,79 @@
+{
+  "original_total_bytes": 13087648,
+  "added_total_bytes": 13087648,
+  "transcoded_to_128kbps": false,
+  "assets": [
+    {
+      "key": "gilded-five",
+      "path": "assets/audio/music-gilded-five.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/dcb55b31-ddfa-41f0-9263-683ec9196bfd.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1561004,
+      "bytes": 1561004,
+      "sha256": "9067c4da82fc8de2b75fa005fda9a6189ec14754566d69e84987b69ae5dec571"
+    },
+    {
+      "key": "shut-the-box",
+      "path": "assets/audio/music-shut-the-box.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/d7e69c81-9783-4873-9868-5cc3d7349f54.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1561004,
+      "bytes": 1561004,
+      "sha256": "5b4cbc4c58c23420bdb6cd1e408812bd17db2a57bedbea2eed9ad519b3c9d933"
+    },
+    {
+      "key": "liars-dice",
+      "path": "assets/audio/music-liars-dice.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/62fd415c-15aa-4934-b2a1-0fdac263d80d.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1561004,
+      "bytes": 1561004,
+      "sha256": "8d0ae76ed3787019465186609f398692cdde951acae159d81cf660f3468d9b70"
+    },
+    {
+      "key": "bust-or-bank",
+      "path": "assets/audio/music-bust-or-bank.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/fdf6b5e2-585f-4326-849c-53fa1e2498cb.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1561004,
+      "bytes": 1561004,
+      "sha256": "6cd8e9fdc382dfedd86135db54f5ff63d9d48a7b0b99b8915f0063dd808d64bb"
+    },
+    {
+      "key": "generala",
+      "path": "assets/audio/music-generala.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/a14d2965-700a-4447-875b-a637a50cf692.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1561004,
+      "bytes": 1561004,
+      "sha256": "0997edaae2d86650749042fa572a09ffef8ae8a74dc7e396beb8e4d425e6287f"
+    },
+    {
+      "key": "ten-of-a-kind",
+      "path": "assets/audio/music-ten-of-a-kind.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/f326ac70-3f10-491a-b9a5-9f252707ffea.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1561004,
+      "bytes": 1561004,
+      "sha256": "8ed946110c0d048c6258a0a1edba8cb19a98d107fb6d2b12c0e3e38d27fa0e69"
+    },
+    {
+      "key": "brain-raid",
+      "path": "assets/audio/music-brain-raid.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/d336ec0e-92f9-4b5b-a29d-5ed46699f43b.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1800620,
+      "bytes": 1800620,
+      "sha256": "c9e6d3c8ead33e4ac7d05310f64bdc91d6cab04667f56ba660c649c3077a99bf"
+    },
+    {
+      "key": "music-lobby",
+      "path": "assets/audio/music-lobby.mp3",
+      "source": "https://cdn.creativeclaw.co/u/f3e7a3b1/audio/fbe4d919-5dc1-49ed-b230-5525d9b8a37f.mp3",
+      "licence": "Creative Claw owner-generated music; commercial redistribution rights not independently verified.",
+      "original_bytes": 1921004,
+      "bytes": 1921004,
+      "sha256": "df7023c4ec4dc0c922dff6294cc6d9f35c8c9283abf8b391d2ed632f6c6fb988"
+    }
+  ]
+}
