@@ -339,13 +339,11 @@ html[data-pocket-game="brain-raid"].br-face-genius .face[data-face="genius"]{
 html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="bomb"]{
  background-image:url("brain-raid-v3/face-bomb.webp");
 }
-/* The remaining two Horde faces do not have separate engine identifiers.
- * Keep the real double/lucky semantics on the readable vector fallback. */
+/* Double-barrel uses the same shot symbol with a visible ×2 badge.
+ * Lucky bomb retains its distinct green shield vector so it cannot be
+ * mistaken for the instant-blast bomb. Horde and toxic art are references. */
 html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="double"]{
  background-image:url("brain-raid-v3/face-shot.webp");
-}
-html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="lucky"]{
- background-image:url("brain-raid-v3/face-bomb.webp");
 }
 html[data-pocket-game="brain-raid"] .face[data-face="brain"] svg,
 html[data-pocket-game="brain-raid"] .face[data-face="feet"] svg,
@@ -364,9 +362,6 @@ html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="shot"] svg,
 html[data-pocket-game="brain-raid"].br-face-genius .face[data-face="genius"] svg,
 html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="bomb"] svg,
 html[data-pocket-game="brain-raid"].br-face-shot .face[data-face="double"] svg,
-html[data-pocket-game="brain-raid"].br-face-bomb .face[data-face="lucky"] svg{
- visibility:hidden;
-}
 html[data-pocket-game="brain-raid"].br-mascot-idle #mascot[data-br-mood="idle"],
 html[data-pocket-game="brain-raid"].br-mascot-happy #mascot[data-br-mood="happy"],
 html[data-pocket-game="brain-raid"].br-mascot-scared #mascot[data-br-mood="scared"],
