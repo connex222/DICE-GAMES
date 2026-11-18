@@ -3,7 +3,7 @@ services:
     name: pocket-gamebox-multiplayer
     runtime: node
     plan: free
-    buildCommand: npm install --omit=dev
+    buildCommand: npm install --package-lock-only --ignore-scripts && npm ci --omit=dev && npm test
     startCommand: npm start
     healthCheckPath: /health
     envVars:
