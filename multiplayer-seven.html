@@ -35,7 +35,7 @@ body.phone #gameArt{max-height:145px}body.phone h1{font-size:1.6rem}body.phone .
 footer{padding-top:24px;font-size:.82rem;color:#a5bbb2;text-align:center}
 @media(max-width:600px){.gamechoice{min-height:120px}.gamechoice img{max-height:75px}.code{letter-spacing:.09em}.panel{padding:15px}.top-right{width:100%}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
-</style></head><body><main><header><div><div class="kicker">PREMIUM DICE COLLECTION</div><h1>POCKET GAMEBOX</h1><small>Seven games • Shared television • Two to eight phones</small></div><div class="top-right"><button type="button" id="fullscreen" class="secondary">⛶ Fullscreen</button><button type="button" id="music" aria-pressed="false">♫ Music off</button><button type="button" id="fx" class="secondary" aria-pressed="true">✦ FX on</button><a href="https://connex222.github.io/DICE-GAMES/">← Standalone Lobby</a></div></header>
+</style></head><body><main><header><div><div class="kicker">PREMIUM DICE COLLECTION</div><h1>POCKET GAMEBOX</h1><small>Seven games • Shared television • Two to eight phones</small></div><div class="top-right"><button type="button" id="fullscreen" class="secondary">⛶ Fullscreen</button><button type="button" id="backRoom" class="secondary hidden">← Multiplayer Lobby</button><button type="button" id="music" aria-pressed="false">♫ Music off</button><button type="button" id="fx" class="secondary" aria-pressed="true">✦ FX on</button><a href="https://connex222.github.io/DICE-GAMES/">← Standalone Lobby</a></div></header>
 <p role="status" aria-live="polite" id="status"></p>
 <section id="welcome" class="panel"><h2>Play together, properly</h2><p>Host on your TV or PC. Everyone scans the QR code and plays on their own phone — no passing devices around.</p><div class="actions"><button id="hostBtn">Host TV multiplayer</button><button id="joinBtn" class="secondary">Join from my phone</button></div><p class="muted">For solo play, bots or pass-and-play, use the original standalone collection.</p></section>
 <section id="joinForm" class="panel hidden"><h2>Join a game</h2><label for="roomInput">Room code</label><input id="roomInput" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"><p><label for="nameInput">Your name</label><input id="nameInput" maxlength="22" autocomplete="nickname" placeholder="Enter player name"></p><div class="actions"><button id="joinNow">Join game</button><button class="secondary" id="joinCancel">Back</button></div></section>
@@ -140,6 +140,7 @@ function render(){
   show('hostLobby',playing?'board':null);
   $('lobbyPlayers').innerHTML=roster(data.players,state?.players);
   $('count').textContent=data.players.length+' / 8 players joined (minimum 2)';
+  $('backRoom').classList.toggle('hidden',!playing);
   $('startGame').disabled=data.players.length<2||playing;
   $('startGame').classList.toggle('hidden',playing);
   $('rematch').classList.toggle('hidden',!done);
@@ -293,6 +294,7 @@ $('joinNow').onclick=()=>{
  if(!/^[A-HJ-NP-Z2-9]{4}$/.test(room)||!name)return say('Enter the room code and your name.');
  document.body.classList.add('phone');show('controller');connect({type:'join',code:room,name});
 };
+$('backRoom').onclick=()=>send('returnLobby');
 $('startGame').onclick=()=>send('start');
 $('rematch').onclick=()=>send('rematch');
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.().catch(()=>say('Fullscreen unavailable on this browser.'));};
